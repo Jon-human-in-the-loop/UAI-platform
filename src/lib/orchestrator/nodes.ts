@@ -79,10 +79,19 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         console.error("Error recuperando memoria:", e);
     }
 
+    // Configuración Dinámica del Agente
+    const config = state.agent_config || {
+        name: "UAI Nucleus",
+        role: "Orquestador Superior",
+        system_prompt: "Eres el núcleo analítico de UAI Platform."
+    };
+
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    Eres el núcleo analítico de UAI Platform (Nivel Superior).
-    Tu objetivo es analizar la solicitud del usuario y sintetizar una fuerza de trabajo dinámica.
+    IDENTIDAD: Eres {agent_name} ({agent_role}).
+    MISIÓN PRINCIPAL: {agent_prompt}
+    
+    Tu objetivo es analizar la solicitud del usuario y sintetizar una fuerza de trabajo dinámica para cumplirla.
     {memory_context}
     
     SOLICITUD: {input}
@@ -117,7 +126,10 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     try {
         const result: any = await chain.invoke({
             input: lastMessage,
-            memory_context: pastContext
+            memory_context: pastContext,
+            agent_name: config.name,
+            agent_role: config.role,
+            agent_prompt: config.system_prompt
         });
 
         return {

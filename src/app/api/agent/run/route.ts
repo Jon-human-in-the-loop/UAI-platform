@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
     try {
-        const { input, threadId } = await req.json();
+        const { input, threadId, agent } = await req.json();
 
         if (!input) {
             return NextResponse.json({ error: 'Falta el input' }, { status: 400 });
@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
         const currentThreadId = threadId || uuidv4();
 
         console.log(`--- Ejecución Persistente (Thread: ${currentThreadId}) para: ${input} ---`);
+        if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
 
         const encoder = new TextEncoder();
         const stream = new TransformStream();
@@ -41,7 +42,13 @@ export async function POST(req: NextRequest) {
                     next_node: 'analizador',
                     errors: [],
                     skills_active: [],
-                    context_memory: {}
+                    context_memory: {},
+                    agent_config: agent || {
+                        name: "UAI Core",
+                        role: "Orquestador Default",
+                        model: "claude-3-opus",
+                        system_prompt: "Eres el núcleo de la plataforma."
+                    }
                 };
 
                 // Suscripción a eventos del grafo con persistencia activada

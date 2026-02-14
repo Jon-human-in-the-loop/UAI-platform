@@ -43,7 +43,11 @@ export default function Dashboard() {
             const response = await fetch('/api/agent/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ input: instruction, threadId: currentThreadId }),
+                body: JSON.stringify({
+                    input: instruction,
+                    threadId: currentThreadId,
+                    agent: activeAgent
+                }),
             });
 
             if (!response.ok) throw new Error('Error en la respuesta del servidor');
