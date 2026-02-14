@@ -58,7 +58,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                     {/* Header */}
                     <div className="p-6 border-b border-white/5 flex items-center justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold text-white">Mejora tu Plan</h2>
+                            <h2 className="text-2xl font-bold text-white">Mejora tu plan</h2>
                             <p className="text-white/40 text-sm">Desbloquea el verdadero poder de la orquestación</p>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
@@ -103,7 +103,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                                 <p className="text-xs text-white/50">Para creadores y early adopters.</p>
                             </div>
                             <ul className="space-y-3">
-                                {['Agentes Ilimitados', 'Modelos SOTA (GPT-4, Claude 3)', 'Prioridad Alta', 'Soporte por Email'].map(feat => (
+                                {['Agentes ilimitados', 'Modelos SOTA (GPT-4, Claude 3)', 'Prioridad alta', 'Soporte por email'].map(feat => (
                                     <li key={feat} className="flex items-center gap-2 text-xs text-white/70">
                                         <CheckCircle2 className="w-4 h-4 text-accent" /> {feat}
                                     </li>
@@ -132,7 +132,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                                 <p className="text-xs text-white/50">Para power users y agencias.</p>
                             </div>
                             <ul className="space-y-3">
-                                {['Todo en Essentials', 'API Access', 'Fine-tuning', 'Soporte 24/7 Dedicado', 'Early Access Features'].map(feat => (
+                                {['Todo en Essentials', 'Acceso a API', 'Fine-tuning', 'Soporte 24/7 dedicado', 'Funciones de acceso anticipado'].map(feat => (
                                     <li key={feat} className="flex items-center gap-2 text-xs text-white/70">
                                         <div className="w-1.5 h-1.5 rounded-full bg-white/20" /> {feat}
                                     </li>

@@ -53,8 +53,12 @@ export async function initDatabase() {
                     longest_streak INTEGER DEFAULT 0,
                     last_active TIMESTAMP,
                     achievements JSONB DEFAULT '[]'::jsonb,
+                    executions_today INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
+                
+                -- Migration for existing tables
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS executions_today INTEGER DEFAULT 0;
             `);
             await client.query(`
                 CREATE TABLE IF NOT EXISTS agents (

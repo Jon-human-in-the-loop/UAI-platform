@@ -16,17 +16,17 @@ const steps: Step[] = [
         icon: Zap
     },
     {
-        title: "Lanza tu Misión",
+        title: "Lanza tu misión",
         description: "Escribe cualquier instrucción en la barra inferior. Desde 'Investiga este mercado' hasta 'Genera un reporte de ventas'. Los agentes entenderán tu intención.",
         icon: Map
     },
     {
-        title: "Visualiza el Pensamiento",
+        title: "Visualiza el pensamiento",
         description: "Observa en tiempo real cómo los agentes PLANIFICAN, EJECUTAN y VERIFICAN tu tarea en el editor de flujo y la consola de logs.",
         icon: Terminal
     },
     {
-        title: "Sube de Nivel",
+        title: "Sube de nivel",
         description: "Cada misión exitosa te otorga XP. Mantén tu racha diaria, desbloquea logros y compite por el rango Arcano.",
         icon: Trophy
     }

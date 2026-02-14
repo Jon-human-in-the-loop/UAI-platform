@@ -22,7 +22,7 @@ export default function LandingPage() {
                     <a href="#pricing" className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">Precios</a>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Link href="/registro" className="bg-primary px-8 py-2.5 rounded-full text-[10px] font-black shadow-[0_0_30px_rgba(139,0,0,0.4)] hover:scale-105 active:scale-95 transition-all tracking-[0.2em] uppercase">Comenzar Ahora</Link>
+                    <Link href="/registro" className="bg-primary px-8 py-2.5 rounded-full text-[10px] font-black shadow-[0_0_30px_rgba(139,0,0,0.4)] hover:scale-105 active:scale-95 transition-all tracking-[0.2em] uppercase">Comenzar ahora</Link>
                 </div>
             </header>
 
@@ -45,8 +45,8 @@ export default function LandingPage() {
                         </div>
 
                         <h1 className="text-7xl md:text-[110px] font-black tracking-tighter leading-[0.9] text-white uppercase italic">
-                            Deja de Chatear,<br />
-                            <span className="gold-text-gradient italic">Empieza a Orquestar.</span>
+                            Deja de chatear,<br />
+                            <span className="gold-text-gradient italic">Empieza a orquestar.</span>
                         </h1>
 
                         <p className="text-xl md:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed font-light">
@@ -60,7 +60,7 @@ export default function LandingPage() {
                             </Link>
                             <div className="flex items-center gap-3 text-white/30 text-xs font-bold uppercase tracking-widest">
                                 <Shield className="w-4 h-4" />
-                                Sin Tarjeta de Crédito Requerida
+                                Sin tarjeta de crédito requerida
                             </div>
                         </div>
                     </motion.div>
@@ -101,17 +101,17 @@ export default function LandingPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
                             <div className="space-y-10">
                                 <h2 className="text-5xl md:text-7xl font-bold tracking-tighter leading-tight">
-                                    La Primera <span className="gold-text-gradient underline decoration-accent/20">Capa de Razonamiento</span> Operativa.
+                                    La primera <span className="gold-text-gradient underline decoration-accent/20">capa de razonamiento</span> operativa
                                 </h2>
                                 <p className="text-xl text-white/40 leading-relaxed font-light">
                                     UAI no es otro "wrapper" de API. Es una infraestructura propietaria de <span className="text-white">Persistencia Cognitiva</span>. Tus agentes no solo responden; recuerdan, analizan errores y refinan sus propias estrategias mediante grafos de decisión recursivos.
                                 </p>
                                 <ul className="space-y-6">
                                     {[
-                                        'Orquestación Multi-Agente en Tiempo Real',
-                                        'Persistencia de Estado vía PostgreSQL',
-                                        'Auto-Sanación Neural de Procesos',
-                                        'Memoria Semántica Infinita'
+                                        'Orquestación multi-agente en tiempo real',
+                                        'Persistencia de estado vía PostgreSQL',
+                                        'Auto-sanación neural de procesos',
+                                        'Memoria semántica infinita'
                                     ].map((item, i) => (
                                         <li key={i} className="flex items-center gap-4 text-base font-medium text-white/80">
                                             <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
@@ -191,7 +191,7 @@ export default function LandingPage() {
                             <div className="space-y-10 order-1 lg:order-2">
                                 <h2 className="text-5xl md:text-7xl font-bold tracking-tighter leading-tight text-right">
                                     Gana la <br />
-                                    <span className="gold-text-gradient underline decoration-accent/20 italic">Soberanía de Rango.</span>
+                                    <span className="gold-text-gradient underline decoration-accent/20 italic">soberanía de rango</span>
                                 </h2>
                                 <p className="text-xl text-white/40 leading-relaxed font-light text-right">
                                     No solo compartes; escalas. Cada aporte te acerca a nuevos Rangos Épicos. Activa personajes exclusivos y desbloquea <span className="text-accent font-bold italic">Planes Professional de por vida</span> al convertirte en una leyenda del UAI Hub.
@@ -199,11 +199,11 @@ export default function LandingPage() {
                                 <div className="flex justify-end gap-10">
                                     <div className="text-right">
                                         <h4 className="text-3xl font-black text-white italic tracking-tighter uppercase">Niveles RPG</h4>
-                                        <p className="text-[10px] text-accent uppercase tracking-[0.2em] font-black">Personajes Exclusivos</p>
+                                        <p className="text-[10px] text-accent uppercase tracking-[0.2em] font-black">Personajes exclusivos</p>
                                     </div>
                                     <div className="text-right">
-                                        <h4 className="text-3xl font-black text-white italic tracking-tighter uppercase">Premios Reales</h4>
-                                        <p className="text-[10px] text-white/30 uppercase tracking-[0.2em]">Essentials & Pro Gratis</p>
+                                        <h4 className="text-3xl font-black text-white italic tracking-tighter uppercase">Premios reales</h4>
+                                        <p className="text-[10px] text-white/30 uppercase tracking-[0.2em]">Essentials & Pro gratis</p>
                                     </div>
                                 </div>
                             </div>
@@ -213,15 +213,15 @@ export default function LandingPage() {
                         <div className="pt-20">
                             <div className="inline-flex items-center gap-2 mb-10 px-4 py-1.5 border border-white/10 rounded-full bg-white/5">
                                 <Layers className="w-4 h-4 text-accent" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Escala de Progresión UAI</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Escala de progresión UAI</span>
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 {[
-                                    { level: "Lvl 1-10", name: "Aprendiz Arcano", benefit: "Plan Free", color: "bg-white/10", icon: Bot },
-                                    { level: "Lvl 11-30", name: "Forjador de Nexos", benefit: "Descuento 50%", color: "bg-blue-500/20", icon: Shield },
-                                    { level: "Lvl 31-70", name: "Oráculo Estelar", benefit: "Essentials Gratis", color: "bg-orange-500/20", icon: Zap },
-                                    { level: "Lvl 71-99", name: "Arquitecto Celestial", benefit: "Pro de por vida", color: "bg-red-500/20", icon: Rocket }
+                                    { level: "Lvl 1-10", name: "Aprendiz arcano", benefit: "Plan Free", color: "bg-white/10", icon: Bot },
+                                    { level: "Lvl 11-30", name: "Forjador de nexos", benefit: "Descuento 50%", color: "bg-blue-500/20", icon: Shield },
+                                    { level: "Lvl 31-70", name: "Oráculo estelar", benefit: "Essentials gratis", color: "bg-orange-500/20", icon: Zap },
+                                    { level: "Lvl 71-99", name: "Arquitecto celestial", benefit: "Pro de por vida", color: "bg-red-500/20", icon: Rocket }
                                 ].map((rank, i) => (
                                     <motion.div
                                         key={rank.name}
@@ -273,7 +273,7 @@ export default function LandingPage() {
                                         <div className="flex-1 space-y-4 text-center md:text-left">
                                             <div className="flex flex-col md:flex-row items-center md:items-end gap-3">
                                                 <h5 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic bg-gradient-to-r from-red-400 via-orange-300 to-yellow-400 bg-clip-text text-transparent">
-                                                    Dragón Primordial
+                                                    Dragón primordial
                                                 </h5>
                                                 <span className="text-[10px] font-mono text-red-400/60 border border-red-500/20 px-3 py-1 rounded-full bg-red-500/5">Lvl 100+</span>
                                             </div>
@@ -284,13 +284,13 @@ export default function LandingPage() {
                                             </p>
                                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400 bg-red-500/10 px-4 py-2 rounded-full border border-red-500/20">
-                                                    🔥 Acceso Vitalicio a Todo
+                                                    🔥 Acceso vitalicio a todo
                                                 </span>
                                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400 bg-orange-500/10 px-4 py-2 rounded-full border border-orange-500/20">
-                                                    ⚡ Agentes Ilimitados
+                                                    ⚡ Agentes ilimitados
                                                 </span>
                                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-400 bg-yellow-500/10 px-4 py-2 rounded-full border border-yellow-500/20">
-                                                    👑 Consejo Fundador
+                                                    👑 Consejo fundador
                                                 </span>
                                             </div>
                                         </div>
@@ -321,8 +321,8 @@ export default function LandingPage() {
                                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-accent">MISSION CONTROL</span>
                             </div>
                             <h2 className="text-5xl md:text-8xl font-black tracking-tighter uppercase italic">
-                                Despliega Tu Escuadrón.<br />
-                                <span className="gold-text-gradient">Conquista en Equipo.</span>
+                                Despliega tu escuadrón.<br />
+                                <span className="gold-text-gradient">Conquista en equipo.</span>
                             </h2>
                             <p className="text-xl text-white/40 max-w-3xl mx-auto leading-relaxed font-light">
                                 Crea comunidades gamificadas donde tus agentes, con <span className="text-white font-medium">avatares únicos</span>, detectan sinergias con otros agentes y <span className="text-accent font-medium">te notifican</span>. Tú conectas con el otro usuario, y a partir de ahí, los agentes hacen todo el trabajo pesado en equipo.
@@ -345,7 +345,7 @@ export default function LandingPage() {
                                 </div>
 
                                 {/* Agent Grid - The "War Room" */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                                     {[
                                         { name: "KRAKEN-9", owner: "@alex_quant", role: "Estrategia Financiera", status: "Devorando datos de mercado...", color: "border-red-500/30 bg-red-500/5", avatar: "🦑", rank: "Arquitecto Celestial" },
                                         { name: "VALKYRIA", owner: "@elena_studio", role: "SEO & Contenido", status: "Orquestando narrativas...", color: "border-orange-500/30 bg-orange-500/5", avatar: "⚔️", rank: "Oráculo Estelar" },
@@ -363,12 +363,12 @@ export default function LandingPage() {
                                             <div className="text-4xl">{agent.avatar}</div>
                                             <div className="space-y-1">
                                                 <h5 className="text-sm font-black uppercase tracking-wider">{agent.name}</h5>
-                                                <p className="text-[9px] text-white/30 font-mono">{agent.owner} · {agent.rank}</p>
+                                                <p className="text-[10px] text-white/30 font-mono">{agent.owner} · {agent.rank}</p>
                                             </div>
-                                            <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">{agent.role}</p>
+                                            <p className="text-xs text-white/50 uppercase tracking-widest font-bold">{agent.role}</p>
                                             <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                                <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
-                                                <span className="text-[9px] text-accent/80 font-mono italic">{agent.status}</span>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                                                <span className="text-[10px] text-accent/80 font-mono italic leading-tight">{agent.status}</span>
                                             </div>
                                         </motion.div>
                                     ))}
@@ -378,9 +378,9 @@ export default function LandingPage() {
                                 <div className="flex items-center justify-center gap-3 py-6">
                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
                                     <div className="flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/[0.02]">
-                                        <Layers className="w-4 h-4 text-accent" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Sinergia Activa</span>
-                                        <span className="text-[10px] font-mono text-accent">98.7%</span>
+                                        <Layers className="w-5 h-5 text-accent" />
+                                        <span className="text-xs font-black uppercase tracking-[0.2em] text-white/80">Sinergia Activa</span>
+                                        <span className="text-sm font-mono text-accent font-bold">98.7%</span>
                                     </div>
                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
                                 </div>
@@ -407,9 +407,9 @@ export default function LandingPage() {
                         {/* Benefits Row */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10">
                             {[
-                                { icon: Globe, title: "Proyectos Globales", desc: "Lanza misiones con colaboradores de cualquier parte del mundo. Tus agentes trabajan 24/7." },
-                                { icon: Zap, title: "Sinergias Inteligentes", desc: "Los agentes detectan oportunidades de colaboración y te avisan. Tú decides, ellos ejecutan el trabajo pesado." },
-                                { icon: Rocket, title: "Resultados Exponenciales", desc: "Conecta con otros usuarios, pon a trabajar a tus agentes en equipo y multiplica los resultados 10x." }
+                                { icon: Globe, title: "Proyectos globales", desc: "Lanza misiones con colaboradores de cualquier parte del mundo. Tus agentes trabajan 24/7." },
+                                { icon: Zap, title: "Sinergias inteligentes", desc: "Los agentes detectan oportunidades de colaboración y te avisan. Tú decides, ellos ejecutan el trabajo pesado." },
+                                { icon: Rocket, title: "Resultados exponenciales", desc: "Conecta con otros usuarios, pon a trabajar a tus agentes en equipo y multiplica los resultados 10x." }
                             ].map((benefit, i) => (
                                 <div key={i} className="text-center space-y-4 p-8 glass-card border-white/5 hover:border-accent/20 transition-colors group">
                                     <benefit.icon className="w-10 h-10 mx-auto text-white/20 group-hover:text-accent transition-colors" />
@@ -427,8 +427,8 @@ export default function LandingPage() {
 
                     <div className="text-center space-y-6 mb-24 relative z-10">
                         <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic">
-                            Poder Elite.<br />
-                            <span className="gold-text-gradient">Precio Disruptivo.</span>
+                            Poder elite.<br />
+                            <span className="gold-text-gradient">Precio disruptivo.</span>
                         </h2>
                         <p className="text-white/40 text-xl max-w-2xl mx-auto">
                             Hemos eliminado los márgenes abusivos. Accede a la tecnología que domina el mercado al coste de infraestructura.
@@ -440,14 +440,14 @@ export default function LandingPage() {
                         <div className="glass-card p-10 space-y-8 border-white/5 bg-white/[0.02] flex flex-col">
                             <div className="space-y-2">
                                 <h4 className="text-2xl font-bold uppercase tracking-tighter">UAI Free</h4>
-                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Explorador Cognitivo</p>
+                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Explorador cognitivo</p>
                             </div>
                             <div className="flex items-baseline gap-1">
                                 <span className="text-6xl font-black font-mono">$0</span>
                                 <span className="text-white/20 text-sm font-bold">/siempre</span>
                             </div>
                             <ul className="flex-1 space-y-5">
-                                {['Orquestación de 1 Agente', 'Modelos Ultra-Rápidos', 'Límite: 5 consultas/hora', 'Comunidad Open-Source'].map(item => (
+                                {['Orquestación de 1 agente', 'Modelos ultra-rápidos', 'Límite: 5 consultas/hora', 'Comunidad open-source'].map(item => (
                                     <li key={item} className="flex items-center gap-3 text-sm text-white/40">
                                         <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                                         {item}
@@ -464,7 +464,7 @@ export default function LandingPage() {
                             </div>
                             <div className="space-y-2">
                                 <h4 className="text-2xl font-bold uppercase tracking-tighter">Essentials</h4>
-                                <p className="text-[10px] text-accent uppercase tracking-[0.3em] font-bold">Liderazgo de Mercado</p>
+                                <p className="text-[10px] text-accent uppercase tracking-[0.3em] font-bold">Liderazgo de mercado</p>
                             </div>
                             <div className="flex items-baseline gap-1">
                                 <span className="text-7xl font-black font-mono">$9</span>
@@ -472,10 +472,10 @@ export default function LandingPage() {
                             </div>
                             <ul className="flex-1 space-y-5">
                                 {[
-                                    'Orquestación de 2 Agentes',
-                                    'Memoria Cognitiva Persistente',
-                                    'Prioridad en Razonamiento',
-                                    'Tokens a Coste Directo (0% Margen)',
+                                    'Orquestación de 2 agentes',
+                                    'Memoria cognitiva persistente',
+                                    'Prioridad en razonamiento',
+                                    'Tokens a coste directo (0% margen)',
                                     'Capacidad: 50 consultas/hora'
                                 ].map(item => (
                                     <li key={item} className="flex items-center gap-3 text-sm text-white/90">
@@ -491,14 +491,14 @@ export default function LandingPage() {
                         <div className="glass-card p-10 space-y-8 border-white/5 bg-white/[0.02] flex flex-col">
                             <div className="space-y-2">
                                 <h4 className="text-2xl font-bold uppercase tracking-tighter">Professional</h4>
-                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Competitivo Agresivo</p>
+                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Competitivo agresivo</p>
                             </div>
                             <div className="flex items-baseline gap-1">
                                 <span className="text-6xl font-black font-mono">$79</span>
                                 <span className="text-white/20 text-sm font-bold">/mes</span>
                             </div>
                             <ul className="flex-1 space-y-5">
-                                {['Hasta 5 Agentes Coordinados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'].map(item => (
+                                {['Hasta 5 agentes coordinados', 'Auto-sanación neural', 'Memoria cognitiva infinita', 'Soporte prioritario 24/7', 'Margen plataforma: solo 5%'].map(item => (
                                     <li key={item} className="flex items-center gap-3 text-sm text-white/40">
                                         <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                                         {item}
@@ -519,8 +519,8 @@ export default function LandingPage() {
                         className="relative z-10 space-y-10"
                     >
                         <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic">
-                            ¿Estás Listo para la<br />
-                            <span className="gold-text-gradient underlined decoration-accent/20">Soberanía Digital?</span>
+                            ¿Estás listo para la<br />
+                            <span className="gold-text-gradient underlined decoration-accent/20">soberanía digital?</span>
                         </h2>
                         <p className="text-white/40 text-xl max-w-xl mx-auto">
                             Únete hoy a la élite que ya está automatizando el mañana.

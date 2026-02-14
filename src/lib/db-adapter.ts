@@ -18,6 +18,7 @@ export interface DBUser {
     longest_streak: number;
     last_active: Date | null;
     achievements: Achievement[];
+    executions_today: number;
     created_at: Date;
 }
 
@@ -58,7 +59,7 @@ export const dbAdapter = {
         }
     },
 
-    async updateUserGamification(userId: string, updates: Partial<UserStats> & { xp?: number, level?: number, achievements?: Achievement[], lastActive?: Date }) {
+    async updateUserGamification(userId: string, updates: Partial<UserStats> & { xp?: number, level?: number, achievements?: Achievement[], lastActive?: Date, executionsToday?: number }) {
         // Construct dynamic update query
         const fields: string[] = [];
         const values: any[] = [];
@@ -82,12 +83,39 @@ export const dbAdapter = {
             fields.push(`achievements = $${idx++}`);
             values.push(JSON.stringify(updates.achievements));
         }
+        if (updates.executionsToday !== undefined) {
+            fields.push(`executions_today = $${idx++}`);
+            values.push(updates.executionsToday);
+        }
 
         if (fields.length === 0) return;
 
         values.push(userId);
         await dbPool.query(
             `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`,
+            values
+        );
+    },
+
+    async getAgentById(agentId: string) {
+        const res = await dbPool.query('SELECT * FROM agents WHERE id = $1', [agentId]);
+        if (res.rows.length === 0) return null;
+        return res.rows[0];
+    },
+
+    async updateAgent(agentId: string, updates: { xp?: number; level?: number }) {
+        const fields: string[] = [];
+        const values: any[] = [];
+        let idx = 1;
+
+        if (updates.xp !== undefined) { fields.push(`xp = $${idx++}`); values.push(updates.xp); }
+        if (updates.level !== undefined) { fields.push(`level = $${idx++}`); values.push(updates.level); }
+
+        if (fields.length === 0) return;
+
+        values.push(agentId);
+        await dbPool.query(
+            `UPDATE agents SET ${fields.join(', ')} WHERE id = $${idx}`,
             values
         );
     }

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bot, Brain, Sparkles, Wand2 } from 'lucide-react';
@@ -126,8 +128,8 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                         type="button"
                                         onClick={() => setFormData({ ...formData, model: model.id })}
                                         className={`px-4 py-3 rounded-lg border text-left transition-all relative overflow-hidden ${formData.model === model.id
-                                                ? 'bg-accent/10 border-accent text-white'
-                                                : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'
+                                            ? 'bg-accent/10 border-accent text-white'
+                                            : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'
                                             }`}
                                     >
                                         <div className="text-sm font-bold">{model.name}</div>
