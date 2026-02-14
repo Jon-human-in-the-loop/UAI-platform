@@ -81,8 +81,16 @@ export default function Dashboard() {
         { id: 1, type: 'info', text: '💡 Escribe una instrucción y lanza tu primera misión del día.' },
     ]);
 
-    useEffect(() => { fetchProfile(); }, []);
-    useEffect(() => { logsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        fetchProfile();
+    }, []);
+    useEffect(() => {
+        // Solo auto-scrollear si hay más de un log (evita scroll al cargar inicial)
+        if (logs.length > 1) {
+            logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [logs]);
 
     const fetchProfile = async () => {
         try {
