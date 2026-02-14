@@ -12,24 +12,42 @@ import { uaiAgents } from "./agents";
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-// --- CLIENTES DE MODELOS SOTA ---
-const claude37 = new ChatAnthropic({
-    modelName: "claude-3-7-sonnet-20250219",
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    temperature: 0,
-});
+// --- CLIENTES DE MODELOS SOTA (Carga Perezosa para evitar fallos de build por llaves faltantes) ---
+let _claude37: ChatAnthropic | null = null;
+function getClaude37() {
+    if (!_claude37) {
+        _claude37 = new ChatAnthropic({
+            modelName: "claude-3-7-sonnet-20250219",
+            anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+            temperature: 0,
+        });
+    }
+    return _claude37;
+}
 
-const gpt5 = new ChatOpenAI({
-    modelName: "gpt-5-preview",
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    temperature: 0.2,
-});
+let _gpt5: ChatOpenAI | null = null;
+function getGpt5() {
+    if (!_gpt5) {
+        _gpt5 = new ChatOpenAI({
+            modelName: "gpt-5-preview",
+            openAIApiKey: process.env.OPENAI_API_KEY,
+            temperature: 0.2,
+        });
+    }
+    return _gpt5;
+}
 
-const geminiPro = new ChatGoogleGenerativeAI({
-    model: "gemini-1.5-pro",
-    apiKey: process.env.GOOGLE_API_KEY,
-    temperature: 0.1,
-});
+let _geminiPro: ChatGoogleGenerativeAI | null = null;
+function getGeminiPro() {
+    if (!_geminiPro) {
+        _geminiPro = new ChatGoogleGenerativeAI({
+            model: "gemini-1.5-pro",
+            apiKey: process.env.GOOGLE_API_KEY,
+            temperature: 0.1,
+        });
+    }
+    return _geminiPro;
+}
 
 // Nodo 1: Analizador de Requerimientos (Claude 3.7 - Razonamiento Profundo)
 export async function analyzerNode(state: AgentState): Promise<Partial<AgentState>> {
@@ -94,7 +112,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     - gemini: Para análisis de grandes volúmenes de datos o contextos extensos.
     `);
 
-    const chain = prompt.pipe(claude37).pipe(parser);
+    const chain = prompt.pipe(getClaude37()).pipe(parser);
 
     try {
         const result: any = await chain.invoke({
@@ -136,10 +154,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
 
     if (dynamicAgents.length > 0) {
         assignedAgents = dynamicAgents.map((agent: any) => {
-            let modelClient: any = gpt5;
-            if (agent.recommended_model === "claude") modelClient = claude37;
-            if (agent.recommended_model === "gemini") modelClient = geminiPro;
-            return { ...agent, model: modelClient };
+            let configModel: any = getGpt5();
+            if (agent.recommended_model === "claude") configModel = getClaude37();
+            if (agent.recommended_model === "gemini") configModel = getGeminiPro();
+            return { ...agent, model: configModel };
         });
     }
 
@@ -190,7 +208,7 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
     Si el score es menor a 85, debes marcar is_valid como false.
     `);
 
-    const chain = prompt.pipe(claude37).pipe(parser);
+    const chain = prompt.pipe(getClaude37()).pipe(parser);
 
     try {
         const evaluation: any = await chain.invoke({ results: lastSummary });
