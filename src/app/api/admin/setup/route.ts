@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { initDatabase, dbPool } from '@/lib/database';
 import crypto from 'crypto';
 
-export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
+export async function GET(req: NextRequest) {
+    const searchParams = req.nextUrl.searchParams;
     const secret = searchParams.get('secret');
 
     if (secret !== process.env.SETUP_SECRET) {
