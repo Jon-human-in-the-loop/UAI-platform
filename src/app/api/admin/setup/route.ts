@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: `Request URL Parsing Failed: ${e.message}` }, { status: 400 });
     }
 
+    const secret = searchParams.get('secret');
     const reset = searchParams.get('reset') === 'true';
 
     // 2. Secret Check
