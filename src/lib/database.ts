@@ -73,9 +73,6 @@ export async function initDatabase() {
                     system_prompt TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-            `);
-            `);
-            
             // Migración para asegurar columnas en la tabla 'agents' (si ya existía de versiones anteriores)
             await client.query(`
                 CREATE TABLE IF NOT EXISTS agents(
