@@ -74,7 +74,16 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
-            console.log('--- Tabla "agents" verificada ---');
+            // Migración para asegurar columnas en la tabla 'agents' (si ya existía de versiones anteriores)
+            await client.query(`
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(50) DEFAULT 'gpt-4-turbo';
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS system_prompt TEXT;
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;
+            `);
+
+            console.log('--- Tabla "agents" verificada y actualizada ---');
 
             console.log('--- Esquema de DB verificado (Users + Agents) ---');
         } finally {
