@@ -3,7 +3,7 @@ import { initDatabase, dbPool } from '@/lib/database';
 import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
-    const searchParams = req.nextUrl.searchParams;
+    const { searchParams } = new URL(req.url, 'http://localhost');
     const secret = searchParams.get('secret');
 
     if (secret !== process.env.SETUP_SECRET) {
