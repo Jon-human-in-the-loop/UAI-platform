@@ -31,6 +31,7 @@ export async function initDatabase() {
                     email VARCHAR(255) UNIQUE NOT NULL,
                     password_hash VARCHAR(255) NOT NULL,
                     plan VARCHAR(50) DEFAULT 'free',
+                    role VARCHAR(50) DEFAULT 'user',
                     stripe_customer_id VARCHAR(255),
                     
                     -- Gamification Stats
