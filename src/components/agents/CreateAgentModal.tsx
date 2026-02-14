@@ -45,7 +45,10 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                 body: JSON.stringify(formData)
             });
 
-            if (!res.ok) throw new Error('Error al crear agente');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Error al crear agente');
+            }
 
             const newAgent = await res.json();
             onCreated(newAgent);

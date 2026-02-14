@@ -29,6 +29,18 @@ export const authConfig = {
             // Si ya es una URL absoluta externa, la permitimos
             return url;
         },
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            if (token && session.user) {
+                session.user.id = token.id as string;
+            }
+            return session;
+        },
     },
     providers: [], // Agregados en auth.ts para evitar colisiones con el Edge Runtime del Middleware
 } satisfies NextAuthConfig;
