@@ -14,6 +14,12 @@ export interface AgentState {
         plan: "free" | "essentials" | "professional";
     };
     is_blocked: boolean;
+    agent_config: {
+        name: string;
+        role: string;
+        model: string;
+        system_prompt: string;
+    };
 }
 
 // Inicialización del Grafo
@@ -46,6 +52,10 @@ const workflow = new StateGraph<AgentState>({
         is_blocked: {
             value: (x: boolean, y: boolean) => y ?? x,
             default: () => false,
+        },
+        agent_config: {
+            value: (x: any, y: any) => y ?? x,
+            default: () => ({ name: "UAI Core", role: "Orquestador", model: "claude-3-opus", system_prompt: "Eres el núcleo de la plataforma." }),
         }
     }
 });
