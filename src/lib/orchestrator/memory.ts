@@ -1,6 +1,6 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { PineconeStore } from "@langchain/community/vectorstores/pinecone";
+import { PineconeStore } from "@langchain/pinecone";
 
 // --- CONFIGURACIÓN DE MEMORIA SEMÁNTICA (PINECONE) ---
 
