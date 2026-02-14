@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('admin@uai.ai');
-    const [password, setPassword] = useState('uai2026');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
