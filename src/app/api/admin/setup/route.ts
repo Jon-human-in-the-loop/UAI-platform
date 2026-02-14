@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: `Request URL Parsing Failed: ${e.message}` }, { status: 400 });
     }
 
-    const secret = searchParams.get('secret');
+    const reset = searchParams.get('reset') === 'true';
 
     // 2. Secret Check
     if (secret !== process.env.SETUP_SECRET) {
@@ -31,12 +31,20 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        console.log("Initializing Database...");
-        await initDatabase();
-        console.log("Database Initialized. Checking Admin...");
-
         const client = await dbPool.connect();
         try {
+            if (reset) {
+                console.log("⚠️ RESET MODE: Dropping agents table and admin user...");
+                await client.query("DROP TABLE IF EXISTS agents CASCADE;");
+                // Optional: Delete admin user if you want to recreate them fresh too
+                // await client.query("DELETE FROM users WHERE email = 'admin@uai.ai';");
+                console.log("Agents table dropped.");
+            }
+
+            console.log("Initializing Database...");
+            await initDatabase();
+            console.log("Database Initialized. Checking Admin...");
+
             // Ensure 'role' column exists (migration for existing tables)
             console.log("Ensuring 'role' column exists...");
             await client.query(`
@@ -58,7 +66,7 @@ export async function GET(req: NextRequest) {
             }
 
             console.log("Admin already exists.");
-            return NextResponse.json({ message: 'Database initialized (Admin already exists)' });
+            return NextResponse.json({ message: reset ? 'Agents Reset & DB Re-initialized' : 'Database initialized (Admin already exists)' });
         } finally {
             client.release();
         }
