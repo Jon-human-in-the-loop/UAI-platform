@@ -56,7 +56,23 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
-            console.log('--- Tabla "users" verificada ---');
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS agents (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    name VARCHAR(255) NOT NULL,
+                    role VARCHAR(255) NOT NULL,
+                    avatar VARCHAR(255),
+                    level INTEGER DEFAULT 1,
+                    xp INTEGER DEFAULT 0,
+                    model VARCHAR(50) NOT NULL,
+                    system_prompt TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+            console.log('--- Tabla "agents" verificada ---');
+
+            console.log('--- Esquema de DB verificado (Users + Agents) ---');
         } finally {
             client.release();
         }

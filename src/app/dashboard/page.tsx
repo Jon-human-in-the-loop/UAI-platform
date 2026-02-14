@@ -2,17 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Cpu, Zap, Layers, Activity, Terminal, Play, Search, Send, Flame, TrendingUp, Star, LogOut, Trophy, Target } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import FlowEditor from '@/components/flow-editor/FlowEditor';
+import PricingModal from '@/components/dashboard/PricingModal';
+import OnboardingTutorial from '@/components/dashboard/OnboardingTutorial';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
-
-// Lazy Load Heavy Components
-const FlowEditor = dynamic(() => import('@/components/flow-editor/FlowEditor'), {
-    loading: () => <div className="w-full h-full flex items-center justify-center bg-white/5 animate-pulse rounded-xl"><div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" /></div>,
-    ssr: false // Editor is client-only
-});
-const PricingModal = dynamic(() => import('@/components/dashboard/PricingModal'), { ssr: false });
-const OnboardingTutorial = dynamic(() => import('@/components/dashboard/OnboardingTutorial'), { ssr: false });
 
 interface Achievement {
     id: string;
