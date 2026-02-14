@@ -65,10 +65,18 @@ function RegistroPage() {
             });
 
             if (res.ok) {
+                const data = await res.json();
                 setSuccess(true);
-                // Redirect to login after a short delay
+
+                // Conditional redirect based on plan
                 setTimeout(() => {
-                    window.location.href = '/login';
+                    if (data.requiresPayment) {
+                        // Paid plans: redirect to checkout
+                        window.location.href = data.checkoutUrl;
+                    } else {
+                        // Free plan: redirect to login
+                        window.location.href = '/login';
+                    }
                 }, 2000);
             } else {
                 const data = await res.json();

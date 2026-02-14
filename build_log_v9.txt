@@ -1,0 +1,30 @@
+
+> uai-platform@1.0.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.2s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 381ms
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ MERCADOPAGO_ACCESS_TOKEN no está definido. La integración de Mercado Pago no funcionará.
+⚠️ MERCADOPAGO_ACCESS_TOKEN no está definido. La integración de Mercado Pago no funcionará.
+Error: Please set an API key for Google GenerativeAI in the environment variable GOOGLE_API_KEY or in the `apiKey` field of the ChatGoogleGenerativeAI constructor
+    at new eF (D:\Mis Proyectos de IA\uai-platform\.next\server\chunks\[root-of-the-server]__3447ac97._.js:221:70032)
+    at <unknown> (D:\Mis Proyectos de IA\uai-platform\.next\server\chunks\[root-of-the-server]__3447ac97._.js:300:7790)
+
+> Build error occurred
+Error: Failed to collect page data for /api/agent/run
+    at ignore-listed frames {
+  type: 'Error'
+}

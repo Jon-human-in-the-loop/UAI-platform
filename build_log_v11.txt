@@ -1,0 +1,52 @@
+
+> uai-platform@1.0.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.0s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 437ms
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+⚠️ MERCADOPAGO_ACCESS_TOKEN no está definido. La integración de Mercado Pago no funcionará.
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ MERCADOPAGO_ACCESS_TOKEN no está definido. La integración de Mercado Pago no funcionará.
+  Generating static pages using 7 workers (0/13) ...
+⚠️ STRIPE_SECRET_KEY no está definida. La integración de Stripe no funcionará.
+⚠️ MERCADOPAGO_ACCESS_TOKEN no está definido. La integración de Mercado Pago no funcionará.
+  Generating static pages using 7 workers (3/13) 
+  Generating static pages using 7 workers (6/13) 
+  Generating static pages using 7 workers (9/13) 
+✓ Generating static pages using 7 workers (13/13) in 635.6ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/admin/setup
+├ ƒ /api/agent/run
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/register
+├ ƒ /api/checkout
+├ ƒ /api/user/billing-portal
+├ ƒ /api/user/profile
+├ ƒ /api/webhooks/mercadopago
+├ ƒ /api/webhooks/stripe
+├ ○ /dashboard
+├ ○ /login
+└ ○ /registro
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

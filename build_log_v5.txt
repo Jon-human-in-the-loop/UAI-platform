@@ -9,3 +9,20 @@
 
 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
   Creating an optimized production build ...
+✓ Compiled successfully in 9.4s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 490ms
+  Running TypeScript ...
+Failed to compile.
+
+./src/lib/orchestrator/memory.ts:3:31
+Type error: Cannot find module '@langchain/community/vectorstores/pinecone' or its corresponding type declarations.
+
+[0m [90m 1 |[39m [36mimport[39m { [33mPinecone[39m } [36mfrom[39m [32m'@pinecone-database/pinecone'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { [33mOpenAIEmbeddings[39m } [36mfrom[39m [32m"@langchain/openai"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mPineconeStore[39m } [36mfrom[39m [32m"@langchain/community/vectorstores/pinecone"[39m[33m;[39m
+ [90m   |[39m                               [31m[1m^[22m[39m
+ [90m 4 |[39m
+ [90m 5 |[39m [90m// --- CONFIGURACIÓN DE MEMORIA SEMÁNTICA (PINECONE) ---[39m
+ [90m 6 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null

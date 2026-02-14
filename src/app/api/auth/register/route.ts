@@ -1,35 +1,6 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { dbPool } from '@/lib/database';
 import crypto from 'crypto';
-
-// Simple file-based user storage (replace with MongoDB/PostgreSQL in production)
-const USERS_FILE = path.join(process.cwd(), 'data', 'users.json');
-
-interface UserRecord {
-    id: string;
-    name: string;
-    email: string;
-    passwordHash: string;
-    plan: string;
-    createdAt: string;
-    rank: string;
-    level: number;
-}
-
-async function getUsers(): Promise<UserRecord[]> {
-    try {
-        const data = await fs.readFile(USERS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch {
-        return [];
-    }
-}
-
-async function saveUsers(users: UserRecord[]) {
-    await fs.mkdir(path.dirname(USERS_FILE), { recursive: true });
-    await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-}
 
 function hashPassword(password: string): string {
     return crypto.createHash('sha256').update(password).digest('hex');
@@ -39,6 +10,7 @@ export async function POST(request: Request) {
     try {
         const { name, email, password, plan } = await request.json();
 
+        // Validation
         if (!name || !email || !password || !plan) {
             return NextResponse.json(
                 { error: 'Todos los campos son obligatorios' },
@@ -61,34 +33,48 @@ export async function POST(request: Request) {
             );
         }
 
-        const users = await getUsers();
-
-        // Check if user already exists
-        if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-            return NextResponse.json(
-                { error: 'Ya existe una cuenta con este email' },
-                { status: 409 }
+        const client = await dbPool.connect();
+        try {
+            // Check if user already exists
+            const existingUser = await client.query(
+                'SELECT id FROM users WHERE email = $1',
+                [email.toLowerCase()]
             );
+
+            if (existingUser.rows.length > 0) {
+                return NextResponse.json(
+                    { error: 'Ya existe una cuenta con este email' },
+                    { status: 409 }
+                );
+            }
+
+            // Create new user
+            const passwordHash = hashPassword(password);
+            const result = await client.query(
+                `INSERT INTO users (name, email, password_hash, plan, role, level, xp)
+                 VALUES ($1, $2, $3, $4, 'user', 1, 0)
+                 RETURNING id`,
+                [name, email.toLowerCase(), passwordHash, plan]
+            );
+
+            const userId = result.rows[0].id;
+
+            // Determine if payment is required
+            const requiresPayment = plan !== 'free';
+
+            return NextResponse.json(
+                {
+                    message: 'Cuenta creada exitosamente',
+                    userId,
+                    plan,
+                    requiresPayment,
+                    ...(requiresPayment && { checkoutUrl: `/checkout?plan=${plan}&userId=${userId}` })
+                },
+                { status: 201 }
+            );
+        } finally {
+            client.release();
         }
-
-        const newUser: UserRecord = {
-            id: crypto.randomUUID(),
-            name,
-            email: email.toLowerCase(),
-            passwordHash: hashPassword(password),
-            plan,
-            createdAt: new Date().toISOString(),
-            rank: 'Aprendiz Arcano',
-            level: 1,
-        };
-
-        users.push(newUser);
-        await saveUsers(users);
-
-        return NextResponse.json(
-            { message: 'Cuenta creada exitosamente', userId: newUser.id, plan: newUser.plan },
-            { status: 201 }
-        );
     } catch (error) {
         console.error('Registration error:', error);
         return NextResponse.json(
