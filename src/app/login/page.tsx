@@ -9,16 +9,33 @@ export default function LoginPage() {
     const [email, setEmail] = useState('admin@uai.ai');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await signIn('credentials', {
-            email,
-            password,
-            callbackUrl: '/',
-        });
-        setLoading(false);
+        setError(null);
+
+        try {
+            const result = await signIn('credentials', {
+                email,
+                password,
+                redirect: false,
+            });
+
+            if (result?.error) {
+                console.error("Login Result Error:", result.error);
+                setError('Credenciales inválidas. Verifica tu email y contraseña.');
+                setLoading(false);
+            } else {
+                // Éxito: Redirigir manualmente
+                window.location.href = '/dashboard';
+            }
+        } catch (err) {
+            console.error("Login Exception:", err);
+            setError('Error de conexión con el servidor.');
+            setLoading(false);
+        }
     };
 
     return (
@@ -40,6 +57,15 @@ export default function LoginPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-500 text-xs text-center font-medium"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-white/30 font-bold ml-1">Email Corporativo</label>
