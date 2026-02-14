@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Cpu, Zap, Layers, Activity, Terminal, Play, Search, Send, Flame, TrendingUp, Star, LogOut, Trophy, Target } from 'lucide-react';
 import FlowEditor from '@/components/flow-editor/FlowEditor';
 import PricingModal from '@/components/dashboard/PricingModal';
+import OnboardingTutorial from '@/components/dashboard/OnboardingTutorial';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
 
@@ -697,11 +698,14 @@ export default function Dashboard() {
                 </main>
             </div>
             {profile && (
-                <PricingModal
-                    isOpen={isPricingOpen}
-                    onClose={() => setIsPricingOpen(false)}
-                    currentPlan={profile.plan || 'free'}
-                />
+                <>
+                    <PricingModal
+                        isOpen={isPricingOpen}
+                        onClose={() => setIsPricingOpen(false)}
+                        currentPlan={profile.plan || 'free'}
+                    />
+                    <OnboardingTutorial />
+                </>
             )}
         </div>
     );

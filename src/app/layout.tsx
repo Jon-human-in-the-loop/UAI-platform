@@ -6,7 +6,30 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "UAI - Unified Agentic Intelligence",
-    description: "Plataforma de orquestación de agentes de IA de próxima generación",
+    description: "Plataforma de orquestación de agentes de IA de próxima generación. Automatiza, conecta y escala tu operación con inteligencia agéntica.",
+    metadataBase: new URL('https://uai-platform-production.up.railway.app'),
+    openGraph: {
+        title: "UAI - Unified Agentic Intelligence",
+        description: "Plataforma de orquestación de agentes de IA de próxima generación.",
+        url: 'https://uai-platform-production.up.railway.app',
+        siteName: 'UAI Platform',
+        images: [
+            {
+                url: '/og-image.png',
+                width: 1200,
+                height: 630,
+                alt: 'UAI Platform Preview',
+            },
+        ],
+        locale: 'es_ES',
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: "UAI - Unified Agentic Intelligence",
+        description: "Plataforma de orquestación de agentes de IA de próxima generación.",
+        images: ['/og-image.png'],
+    },
 };
 
 import { Providers } from "@/components/providers";
