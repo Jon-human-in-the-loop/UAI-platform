@@ -31,7 +31,7 @@
 ### 4.3 Despliegue a Producción
 - [x] Migración a PostgreSQL (Persistencia de datos)
 - [x] Dockerización parcial (via Railway Buildpack)
-- [ ] Despliegue final en **Railway**
+- [x] Despliegue final en **Railway**
 - [ ] Configuración de dominio personalizado
 - [ ] Configuración de gestor de secretos (Environment Variables)
 

@@ -55,6 +55,6 @@ export async function POST(req: NextRequest) {
         }
     } catch (error: any) {
         console.error('Error creating agent:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: `Error creating agent: ${error.message}` }, { status: 500 });
     }
 }
