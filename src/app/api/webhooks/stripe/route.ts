@@ -1,75 +1,46 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { headers } from 'next/headers';
-import fs from 'fs/promises';
-import path from 'path';
+import { dbAdapter } from '@/lib/db-adapter';
 
-// Force Node.js runtime for fs access
 export const runtime = 'nodejs';
 
-const USERS_FILE = path.join(process.cwd(), 'data', 'users.json');
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-async function updateUserSubscription(userId: string, planId: string, customerId?: string) {
-    try {
-        const data = await fs.readFile(USERS_FILE, 'utf-8');
-        const users = JSON.parse(data);
-        const userIndex = users.findIndex((u: any) => u.id === userId);
-
-        if (userIndex !== -1) {
-            users[userIndex].plan = planId;
-            if (customerId) {
-                users[userIndex].stripeCustomerId = customerId;
-            }
-            await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-            console.log(`✅ Plan actualizado para usuario ${userId} a ${planId} (Customer: ${customerId})`);
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error actualizando usuario:', error);
-        return false;
-    }
-}
-
-export async function POST(req: Request) {
-    const body = await req.text();
-    const headersList = await headers();
-    const signature = headersList.get('stripe-signature') as string;
+export async function POST(req: NextRequest) {
+    const payload = await req.text();
+    const signature = req.headers.get('stripe-signature');
 
     let event;
 
     try {
-        event = stripe.webhooks.constructEvent(
-            body,
-            signature,
-            process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy_test_secret'
-        );
+        if (!signature || !webhookSecret) {
+            console.error('Missing signature or webhook secret');
+            return NextResponse.json({ error: 'Configuración de webhook incompleta' }, { status: 400 });
+        }
+        event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
     } catch (err: any) {
-        console.error(`⚠️  Webhook signature verification failed.`, err.message);
-        return NextResponse.json({ error: 'Webhook Error' }, { status: 400 });
+        console.error(`Webhook signature verification failed: ${err.message}`);
+        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
 
     // Handle the event
-    switch (event.type) {
-        case 'checkout.session.completed':
-            const session = event.data.object as any;
-            const userId = session.metadata?.userId;
-            const planId = session.metadata?.planId;
-            const customerId = session.customer as string;
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object as any;
+        const userId = session.metadata?.userId;
+        const planId = session.metadata?.planId;
 
-            if (userId && planId) {
-                // await updateUserSubscription(userId, planId, customerId); 
-                // Using DB Adapter now
-                const { dbAdapter } = await import('@/lib/db-adapter');
-                await dbAdapter.updateUserPlan(userId, planId, customerId);
-                console.log(`✅ Plan actualizado (DB) para usuario ${userId}`);
-            } else {
-                console.warn('⚠️  Webhook recibido sin metadata de userId/planId');
+        if (userId && planId) {
+            try {
+                console.log(`Activating plan ${planId} for user ${userId}`);
+                await dbAdapter.updateUserPlan(userId, planId, session.customer as string);
+
+                // Optional: trigger other actions like sending a welcome email
+
+            } catch (err) {
+                console.error(`Error updating user plan:`, err);
+                return NextResponse.json({ error: 'Error actualizando el plan en la base de datos' }, { status: 500 });
             }
-            break;
-        default:
-            // Unexpected event type
-            console.log(`Unhandled event type ${event.type}`);
+        }
     }
 
     return NextResponse.json({ received: true });
