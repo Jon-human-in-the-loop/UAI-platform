@@ -525,7 +525,7 @@ export default function LandingPage() {
                         <p className="text-white/40 text-xl max-w-xl mx-auto">
                             Únete hoy a la élite que ya está automatizando el mañana.
                         </p>
-                        <Link href="/dashboard" className="inline-flex items-center gap-4 bg-white text-black px-16 py-8 rounded-3xl font-black text-2xl hover:bg-accent hover:text-white transition-all shadow-[0_40px_80px_rgba(139,0,0,0.4)] group">
+                        <Link href="/registro" className="inline-flex items-center gap-4 bg-white text-black px-16 py-8 rounded-3xl font-black text-2xl hover:bg-accent hover:text-white transition-all shadow-[0_40px_80px_rgba(139,0,0,0.4)] group">
                             COMENZAR LA REVOLUCIÓN
                             <ArrowRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
                         </Link>
