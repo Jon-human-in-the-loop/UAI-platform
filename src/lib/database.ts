@@ -74,8 +74,24 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
+            `);
+            
             // Migración para asegurar columnas en la tabla 'agents' (si ya existía de versiones anteriores)
             await client.query(`
+                CREATE TABLE IF NOT EXISTS agents(
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                role VARCHAR(255) NOT NULL,
+                avatar VARCHAR(255),
+                level INTEGER DEFAULT 1,
+                xp INTEGER DEFAULT 0,
+                model VARCHAR(50) NOT NULL,
+                system_prompt TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            --Columnas adicionales si faltan(para migraciones futuras)
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(50) DEFAULT 'gpt-4-turbo';
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS system_prompt TEXT;
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
