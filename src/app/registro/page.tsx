@@ -47,6 +47,7 @@ function RegistroPage() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSelectPlan = (planId: PlanId) => {
         setSelectedPlan(planId);
@@ -55,6 +56,7 @@ function RegistroPage() {
 
     const handleCreateAccount = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
         if (!selectedPlan || !name || !email || !password) return;
         setLoading(true);
 
@@ -103,10 +105,11 @@ function RegistroPage() {
                 }
             } else {
                 const data = await res.json();
-                alert(data.error || 'Error al crear la cuenta');
+                setError(data.error || 'Error al crear la cuenta');
             }
-        } catch {
-            alert('Error de conexión. Intenta de nuevo.');
+        } catch (err) {
+            console.error('Registration Exception:', err);
+            setError('Error de conexión. Intenta de nuevo.');
         } finally {
             setLoading(false);
         }
@@ -253,10 +256,23 @@ function RegistroPage() {
                                         <CheckCircle2 className="w-10 h-10 text-green-400" />
                                     </div>
                                     <h2 className="text-3xl font-black tracking-tighter">¡Cuenta Creada!</h2>
-                                    <p className="text-white/40">Redirigiendo al inicio de sesión...</p>
+                                    <p className="text-white/40">Redirigiendo para sincronizar acceso...</p>
                                 </motion.div>
                             ) : (
                                 <form onSubmit={handleCreateAccount} className="space-y-6">
+                                    <AnimatePresence>
+                                        {error && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-500 text-xs text-center font-bold flex items-center justify-center gap-2"
+                                            >
+                                                <Shield className="w-4 h-4" />
+                                                {error}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                     <div className="glass-card p-8 space-y-6 border-white/10">
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest text-white/30 font-bold ml-1">Nombre Completo</label>

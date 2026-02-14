@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { dbPool } from '@/lib/database';
 import crypto from 'crypto';
+import { isDisposableEmail, checkRateLimit, isVpnOrProxy } from '@/lib/security';
 
 function hashPassword(password: string): string {
     return crypto.createHash('sha256').update(password).digest('hex');
@@ -8,7 +9,33 @@ function hashPassword(password: string): string {
 
 export async function POST(request: Request) {
     try {
+        // 0. Rate Limiting (Basic IP check)
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        const rateLimit = checkRateLimit(ip);
+        if (!rateLimit.allowed) {
+            return NextResponse.json(
+                { error: 'Demasiados intentos de registro. Por favor, intenta de nuevo más tarde.' },
+                { status: 429 }
+            );
+        }
+
         const { name, email, password, plan } = await request.json();
+
+        // 1. Disposable Email Validation
+        if (isDisposableEmail(email)) {
+            return NextResponse.json(
+                { error: 'El uso de correos temporales o desechables no está permitido. Utiliza un correo real.' },
+                { status: 403 }
+            );
+        }
+
+        // 2. VPN/Proxy Detection (Basic check)
+        if (isVpnOrProxy(request)) {
+            return NextResponse.json(
+                { error: 'Se ha detectado el uso de VPN o Proxy. Para mayor seguridad, desactívalo durante el registro.' },
+                { status: 403 }
+            );
+        }
 
         // Validation
         if (!name || !email || !password || !plan) {
