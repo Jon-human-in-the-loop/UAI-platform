@@ -34,6 +34,7 @@ export async function initDatabase() {
     try {
         const client = await pool.connect();
         try {
+            // 1. Create USERS table
             await client.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,9 +58,10 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
                 
-                -- Migration for existing tables
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS executions_today INTEGER DEFAULT 0;
             `);
+
+            // 2. Create AGENTS table & Ensure Schema
             await client.query(`
                 CREATE TABLE IF NOT EXISTS agents (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -73,22 +75,7 @@ export async function initDatabase() {
                     system_prompt TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-            // Migración para asegurar columnas en la tabla 'agents' (si ya existía de versiones anteriores)
-            await client.query(`
-                CREATE TABLE IF NOT EXISTS agents(
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                name VARCHAR(255) NOT NULL,
-                role VARCHAR(255) NOT NULL,
-                avatar VARCHAR(255),
-                level INTEGER DEFAULT 1,
-                xp INTEGER DEFAULT 0,
-                model VARCHAR(50) NOT NULL,
-                system_prompt TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
 
-            --Columnas adicionales si faltan(para migraciones futuras)
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(50) DEFAULT 'gpt-4-turbo';
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS system_prompt TEXT;
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
@@ -96,13 +83,11 @@ export async function initDatabase() {
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;
             `);
 
-            console.log('--- Tabla "agents" verificada y actualizada ---');
-
-            console.log('--- Esquema de DB verificado (Users + Agents) ---');
+            console.log('--- DB Schema Verified (Users + Agents) ---');
         } finally {
             client.release();
         }
     } catch (err) {
-        console.error('--- Error de conexión a DB ---', err);
+        console.error('--- DB Connection/Init Error ---', err);
     }
 }
