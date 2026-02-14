@@ -37,6 +37,13 @@ export async function GET(req: NextRequest) {
 
         const client = await dbPool.connect();
         try {
+            // Ensure 'role' column exists (migration for existing tables)
+            console.log("Ensuring 'role' column exists...");
+            await client.query(`
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'user';
+            `);
+            console.log("Role column verified/added.");
+
             const email = 'admin@uai.ai';
             const res = await client.query("SELECT * FROM users WHERE email = $1", [email]);
 
