@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Cpu, CheckCircle2, Mail, Lock, User, ArrowRight, Sparkles, Shield, Zap, Rocket, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 
 type PlanId = 'free' | 'essentials' | 'professional';
 
@@ -69,15 +70,37 @@ function RegistroPage() {
                 setSuccess(true);
 
                 // Conditional redirect based on plan
-                setTimeout(() => {
-                    if (data.requiresPayment) {
-                        // Paid plans: redirect to checkout
+                if (data.requiresPayment) {
+                    setTimeout(() => {
                         window.location.href = data.checkoutUrl;
-                    } else {
-                        // Free plan: redirect to login
-                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    // Plan Free: auto-login
+                    try {
+                        const loginRes = await signIn('credentials', {
+                            email,
+                            password,
+                            redirect: false,
+                        });
+
+                        if (loginRes?.error) {
+                            console.error('Auto-login error:', loginRes.error);
+                            // Fallback to manual login page if auto-login fails
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 2000);
+                        } else {
+                            setTimeout(() => {
+                                window.location.href = '/dashboard';
+                            }, 1500);
+                        }
+                    } catch (err) {
+                        console.error('SignIn catch error:', err);
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
                     }
-                }, 2000);
+                }
             } else {
                 const data = await res.json();
                 alert(data.error || 'Error al crear la cuenta');
