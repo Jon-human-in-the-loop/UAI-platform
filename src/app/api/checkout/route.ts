@@ -7,11 +7,23 @@ import { PAYMENT_PLANS, PAYMENT_PROVIDERS } from '@/lib/payments.config';
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        if (!session?.user?.email || !session.user.id) {
-            return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+        const { planId, provider, userId: bodyUserId } = await req.json();
+
+        // Use session ID or provided userId from body (for registration flow)
+        const userId = session?.user?.id || bodyUserId;
+        let userEmail = session?.user?.email;
+
+        if (!userId) {
+            return NextResponse.json({ error: 'Usuario no identificado' }, { status: 401 });
         }
 
-        const { planId, provider } = await req.json();
+        // If no session, fetch user email from DB using userId
+        const { dbAdapter } = await import('@/lib/db-adapter');
+        if (!userEmail) {
+            const user = await dbAdapter.getUserById(userId);
+            if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+            userEmail = user.email;
+        }
 
         // Validar plan
         const plan = Object.values(PAYMENT_PLANS).find(p => p.id === planId) as any;
@@ -47,9 +59,9 @@ export async function POST(req: Request) {
                 mode: plan.stripePriceId ? 'subscription' : 'payment',
                 success_url: successUrl,
                 cancel_url: cancelUrl,
-                customer_email: session.user.email,
+                customer_email: userEmail,
                 metadata: {
-                    userId: session.user.id,
+                    userId: userId,
                     planId: plan.id,
                 },
             });
@@ -71,8 +83,8 @@ export async function POST(req: Request) {
                         }
                     ],
                     payer: {
-                        email: session.user.email,
-                        name: session.user.name || 'Usuario UAI',
+                        email: userEmail,
+                        name: userEmail.split('@')[0], // Simplified name if not available
                     },
                     back_urls: {
                         success: successUrl,
@@ -80,7 +92,7 @@ export async function POST(req: Request) {
                         pending: cancelUrl,
                     },
                     auto_return: 'approved',
-                    external_reference: session.user.id, // Para identificar al usuario en el webhook
+                    external_reference: userId, // Para identificar al usuario en el webhook
                     metadata: {
                         plan_id: plan.id,
                     }

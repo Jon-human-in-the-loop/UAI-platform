@@ -5,35 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { Cpu, CheckCircle2, CreditCard, Shield, Zap, Rocket, ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { Globe } from 'lucide-react';
+
+import { PAYMENT_PLANS, PAYMENT_PROVIDERS } from '@/lib/payments.config';
 
 type PlanId = 'essentials' | 'professional';
-
-const planDetails: Record<PlanId, { name: string; price: string; period: string; features: string[] }> = {
-    essentials: {
-        name: 'Essentials',
-        price: '$9',
-        period: '/mes',
-        features: [
-            'Orquestación de 2 Agentes',
-            'Memoria Cognitiva Persistente',
-            'Prioridad en Razonamiento',
-            'Tokens a Coste Directo (0% Margen)',
-            'Capacidad: 50 consultas/hora'
-        ]
-    },
-    professional: {
-        name: 'Professional',
-        price: '$79',
-        period: '/mes',
-        features: [
-            'Hasta 5 Agentes Coordinados',
-            'Auto-Sanación Neural',
-            'Memoria Cognitiva Infinita',
-            'Soporte Prioritario 24/7',
-            'Margen Plataforma: solo 5%'
-        ]
-    }
-};
 
 export default function CheckoutPageWrapper() {
     return (
@@ -49,26 +25,41 @@ function CheckoutPage() {
     const userId = searchParams.get('userId');
 
     const [loading, setLoading] = useState(false);
+    const [region, setRegion] = useState<'GLOBAL' | 'LATAM'>('GLOBAL');
 
     useEffect(() => {
-        if (!plan || !userId || !planDetails[plan]) {
+        if (!plan || !userId || !PAYMENT_PLANS[plan as keyof typeof PAYMENT_PLANS]) {
             window.location.href = '/registro';
         }
     }, [plan, userId]);
 
     const handlePayment = async () => {
         setLoading(true);
-        // TODO: Integrate with Stripe/Mercado Pago
-        // For now, simulate payment and redirect to login
-        setTimeout(() => {
-            alert('Integración de pago próximamente. Por ahora, redirigiendo a login...');
-            window.location.href = '/login';
-        }, 2000);
+        try {
+            const provider = region === 'GLOBAL' ? PAYMENT_PROVIDERS.STRIPE : PAYMENT_PROVIDERS.MERCADOPAGO;
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planId: plan, provider, userId }),
+            });
+
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('Error al iniciar checkout: ' + (data.error || 'Desconocido'));
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Checkout error:', error);
+            alert('Error de conexión');
+            setLoading(false);
+        }
     };
 
-    if (!plan || !planDetails[plan]) return null;
+    if (!plan || !PAYMENT_PLANS[plan as keyof typeof PAYMENT_PLANS]) return null;
 
-    const selectedPlan = planDetails[plan];
+    const selectedPlan = PAYMENT_PLANS[plan as keyof typeof PAYMENT_PLANS];
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-accent font-sans relative overflow-hidden">
@@ -114,8 +105,10 @@ function CheckoutPage() {
                             <div className="flex items-center justify-between">
                                 <h3 className="text-2xl font-black uppercase tracking-tight">{selectedPlan.name}</h3>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-5xl font-black font-mono">{selectedPlan.price}</span>
-                                    <span className="text-white/40 text-sm font-bold">{selectedPlan.period}</span>
+                                    <span className="text-5xl font-black font-mono">
+                                        {region === 'GLOBAL' ? `$${(selectedPlan as any).price}` : `$${(selectedPlan as any).mpPrice?.toLocaleString()}`}
+                                    </span>
+                                    <span className="text-white/40 text-sm font-bold">/{region === 'GLOBAL' ? 'mes' : 'h approx'}</span>
                                 </div>
                             </div>
 
@@ -139,13 +132,30 @@ function CheckoutPage() {
                             </div>
 
                             <div className="space-y-4">
+                                {/* Region Selector */}
+                                <div className="bg-white/5 p-1 rounded-full flex relative mb-6">
+                                    <div className={`absolute inset-y-1 w-1/2 bg-accent/20 rounded-full transition-all duration-300 ${region === 'GLOBAL' ? 'left-1' : 'left-[calc(50%-4px)] translate-x-full'}`} />
+                                    <button
+                                        onClick={() => setRegion('GLOBAL')}
+                                        className={`relative z-10 w-1/2 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 ${region === 'GLOBAL' ? 'text-white' : 'text-white/40'}`}
+                                    >
+                                        <Globe className="w-3 h-3" /> Global (Stripe)
+                                    </button>
+                                    <button
+                                        onClick={() => setRegion('LATAM')}
+                                        className={`relative z-10 w-1/2 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 ${region === 'LATAM' ? 'text-white' : 'text-white/40'}`}
+                                    >
+                                        <CreditCard className="w-3 h-3" /> LATAM (M. Pago)
+                                    </button>
+                                </div>
+
                                 <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02] text-center space-y-3">
                                     <Zap className="w-12 h-12 mx-auto text-accent" />
                                     <p className="text-sm text-white/60">
-                                        La integración de pagos con <span className="text-white font-bold">Stripe</span> y <span className="text-white font-bold">Mercado Pago</span> estará disponible próximamente.
+                                        Serás redirigido a la pasarela de pago seleccionada para completar el proceso de forma segura.
                                     </p>
                                     <p className="text-xs text-white/40">
-                                        Por ahora, puedes crear tu cuenta y acceder al dashboard.
+                                        Tras el pago, tu cuenta será activada automáticamente.
                                     </p>
                                 </div>
 

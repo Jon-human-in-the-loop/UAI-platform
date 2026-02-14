@@ -8,6 +8,7 @@ import { authConfig } from "./auth.config";
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
     ...authConfig,
+    secret: process.env.AUTH_SECRET,
     providers: [
         Credentials({
             name: "UAI Account",
@@ -30,15 +31,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 try {
                     const user = await dbAdapter.getUserByEmail(email);
                     if (user && user.password_hash === hashPassword(password)) {
+                        console.log('Auth Success:', email);
                         return { id: user.id, name: user.name, email: user.email };
                     }
+                    console.warn('Auth Failed: Invalid credentials for', email);
                 } catch (e) {
                     console.error('Auth DB Error:', e);
                 }
 
                 // Fallback: dev admin account
-                if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-                    return { id: "1", name: "UAI Admin", email: process.env.ADMIN_EMAIL! };
+                if (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL &&
+                    process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
+                    console.log('Auth Success (Admin Fallback):', email);
+                    return { id: "admin-1", name: "UAI Admin", email: process.env.ADMIN_EMAIL };
                 }
 
                 return null;
