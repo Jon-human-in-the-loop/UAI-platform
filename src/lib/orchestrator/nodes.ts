@@ -157,15 +157,14 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     SOLICITUD DEL USUARIO (TERRENO DE OPERACIONES): {input}
 
     REGLAS DE ENGRANAJE (ESTRICTAS):
-    1. TONO: Usa un tono profesional, B2B, directo y técnico. Evita el "corporatés" vacío.
-    2. FORMATO: Usa Markdown limpio (encabezados, listas, negritas). EVITA EMOJIS INNECESARIOS y decoración infantil.
-    3. DESCUBRIMIENTO CRÍTICO: Debes identificar un riesgo o brecha técnica que el usuario NO ha mencionado.
-    4. DIMENSIONES DIVERGENTES:
-       - DIMENSIÓN ALPHA (Impacto Inmediato): Uso de OpenClaw + Skills de Borde (Search/Marketing) para victoria rápida.
-       - DIMENSIÓN BETA (Deep Intel): Uso de Pinecone para crear un "Gemelo Digital" del problema y simular escenarios.
-       - DIMENSIÓN GAMMA (Soberanía): Creación de una arquitectura de agentes LangGraph que no dependan de APIs externas para el núcleo lógico.
+    1. REALITY CHECK: NO menciones herramientas de infraestructura (Pinecone, LangGraph) como soluciones mágicas para problemas de "soft skills" (ventas, copy, estrategia). Si el usuario pide marketing, habla de MARKETING, no de bases de datos vectoriales.
+    2. TONO: Senior, cínico y directo. Si una estrategia es mala (ej: cold email sin warm-up), DÍSELO.
+    3. DIMENSIONES DIVERGENTES (ENFOQUES, NO HERRAMIENTAS):
+       - DIMENSIÓN ALPHA (Guerrilla / Hack): Estrategias no convencionales, de bajo coste y alta viralidad/impacto.
+       - DIMENSIÓN BETA (Data-Driven / Sniper): Estrategias basadas en precisión, enriquecimiento de datos y personalización extrema.
+       - DIMENSIÓN GAMMA (Systemic / Automatización): Creación de flujos de trabajo perpetuos y sistemas autónomos de largo plazo.
 
-    RECURSOS: Tienes 17+ Skills Pro integrados (pricing, marketing, competitor, security, etc.). ÚSALOS en las estrategias.
+    RECURSOS TÉCNICOS: Tienes acceso a Skills (search, marketing, copy, etc). Úsalos para EJECUTAR, no solo para nombrar.
 
     Debes devolver este JSON:
     {{
