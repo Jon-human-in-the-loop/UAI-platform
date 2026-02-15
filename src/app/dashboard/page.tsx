@@ -30,6 +30,15 @@ export default function Dashboard() {
         }
     }, [logs]);
 
+    // Auto-resize textarea
+    useEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.style.height = '48px'; // Reset height to recalculate
+            const scrollHeight = inputRef.current.scrollHeight;
+            inputRef.current.style.height = Math.min(scrollHeight, 400) + 'px';
+        }
+    }, [userInput]);
+
     const startAgent = async () => {
         if (isRunning || !userInput.trim()) return;
         setIsRunning(true);
@@ -37,6 +46,7 @@ export default function Dashboard() {
         setViewMode('graph'); // Resetear a grafo al inicio
         const instruction = userInput.trim();
         setUserInput('');
+        if (inputRef.current) inputRef.current.style.height = '48px'; // Reset height
         setLogs(prev => [...prev, { id: Date.now(), type: 'info', text: `🎯 Misión: "${instruction.substring(0, 80)}${instruction.length > 80 ? '...' : ''}"` }]);
 
         let nodesCompleted = 0;
@@ -197,7 +207,7 @@ export default function Dashboard() {
                             }
                         }}
                         placeholder="Describe tu misión (e.g., 'Investiga las últimas tendencias en IA y crea un resumen')..."
-                        className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/30 resize-none h-12 py-3"
+                        className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-white/30 resize-none min-h-[48px] py-3 overflow-y-auto custom-scrollbar"
                         disabled={isRunning}
                     />
                     <button
