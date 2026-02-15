@@ -175,13 +175,46 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         });
     }
 
-    // Aquí integraríamos CrewAI (crew-js) real en el futuro
-    // Por ahora, simulamos el progreso para que el stream sea útil
-    const results = assignedAgents.map((agent: any) => ({
-        agent: agent.role,
-        status: "completed",
-        output: `Resultado para: ${agent.goal}`
+    // Ejecución Real con Modelos SOTA
+    console.log(`Iniciando ejecución paralela con ${assignedAgents.length} agentes...`);
+
+    const results = await Promise.all(assignedAgents.map(async (agent: any) => {
+        try {
+            const prompt = PromptTemplate.fromTemplate(`
+            ROL: {role}
+            CONTEXTO: {backstory}
+            
+            TAREA ASIGNADA: {goal}
+            
+            Ejecuta esta tarea con la máxima excelencia y profundidad profesional.
+            `);
+
+            const chain = prompt.pipe(agent.model);
+            const response = await chain.invoke({
+                role: agent.role,
+                backstory: agent.backstory,
+                goal: agent.goal
+            });
+
+            const outputText = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+
+            return {
+                agent: agent.role,
+                status: "completed",
+                output: outputText
+            };
+        } catch (error: any) {
+            console.error(`Error en agente ${agent.role}:`, error);
+            return {
+                agent: agent.role,
+                status: "failed",
+                output: `Error ejecutando tarea: ${error.message}`
+            };
+        }
     }));
+
+    // Formatear el resultado final para el chat
+    const finalSummary = results.map(r => `### 🤖 ${r.agent}\n${r.output}`).join("\n\n---\n\n");
 
     return {
         next_node: "validador",
@@ -191,8 +224,7 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         },
         messages: [
             new HumanMessage(`Iniciando orquestación con ${assignedAgents.length} agentes...`),
-            new HumanMessage(`Ejecución en curso: ${assignedAgents.map(a => a.role).join(", ")}`),
-            new HumanMessage(`Fuerza laboral ha finalizado con éxito.`)
+            new HumanMessage(finalSummary) // Enviamos el contenido REAL al chat
         ]
     };
 }
