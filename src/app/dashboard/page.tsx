@@ -96,7 +96,11 @@ export default function Dashboard() {
 
                                 state.messages.forEach((msg: any) => {
                                     const text = typeof msg === 'string' ? msg : (msg?.content || "");
+                                    const role = msg?.role || "";
                                     const cleanText = String(text).trim();
+
+                                    // IGNORAR MENSAJES DEL USUARIO (HUMAN) para la caja de resultado
+                                    if (role === 'human' || role === 'user') return;
 
                                     if (cleanText.length > 10) {
                                         latestMeaningfulText = cleanText;
