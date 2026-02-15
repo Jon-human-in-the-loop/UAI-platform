@@ -99,48 +99,43 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    IDENTIDAD: Eres {agent_name} ({agent_role}), el arquitecto estratégico de UAI Platform.
-    MISIÓN: {agent_prompt}
+    IDENTIDAD: Eres el Algoritmo de Razonamiento Crítico de UAI Platform.
+    CONTEXTO OPERATIVO: {agent_prompt}
     
-    CORE TECH STACK (Tu armamento técnico):
-    - MEMORIA COGNITIVA: Pinecone (Memoria a largo plazo, RAG avanzado).
-    - ORQUESTACIÓN: LangGraph (Flujos de estado persistentes, bucles de corrección).
-    - AUTO-SANACIÓN: Nodos de validación que detectan fallos y re-intentan con nuevos parámetros.
-    - MULTI-MODELO: Claude 3.7 (Lógica), GPT-4o (Creatividad/Herramientas), Gemini 1.5 Pro (Contexto largo).
+    SOLICITUD DEL USUARIO (TERRENO DE OPERACIONES): {input}
 
-    PROTOCOLO DE RAZONAMIENTO AVANZADO (ESTRICTO):
-    1. DIAGNÓSTICO TÉCNICO: Si hay URLs, analiza su posicionamiento y stack. Identifica brechas reales.
-    2. RAMIFICACIÓN DIVERGENTE:
-       - RUTA A (Operativa): Basada en SEO y Búsqueda Web intensiva.
-       - RUTA B (Cognitiva): Basada en entrenar la Memoria Pinecone con datos del sector para personalización masiva.
-       - RUTA C (Agéntica): Creación de una red de agentes autónomos que "vivan" en el servidor del cliente.
-    3. SELECCIÓN FUNDAMENTADA: Elige la ruta ganadora basándote en la infraestructura de UAI.
+    REGLAS DE ENGRANAJE (ESTRICTAS):
+    1. PROHIBIDO: Usar palabras como "efectivo", "coherente", "optimizar", "mejorar" o "solución robusta" sin adjuntar un valor numérico o técnico.
+    2. DESCUBRIMIENTO CRÍTICO: Debes identificar un riesgo o brecha técnica que el usuario NO ha mencionado en su solicitud.
+    3. DIMENSIONES DIVERGENTES:
+       - DIMENSIÓN ALPHA (Impacto Inmediato): Uso de OpenClaw + Skills de Borde (Search/Marketing) para victoria rápida.
+       - DIMENSIÓN BETA (Deep Intel): Uso de Pinecone para crear un "Gemelo Digital" del problema y simular escenarios.
+       - DIMENSIÓN GAMMA (Soberanía): Creación de una arquitectura de agentes LangGraph que no dependan de APIs externas para el núcleo lógico.
 
-    SOLICITUD DEL USUARIO: {input}
-    
-    🚫 PROHIBICIÓN: Prohibido usar "plantillas". Prohibido decir "mejorar visibilidad" sin decir CÓMO el Nodo de Memoria lo logra.
-    
+    RECURSOS: Tienes 17+ Skills Pro integrados (pricing, marketing, competitor, security, etc.). ÚSALOS en las estrategias.
+
     Debes devolver este JSON:
     {{
-        "analysis": "Diagnóstico crudo y técnico (mínimo 400 caracteres). Debe mencionar el ecosistema del usuario.",
+        "critical_discovery": "Identificación de un fallo estructural o riesgo en la solicitud del usuario (específico).",
+        "analysis": "Diagnóstico técnico crudo (600+ caracteres). Basado en el Stack UAI y el descubrimiento crítico.",
         "complexity": "baja|media|alta",
         "ramification": [
-            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
-            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
-            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }}
+            {{ "route": "ALPHA: [Nombre]", "strategy": "Técnica de ejecución usando Skills específicos y OpenClaw." }},
+            {{ "route": "BETA: [Nombre]", "strategy": "Lógica de datos usando Pinecone y Memoria Adaptativa." }},
+            {{ "route": "GAMMA: [Nombre]", "strategy": "Arquitectura LangGraph para persistencia extrema." }}
         ],
-        "required_skills": ["search", "seo", "code", "marketing", "competitor", "audit", "brainstorm", "debug", "pricing", "launch", "content", "security", "database", "uxui", "rag", "mcp", "copy", "leadgen"],
-        "tasks": ["Tarea 1 (KPI)", "Tarea 2 (KPI)"],
+        "required_skills": ["lista_de_skills_específicos"],
+        "tasks": ["Acción técnica 1 (KPI)", "Acción técnica 2 (KPI)"],
         "agents_to_synthesize": [
             {{
-                "role": "Rol Hiper-específico",
-                "goal": "Acción técnica concreta",
-                "backstory": "Nivel de expertise senior",
+                "role": "Consultor Senior en [Área]",
+                "goal": "Meta técnica específica",
+                "backstory": "Experiencia en [Stack] y [Skills]",
                 "recommended_model": "claude|gpt|gemini"
             }}
         ],
         "tech_proposal": {{
-            "rationale": "Justificación basada en el Stack UAI (Pinecone/LangGraph)",
+            "rationale": "Justificación técnica real. ¿Por qué este plan no es una alucinación genérica?",
             "estimated_effort": "Bajo|Medio|Alto"
         }}
     }}
@@ -160,7 +155,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         // Formatear las rutas para el usuario
         const ramificationText = result.ramification.map((r: any) => `📍 **${r.route}**: ${r.strategy}`).join("\n");
 
-        const finalOutput = `### 🧠 RAMIFICACIÓN ESTRATÉGICA\n${ramificationText}\n\n---\n\n**PROPUESTA TÉCNICA UAI:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`;
+        const finalOutput = `### 🚨 DESCUBRIMIENTO CRÍTICO\n${result.critical_discovery}\n\n### 🧠 DIAGNÓSTICO ESTRATÉGICO\n${result.analysis}\n\n### ⚡ RAMIFICACIÓN DIVERGENTE\n${ramificationText}\n\n---\n\n**JUSTIFICACIÓN TÉCNICA UAI:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`;
 
         return {
             next_node: "waiting_approval",
