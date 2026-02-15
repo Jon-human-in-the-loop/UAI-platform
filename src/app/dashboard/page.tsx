@@ -87,11 +87,23 @@ export default function Dashboard() {
                                 const lastMsg = state.messages[state.messages.length - 1];
                                 const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;
 
-                                // CAPTURA DE RESULTADO FINAL (MODO FORZADO):
-                                // Siempre guardamos el último mensaje del agente como resultado potencial
-                                // para asegurarnos de mostrar ALGO, incluso si es corto o un error.
-                                if (text && text.trim().length > 0 && (nodeName === 'ejecutor' || nodeName === 'validador' || nodeName === 'reflexion')) {
-                                    setResult(text);
+                                // CAPTURA DE RESULTADO INTELIGENTE:
+                                // El 'nodeName' aquí representa el SIGUIENTE nodo, por lo que indica quién acaba de terminar.
+                                // - Si nextNode es 'validador', entonces el 'ejecutor' acaba de terminar (aquí está el contenido rico).
+                                // - Si nextNode es 'reflexion', entonces el 'validador' acaba de terminar (aquí está el status).
+
+                                if (text && text.trim().length > 0) {
+                                    if (nodeName === 'validador') {
+                                        // Salida del Ejecutor (El contenido principal)
+                                        setResult(text);
+                                    } else if (nodeName === 'reflexion') {
+                                        // Salida del Validador (Status de calidad)
+                                        // Lo agregamos al final para no borrar el trabajo del ejecutor
+                                        setResult(prev => prev ? `${prev}\n\n---\n\n🔍 **Validación:** ${text}` : text);
+                                    } else if (nodeName === 'ejecutor' && !result) {
+                                        // Si estamos en fallback o algo temprano
+                                        setResult(text);
+                                    }
                                 }
 
                                 setLogs(prev => {
