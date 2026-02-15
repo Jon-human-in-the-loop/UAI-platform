@@ -5,8 +5,12 @@ import { motion } from 'framer-motion';
 import { Plus, Bot, Search, Loader2 } from 'lucide-react';
 import AgentCard from '@/components/agents/AgentCard';
 import CreateAgentModal from '@/components/agents/CreateAgentModal';
+import { useRouter } from 'next/navigation';
+import { useDashboard } from '@/components/dashboard/DashboardContext';
 
 export default function AgentsPage() {
+    const router = useRouter();
+    const { setActiveAgent } = useDashboard();
     const [agents, setAgents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +36,11 @@ export default function AgentsPage() {
 
     const handleAgentCreated = (newAgent: any) => {
         setAgents([newAgent, ...agents]);
+    };
+
+    const handleAgentSelect = (agent: any) => {
+        setActiveAgent(agent);
+        router.push('/dashboard');
     };
 
     const filteredAgents = agents.filter(agent =>
@@ -84,7 +93,7 @@ export default function AgentsPage() {
                         <AgentCard
                             key={agent.id}
                             agent={agent}
-                            onSelect={(a) => console.log('Selected:', a)}
+                            onSelect={handleAgentSelect}
                         />
                     ))}
                 </motion.div>
