@@ -88,51 +88,61 @@ export default function Dashboard() {
 
                             if (state.messages?.length > 0) {
                                 const lastMsg = state.messages[state.messages.length - 1];
-                                const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;
+                                let text = typeof lastMsg === 'string' ? lastMsg : (lastMsg?.content || "");
+
+                                // Asegurar que sea string y no esté vacío
+                                if (typeof text !== 'string') text = String(text);
+                                if (!text || text.trim().length === 0) continue;
+
                                 accumulatedText = text;
 
-                                // LÓGICA ROBUSTA DE CAPTURA DE RESULTADO v4
+                                // LÓGICA ROBUSTA DE CAPTURA DE RESULTADO v5
                                 // 1. Si el ejecutor termina (nextNode == validador o reflexion), es un candidato fuerte.
                                 const executorFinished = nextNode === 'validador' || nextNode === 'reflexion';
 
                                 // 2. Detectar marcadores explícitos o contenido rico
                                 const isCode = text.includes('```');
                                 const isLongResponse = text.length > 100;
-                                const isExplicitResult = text.includes('### 🤖') || text.includes('RESULTADO:');
+                                const isExplicitResult = text.includes('### 🤖') || text.includes('RESULTADO:') || text.includes('PROPUESTA');
 
                                 if (executorFinished || isExplicitResult || (isLongResponse && isCode)) {
-                                    // Solo sobreescribir si es "mejor" o si no hay nada
                                     setResult(prev => {
                                         if (!prev) return text;
-                                        if (text.length > prev.length) return text; // Asumir que más texto = más completo
-                                        return prev;
+                                        // Preferir el mensaje más largo/completo
+                                        return (text.length > prev.length) ? text : prev;
                                     });
                                 }
 
                                 setLogs(prev => {
+                                    // Evitar duplicados consecutivos
                                     if (prev.length > 0 && prev[prev.length - 1].text === text) return prev;
-                                    return [...prev, { id: Date.now() + Math.random(), type: 'process', text }];
+                                    return [...prev, { id: Date.now() + Math.random(), type: 'process', text: text.substring(0, 500) }];
                                 });
                             }
                         } else if (event.type === 'complete') {
+                            console.log("Misión terminada. Resultado final propuesto:", accumulatedText);
                             setLogs(prev => [...prev, { id: Date.now(), type: 'success', text: '✅ Misión completada con éxito.' }]);
                             await awardXp(true, autoHealed, nodesCompleted);
 
-                            // Fallback final: Si el resultado es nulo, usar lo último que tengamos
+                            // Fallback final ultra-resiliente
                             setResult(prev => {
-                                const finalRes = prev || accumulatedText || "No se generó contenido textual.";
-                                return finalRes;
+                                if (prev && prev.length > 50) return prev;
+                                return accumulatedText || prev || "La misión se completó pero no se capturó un bloque de texto descriptivo.";
                             });
 
-                            setViewMode('output'); // Auto-switch al terminar
+                            setViewMode('output');
                         } else if (event.type === 'error') {
+                            console.error("Error en el stream:", event);
                             success = false;
                             setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `❌ Error: ${event.message}` }]);
                         }
-                    } catch (e) { console.error('Parse error:', e); }
+                    } catch (e) {
+                        console.error('Error procesando evento del stream:', e, line);
+                    }
                 }
             }
         } catch (error: any) {
+            console.error("Fallo crítico en startAgent:", error);
             success = false;
             setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `💀 Fallo crítico: ${error.message}` }]);
         } finally {
