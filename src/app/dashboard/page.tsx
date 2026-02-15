@@ -87,9 +87,10 @@ export default function Dashboard() {
                                 const lastMsg = state.messages[state.messages.length - 1];
                                 const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;
 
-                                // DETECCIÓN DE RESULTADO FINAL:
-                                // Si el texto es largo y contiene marcadores de markdown o viene del validador/ejecutor
-                                if (text.length > 200 || text.includes('###') || text.includes('---')) {
+                                // CAPTURA DE RESULTADO FINAL (MODO FORZADO):
+                                // Siempre guardamos el último mensaje del agente como resultado potencial
+                                // para asegurarnos de mostrar ALGO, incluso si es corto o un error.
+                                if (text && text.trim().length > 0 && (nodeName === 'ejecutor' || nodeName === 'validador' || nodeName === 'reflexion')) {
                                     setResult(text);
                                 }
 
