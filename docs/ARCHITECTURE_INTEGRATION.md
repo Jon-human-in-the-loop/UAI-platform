@@ -28,9 +28,20 @@ graph TD
         
         OC_Executor --> OC_Browser[Chrome Headless Sandbox]
         OC_Executor --> OC_Code[Docker Code Runner]
-        OC_Executor --> OC_Skills[Local Skills Registry]
+        OC_Executor --> OC_Skills[UAI Skills Hub: 17+ Pro Skills]
     end
 ```
+
+---
+
+## 3. El "UAI Skills Hub" (La Diferencia Técnico-Estratégica) No es solo teoría; es un arsenal operativo.
+A diferencia de otras plataformas, UAI integra un arsenal de herramientas procedimentales (skills) que los agentes invocan para no ser genéricos.
+
+### Categorías de Skills Activos:
+1. **Negocio & Estrategia:** Pricing Psychology, GTM Launch, Content Authority.
+2. **Ingeniería de Datos:** Database Schema Architect, RAG Optimizer (Pinecone).
+3. **Optimización de Producto:** UX/UI Pro Max, Marketing Psychology Audit.
+4. **Seguridad y MCP:** Security Hardening, MCP Connector Builder.
 
 ---
 
