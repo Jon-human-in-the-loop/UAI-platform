@@ -99,39 +99,48 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    IDENTIDAD: Eres {agent_name} ({agent_role}).
-    MISIÓN PRINCIPAL: {agent_prompt}
+    IDENTIDAD: Eres {agent_name} ({agent_role}), el arquitecto estratégico de UAI Platform.
+    MISIÓN: {agent_prompt}
     
-    Tu objetivo es analizar la solicitud siguiendo el PROTOCOLO DE RAZONAMIENTO AVANZADO:
-    1. ANÁLISIS: Desglose de la situación actual.
-    2. RAMIFICACIÓN: Genera 3 RUTAS ESTRATÉGICAS distintas para abordar el problema.
-    3. SÍNTESIS: Creación del workforce dinámico para ejecutar la mejor ruta.
+    CORE TECH STACK (Tu armamento técnico):
+    - MEMORIA COGNITIVA: Pinecone (Memoria a largo plazo, RAG avanzado).
+    - ORQUESTACIÓN: LangGraph (Flujos de estado persistentes, bucles de corrección).
+    - AUTO-SANACIÓN: Nodos de validación que detectan fallos y re-intentan con nuevos parámetros.
+    - MULTI-MODELO: Claude 3.7 (Lógica), GPT-4o (Creatividad/Herramientas), Gemini 1.5 Pro (Contexto largo).
+
+    PROTOCOLO DE RAZONAMIENTO AVANZADO (ESTRICTO):
+    1. DIAGNÓSTICO TÉCNICO: Si hay URLs, analiza su posicionamiento y stack. Identifica brechas reales.
+    2. RAMIFICACIÓN DIVERGENTE:
+       - RUTA A (Operativa): Basada en SEO y Búsqueda Web intensiva.
+       - RUTA B (Cognitiva): Basada en entrenar la Memoria Pinecone con datos del sector para personalización masiva.
+       - RUTA C (Agéntica): Creación de una red de agentes autónomos que "vivan" en el servidor del cliente.
+    3. SELECCIÓN FUNDAMENTADA: Elige la ruta ganadora basándote en la infraestructura de UAI.
+
+    SOLICITUD DEL USUARIO: {input}
     
-    {memory_context}
+    🚫 PROHIBICIÓN: Prohibido usar "plantillas". Prohibido decir "mejorar visibilidad" sin decir CÓMO el Nodo de Memoria lo logra.
     
-    SOLICITUD: {input}
-    
-    Debes devolver un JSON con el siguiente formato EXACTO:
+    Debes devolver este JSON:
     {{
-        "analysis": "Resumen ejecutivo",
+        "analysis": "Diagnóstico crudo y técnico (mínimo 400 caracteres). Debe mencionar el ecosistema del usuario.",
         "complexity": "baja|media|alta",
         "ramification": [
-            {{ "route": "Nombre Ruta A", "strategy": "Explicación" }},
-            {{ "route": "Nombre Ruta B", "strategy": "Explicación" }},
-            {{ "route": "Nombre Ruta C", "strategy": "Explicación" }}
+            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
+            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
+            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }}
         ],
-        "required_skills": ["search", "seo", "code", "etc"],
-        "tasks": ["tarea 1", "tarea 2"],
+        "required_skills": ["search", "seo", "code", "marketing", "competitor", "audit", "brainstorm", "debug", "pricing", "launch", "content", "security", "database", "uxui", "rag", "mcp", "copy", "leadgen"],
+        "tasks": ["Tarea 1 (KPI)", "Tarea 2 (KPI)"],
         "agents_to_synthesize": [
             {{
-                "role": "Nombre del Rol (ej. Arquitecto Legal)",
-                "goal": "Objetivo específico para esta tarea",
-                "backstory": "Trasfondo profesional que le da autoridad",
+                "role": "Rol Hiper-específico",
+                "goal": "Acción técnica concreta",
+                "backstory": "Nivel de expertise senior",
                 "recommended_model": "claude|gpt|gemini"
             }}
         ],
         "tech_proposal": {{
-            "rationale": "Descripción de por qué se eligieron estos modelos",
+            "rationale": "Justificación basada en el Stack UAI (Pinecone/LangGraph)",
             "estimated_effort": "Bajo|Medio|Alto"
         }}
     }}
@@ -212,28 +221,113 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         });
     }
 
-    // Ejecución Real con Modelos SOTA
+    // Ejecución Real con Modelos SOTA y Tool-Calling
     console.log(`Iniciando ejecución paralela con ${assignedAgents.length} agentes...`);
+
+    // Herramientas disponibles mapeadas por skill
+    const skillMap: Record<string, any> = {
+        "search": availableSkills.search,
+        "seo": availableSkills.seo,
+        "marketing": availableSkills.marketing,
+        "competitor": availableSkills.competitor,
+        "audit": availableSkills.audit,
+        "brainstorm": availableSkills.brainstorm,
+        "debug": availableSkills.debug,
+        "pricing": availableSkills.pricing,
+        "launch": availableSkills.launch,
+        "content": availableSkills.content,
+        "security": availableSkills.security,
+        "database": availableSkills.database,
+        "uxui": availableSkills.uxui,
+        "rag": availableSkills.rag,
+        "mcp": availableSkills.mcp,
+        "copy": availableSkills.copy,
+        "leadgen": availableSkills.leadgen,
+    };
 
     const results = await Promise.all(assignedAgents.map(async (agent: any) => {
         try {
+            // Seleccionar herramientas para este agente específico
+            const agentSkills = (analysis.required_skills || []).filter((s: string) => {
+                const roleLower = agent.role.toLowerCase();
+                if (s === "search" && (roleLower.includes("investig") || roleLower.includes("research") || roleLower.includes("busc"))) return true;
+                if (s === "seo" && (roleLower.includes("seo") || roleLower.includes("visibil") || roleLower.includes("rank"))) return true;
+                if (s === "marketing" && (roleLower.includes("psico") || roleLower.includes("marketing") || roleLower.includes("growth"))) return true;
+                if (s === "competitor" && (roleLower.includes("bench") || roleLower.includes("competid") || roleLower.includes("espia"))) return true;
+                if (s === "audit" && (roleLower.includes("audit") || roleLower.includes("inspeccion") || roleLower.includes("revisa"))) return true;
+                if (s === "brainstorm" && (roleLower.includes("brain") || roleLower.includes("creativo") || roleLower.includes("ideador"))) return true;
+                if (s === "debug" && (roleLower.includes("debug") || roleLower.includes("error") || roleLower.includes("fallo") || roleLower.includes("dev"))) return true;
+                if (s === "pricing" && (roleLower.includes("precio") || roleLower.includes("financ") || roleLower.includes("monetiz"))) return true;
+                if (s === "launch" && (roleLower.includes("launch") || roleLower.includes("lanz") || roleLower.includes("gtm"))) return true;
+                if (s === "content" && (roleLower.includes("contenid") || roleLower.includes("estrateg") || roleLower.includes("autorid"))) return true;
+                if (s === "security" && (roleLower.includes("segurid") || roleLower.includes("hack") || roleLower.includes("seg"))) return true;
+                if (s === "database" && (roleLower.includes("data") || roleLower.includes("db") || roleLower.includes("sql") || roleLower.includes("no-sql"))) return true;
+                if (s === "uxui" && (roleLower.includes("ux") || roleLower.includes("ui") || roleLower.includes("disen") || roleLower.includes("interfaz"))) return true;
+                if (s === "rag" && (roleLower.includes("rag") || roleLower.includes("vector") || roleLower.includes("memory") || roleLower.includes("pinecone"))) return true;
+                if (s === "mcp" && (roleLower.includes("mcp") || roleLower.includes("conector") || roleLower.includes("api") || roleLower.includes("integrac"))) return true;
+                if (s === "copy" && (roleLower.includes("copy") || roleLower.includes("escrit") || roleLower.includes("ventas"))) return true;
+                if (s === "leadgen" && (roleLower.includes("lead") || roleLower.includes("prospect") || roleLower.includes("captac"))) return true;
+                return false;
+            });
+
+            const agentTools = agentSkills.map((s: string) => skillMap[s]).filter(Boolean);
+
+            // Vincular herramientas al modelo
+            const modelWithTools = agentTools.length > 0 ? (agent.model as any).bindTools(agentTools) : agent.model;
+
             const prompt = PromptTemplate.fromTemplate(`
             ROL: {role}
             CONTEXTO: {backstory}
             
             TAREA ASIGNADA: {goal}
             
-            Ejecuta esta tarea con la máxima excelencia y profundidad profesional.
+            INSTRUCCIÓN CRÍTICA DE PERSONALIDAD: 
+            - PROHIBIDO ser genérico. 
+            - Debes basar tus respuestas en DATOS REALES obtenidos (si usas herramientas).
+            - Si no usas herramientas, debes razonar sobre el stack técnico real (Next.js, LangGraph, Pinecone, etc.).
+            - Tu respuesta debe ser una "pieza de ingeniería" o "estrategia de alto impacto", no un resumen escolar.
             `);
 
-            const chain = prompt.pipe(agent.model);
-            const response = await chain.invoke({
+            // Ejecutamos la tarea
+            const chain = prompt.pipe(modelWithTools);
+            const response: any = await chain.invoke({
                 role: agent.role,
                 backstory: agent.backstory,
                 goal: agent.goal
             });
 
-            const outputText = typeof (response as any).content === "string" ? (response as any).content : JSON.stringify((response as any).content);
+            let outputText = "";
+
+            // Manejo de Tool Calling (Simpificado para esta arquitectura)
+            if (response.tool_calls && response.tool_calls.length > 0) {
+                // Si el modelo decide usar herramientas, procesamos la llamada y volvemos a llamar (ReAct loop simple)
+                const toolResults = [];
+                for (const tc of response.tool_calls) {
+                    const tool = agentTools.find((t: any) => t.name === tc.name);
+                    if (tool) {
+                        const r = await tool._call(tc.args);
+                        toolResults.push(`[TOOL: ${tc.name}] -> ${r}`);
+                    }
+                }
+
+                // Segunda llamada con los datos obtenidos
+                const secondPrompt = PromptTemplate.fromTemplate(`
+                Has obtenido los siguientes datos reales:
+                {tool_data}
+                
+                Usa esta información para completar tu TAREA ORIGINAL: {goal}
+                Entrega un informe técnico definitivo, específico y de alto valor.
+                `);
+
+                const secondChain = secondPrompt.pipe(agent.model);
+                const secondResponse: any = await secondChain.invoke({
+                    tool_data: toolResults.join("\n"),
+                    goal: agent.goal
+                });
+                outputText = typeof secondResponse.content === "string" ? secondResponse.content : JSON.stringify(secondResponse.content);
+            } else {
+                outputText = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+            }
 
             return {
                 agent: agent.role,
@@ -260,8 +354,8 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             execution_results: results
         },
         messages: [
-            new AIMessage(`Iniciando orquestación con ${assignedAgents.length} agentes...`),
-            new AIMessage(finalSummary) // Enviamos el contenido REAL al chat
+            new AIMessage(`Iniciando orquestación con ${assignedAgents.length} agentes especializados...`),
+            new AIMessage(finalSummary)
         ]
     };
 }

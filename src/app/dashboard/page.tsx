@@ -37,7 +37,7 @@ export default function Dashboard() {
         setViewMode('graph'); // Resetear a grafo al inicio
         const instruction = userInput.trim();
         setUserInput('');
-        setLogs([{ id: Date.now(), type: 'info', text: `🎯 Misión: "${instruction.substring(0, 80)}${instruction.length > 80 ? '...' : ''}"` }]);
+        setLogs(prev => [...prev, { id: Date.now(), type: 'info', text: `🎯 Misión: "${instruction.substring(0, 80)}${instruction.length > 80 ? '...' : ''}"` }]);
 
         let nodesCompleted = 0;
         let autoHealed = false;
