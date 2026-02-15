@@ -56,7 +56,23 @@ Sugerencia: Mejorar las meta-etiquetas de descripción.`;
     }
 }
 
-import { MarketingPsychologyTool, CompetitorIntelligenceTool, AuditWebsiteTool, BrainstormingTool, SystematicDebuggingTool } from "./library";
+import {
+    MarketingPsychologyTool,
+    CompetitorIntelligenceTool,
+    AuditWebsiteTool,
+    BrainstormingTool,
+    SystematicDebuggingTool,
+    PricingStrategyTool,
+    LaunchStrategyTool,
+    ContentStrategyTool,
+    SecurityAuditTool,
+    DatabaseArchitectTool,
+    UXUIProTool,
+    RAGOptimizerTool,
+    MCPBuilderTool,
+    CopywritingMasterTool,
+    LeadGenExpertTool
+} from "./library";
 
 export const webSearchSkill = new WebSearchTool();
 export const seoAnalysisSkill = new SeoAnalysisTool();
@@ -65,6 +81,16 @@ export const competitorIntelligenceSkill = new CompetitorIntelligenceTool();
 export const auditWebsiteSkill = new AuditWebsiteTool();
 export const brainstormingSkill = new BrainstormingTool();
 export const systematicDebuggingSkill = new SystematicDebuggingTool();
+export const pricingStrategySkill = new PricingStrategyTool();
+export const launchStrategySkill = new LaunchStrategyTool();
+export const contentStrategySkill = new ContentStrategyTool();
+export const securityAuditSkill = new SecurityAuditTool();
+export const databaseArchitectSkill = new DatabaseArchitectTool();
+export const uxUiProSkill = new UXUIProTool();
+export const ragOptimizerSkill = new RAGOptimizerTool();
+export const mcpBuilderSkill = new MCPBuilderTool();
+export const copywritingMasterSkill = new CopywritingMasterTool();
+export const leadGenExpertSkill = new LeadGenExpertTool();
 
 export const availableSkills = {
     search: webSearchSkill,
@@ -74,4 +100,14 @@ export const availableSkills = {
     audit: auditWebsiteSkill,
     brainstorm: brainstormingSkill,
     debug: systematicDebuggingSkill,
+    pricing: pricingStrategySkill,
+    launch: launchStrategySkill,
+    content: contentStrategySkill,
+    security: securityAuditSkill,
+    database: databaseArchitectSkill,
+    uxui: uxUiProSkill,
+    rag: ragOptimizerSkill,
+    mcp: mcpBuilderSkill,
+    copy: copywritingMasterSkill,
+    leadgen: leadGenExpertSkill,
 };

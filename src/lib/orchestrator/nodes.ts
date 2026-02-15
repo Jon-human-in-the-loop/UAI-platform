@@ -129,7 +129,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
             {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }}
         ],
-        "required_skills": ["search", "seo", "code", "marketing", "competitor"],
+        "required_skills": ["search", "seo", "code", "marketing", "competitor", "audit", "brainstorm", "debug", "pricing", "launch", "content", "security", "database", "uxui", "rag", "mcp", "copy", "leadgen"],
         "tasks": ["Tarea 1 (KPI)", "Tarea 2 (KPI)"],
         "agents_to_synthesize": [
             {{
@@ -229,7 +229,20 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         "search": availableSkills.search,
         "seo": availableSkills.seo,
         "marketing": availableSkills.marketing,
-        "competitor": availableSkills.competitor
+        "competitor": availableSkills.competitor,
+        "audit": availableSkills.audit,
+        "brainstorm": availableSkills.brainstorm,
+        "debug": availableSkills.debug,
+        "pricing": availableSkills.pricing,
+        "launch": availableSkills.launch,
+        "content": availableSkills.content,
+        "security": availableSkills.security,
+        "database": availableSkills.database,
+        "uxui": availableSkills.uxui,
+        "rag": availableSkills.rag,
+        "mcp": availableSkills.mcp,
+        "copy": availableSkills.copy,
+        "leadgen": availableSkills.leadgen,
     };
 
     const results = await Promise.all(assignedAgents.map(async (agent: any) => {
@@ -237,10 +250,23 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             // Seleccionar herramientas para este agente específico
             const agentSkills = (analysis.required_skills || []).filter((s: string) => {
                 const roleLower = agent.role.toLowerCase();
-                if (s === "search" && (roleLower.includes("investig") || roleLower.includes("research") || roleLower.includes("marketing"))) return true;
-                if (s === "seo" && (roleLower.includes("seo") || roleLower.includes("visibilidad") || roleLower.includes("arquitecto"))) return true;
-                if (s === "marketing" && (roleLower.includes("psico") || roleLower.includes("copy") || roleLower.includes("creativo"))) return true;
-                if (s === "competitor" && (roleLower.includes("bench") || roleLower.includes("competidor") || roleLower.includes("analista"))) return true;
+                if (s === "search" && (roleLower.includes("investig") || roleLower.includes("research") || roleLower.includes("busc"))) return true;
+                if (s === "seo" && (roleLower.includes("seo") || roleLower.includes("visibil") || roleLower.includes("rank"))) return true;
+                if (s === "marketing" && (roleLower.includes("psico") || roleLower.includes("marketing") || roleLower.includes("growth"))) return true;
+                if (s === "competitor" && (roleLower.includes("bench") || roleLower.includes("competid") || roleLower.includes("espia"))) return true;
+                if (s === "audit" && (roleLower.includes("audit") || roleLower.includes("inspeccion") || roleLower.includes("revisa"))) return true;
+                if (s === "brainstorm" && (roleLower.includes("brain") || roleLower.includes("creativo") || roleLower.includes("ideador"))) return true;
+                if (s === "debug" && (roleLower.includes("debug") || roleLower.includes("error") || roleLower.includes("fallo") || roleLower.includes("dev"))) return true;
+                if (s === "pricing" && (roleLower.includes("precio") || roleLower.includes("financ") || roleLower.includes("monetiz"))) return true;
+                if (s === "launch" && (roleLower.includes("launch") || roleLower.includes("lanz") || roleLower.includes("gtm"))) return true;
+                if (s === "content" && (roleLower.includes("contenid") || roleLower.includes("estrateg") || roleLower.includes("autorid"))) return true;
+                if (s === "security" && (roleLower.includes("segurid") || roleLower.includes("hack") || roleLower.includes("seg"))) return true;
+                if (s === "database" && (roleLower.includes("data") || roleLower.includes("db") || roleLower.includes("sql") || roleLower.includes("no-sql"))) return true;
+                if (s === "uxui" && (roleLower.includes("ux") || roleLower.includes("ui") || roleLower.includes("disen") || roleLower.includes("interfaz"))) return true;
+                if (s === "rag" && (roleLower.includes("rag") || roleLower.includes("vector") || roleLower.includes("memory") || roleLower.includes("pinecone"))) return true;
+                if (s === "mcp" && (roleLower.includes("mcp") || roleLower.includes("conector") || roleLower.includes("api") || roleLower.includes("integrac"))) return true;
+                if (s === "copy" && (roleLower.includes("copy") || roleLower.includes("escrit") || roleLower.includes("ventas"))) return true;
+                if (s === "leadgen" && (roleLower.includes("lead") || roleLower.includes("prospect") || roleLower.includes("captac"))) return true;
                 return false;
             });
 
