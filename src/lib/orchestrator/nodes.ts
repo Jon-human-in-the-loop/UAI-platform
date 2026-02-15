@@ -17,7 +17,7 @@ let _claude37: ChatAnthropic | null = null;
 function getClaude37() {
     if (!_claude37) {
         _claude37 = new ChatAnthropic({
-            modelName: "claude-3-7-sonnet-20250219",
+            modelName: "claude-3-5-sonnet-20240620", // Modelo estable y potente
             anthropicApiKey: process.env.ANTHROPIC_API_KEY,
             temperature: 0,
         });
@@ -29,7 +29,7 @@ let _gpt5: ChatOpenAI | null = null;
 function getGpt5() {
     if (!_gpt5) {
         _gpt5 = new ChatOpenAI({
-            modelName: "gpt-5-preview",
+            modelName: "gpt-4o", // Modelo insignia actual de OpenAI
             openAIApiKey: process.env.OPENAI_API_KEY,
             temperature: 0.2,
         });
@@ -41,8 +41,8 @@ let _geminiPro: ChatGoogleGenerativeAI | null = null;
 function getGeminiPro() {
     if (!_geminiPro) {
         _geminiPro = new ChatGoogleGenerativeAI({
-            model: "gemini-1.5-pro",
-            apiKey: process.env.GOOGLE_API_KEY,
+            model: "gemini-1.5-flash", // Modelo rápido y eficiente de Google
+            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY,
             temperature: 0.1,
         });
     }
@@ -145,13 +145,30 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             skills_active: result.required_skills,
             messages: [new HumanMessage(`PROPUESTA TÉCNICA UAI:\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`)]
         };
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error en Analizador Real:", e);
-        // Fallback a simulación si fallan las keys
+
+        // Fallback Robusto: Si falla la planificación, asignamos un agente de emergencia
+        // para que intente resolver la tarea directamente.
+        const fallbackAgent = {
+            role: "Agente de Respuesta Rápida",
+            goal: "Intentar resolver la solicitud del usuario directamente dado que el planificador falló.",
+            backstory: "IA de respaldo experta en resolución de conflictos y ejecución directa.",
+            recommended_model: "gpt" // Usamos GPT como backup si Claude falló
+        };
+
         return {
             next_node: "ejecutor",
-            context_memory: { analysis: { tasks: ["Tarea Fallback"], required_skills: [] } },
-            messages: [new HumanMessage("Fallo en API analítica. Usando modo degradado.")]
+            context_memory: {
+                analysis: {
+                    tasks: ["Ejecución Directa de Respaldo"],
+                    required_skills: [],
+                    complexity: "media"
+                },
+                dynamic_agents: [fallbackAgent], // ¡IMPORTANTE! Asignamos un agente para que el Executor no esté vacío
+                proposal: { rationale: "Modo de recuperación por fallo en API de planificación.", estimated_effort: "Medio" }
+            },
+            messages: [new HumanMessage(`⚠️ ALERTA: Fallo en el sistema de planificación (${e.message}). Activando protocolo de emergencia con Agente de Respaldo.`)]
         };
     }
 }
