@@ -9,6 +9,26 @@ import FlowEditor from '@/components/flow-editor/FlowEditor';
 export default function Dashboard() {
     const { awardXp, activeAgent } = useDashboard();
     const [viewMode, setViewMode] = useState<'graph' | 'output'>('graph'); // Toggle visualización
+    const [isRunning, setIsRunning] = useState(false);
+    const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
+    const [currentThreadId, setCurrentThreadId] = useState<string | undefined>();
+    const [userInput, setUserInput] = useState('');
+    const [result, setResult] = useState<string | null>(null); // Nuevo estado para el resultado
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const logsEndRef = useRef<HTMLDivElement>(null);
+    const [logs, setLogs] = useState<{ id: number; type: string; text: string }[]>([
+        { id: 1, type: 'info', text: '💡 Escribe una instrucción y lanza tu primera misión del día.' },
+    ]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    useEffect(() => {
+        if (logs.length > 1) {
+            logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [logs]);
 
     const startAgent = async () => {
         if (isRunning || !userInput.trim()) return;
