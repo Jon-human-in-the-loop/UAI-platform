@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Terminal, Play, Send, Activity, Search } from 'lucide-react';
+import { Bot, Terminal, Play, Send, Activity, Search, X, Maximize2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 import FlowEditor from '@/components/flow-editor/FlowEditor';
@@ -12,9 +12,10 @@ export default function Dashboard() {
     const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
     const [currentThreadId, setCurrentThreadId] = useState<string | undefined>();
     const [userInput, setUserInput] = useState('');
+    const [result, setResult] = useState<string | null>(null); // Nuevo estado para el resultado
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const logsEndRef = useRef<HTMLDivElement>(null);
-    const [logs, setLogs] = useState([
+    const [logs, setLogs] = useState<{ id: number; type: string; text: string }[]>([
         { id: 1, type: 'info', text: '💡 Escribe una instrucción y lanza tu primera misión del día.' },
     ]);
 
@@ -31,6 +32,7 @@ export default function Dashboard() {
     const startAgent = async () => {
         if (isRunning || !userInput.trim()) return;
         setIsRunning(true);
+        setResult(null); // Limpiar resultado anterior
         const instruction = userInput.trim();
         setUserInput('');
         setLogs([{ id: Date.now(), type: 'info', text: `🎯 Misión: "${instruction.substring(0, 80)}${instruction.length > 80 ? '...' : ''}"` }]);
@@ -84,6 +86,13 @@ export default function Dashboard() {
                             if (state.messages?.length > 0) {
                                 const lastMsg = state.messages[state.messages.length - 1];
                                 const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;
+
+                                // DETECCIÓN DE RESULTADO FINAL:
+                                // Si el texto es largo y contiene marcadores de markdown o viene del validador/ejecutor
+                                if (text.length > 200 || text.includes('###') || text.includes('---')) {
+                                    setResult(text);
+                                }
+
                                 setLogs(prev => {
                                     if (prev.length > 0 && prev[prev.length - 1].text === text) return prev;
                                     return [...prev, { id: Date.now() + Math.random(), type: 'process', text }];
@@ -160,29 +169,48 @@ export default function Dashboard() {
 
             {/* Main Workspace Grid */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden min-h-0">
-                {/* Left: Visualization */}
+                {/* Left: Visualization or Result */}
                 <div className="lg:col-span-2 glass-card relative overflow-hidden flex flex-col">
                     <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/50 to-transparent z-10 pointer-events-none" />
 
                     {/* Toolbar */}
                     <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
                         <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-white/40">
-                            <Terminal className="w-3 h-3" />
-                            <span>Visualización de Proceso</span>
+                            {result ? <Maximize2 className="w-3 h-3 text-green-400" /> : <Terminal className="w-3 h-3" />}
+                            <span>{result ? 'Resultado de Misión' : 'Visualización de Proceso'}</span>
                         </div>
                         <div className="flex gap-2">
-                            {/* Optional toolbar items */}
+                            {result && (
+                                <button
+                                    onClick={() => setResult(null)}
+                                    className="flex items-center gap-1 text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white transition-colors"
+                                >
+                                    <RotateCcw className="w-3 h-3" /> Volver al Grafo
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex-1 relative bg-grid-pattern overflow-hidden">
                         <div className="absolute inset-0 bg-black/80" />
-                        {/* Here we render the flowchart */}
-                        <div className="absolute inset-0 overflow-auto custom-scrollbar p-8 flex items-center justify-center">
-                            <div className="scale-90 origin-center w-full h-full">
-                                <FlowEditor activeNodeId={activeNodeId} />
+
+                        {result ? (
+                            // RESULT VIEW
+                            <div className="absolute inset-0 overflow-auto custom-scrollbar p-8">
+                                <div className="max-w-3xl mx-auto bg-[#0A0A0A] border border-white/10 p-6 rounded-xl shadow-2xl">
+                                    <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap font-mono text-white/80 leading-relaxed">
+                                        {result}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            // FLOW EDITOR VIEW
+                            <div className="absolute inset-0 overflow-auto custom-scrollbar p-8 flex items-center justify-center">
+                                <div className="scale-90 origin-center w-full h-full">
+                                    <FlowEditor activeNodeId={activeNodeId} />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -191,7 +219,7 @@ export default function Dashboard() {
                     {/* Cabecera Logs */}
                     <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                         <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                            <div className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-white/20'}`} />
                             <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">System Logs</span>
                         </div>
                         <span className="text-[9px] font-mono text-white/20">v2.4.0-stable</span>
@@ -212,7 +240,7 @@ export default function Dashboard() {
                                         }`}
                                 >
                                     <span className="opacity-30 shrink-0 select-none">[{new Date(log.id).toLocaleTimeString([], { hour12: false })}]</span>
-                                    <span className="leading-relaxed break-words">{log.text}</span>
+                                    <span className="leading-relaxed break-words line-clamp-3 hover:line-clamp-none transition-all cursor-crosshair">{log.text}</span>
                                 </motion.div>
                             ))}
                         </AnimatePresence>
