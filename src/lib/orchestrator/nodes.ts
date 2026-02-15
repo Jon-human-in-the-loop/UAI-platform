@@ -17,7 +17,7 @@ let _claude37: ChatAnthropic | null = null;
 function getClaude37() {
     if (!_claude37) {
         _claude37 = new ChatAnthropic({
-            modelName: "claude-3-5-sonnet-20240620", // FIXED: Modelo estable real
+            modelName: "claude-3-5-sonnet-20241022", // FIXED: Latest Stable Sonnet 3.5 (New Release)
             anthropicApiKey: process.env.ANTHROPIC_API_KEY,
             temperature: 0,
         });
@@ -73,12 +73,25 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     // Recuperar memorias relacionadas del pasado
     let pastContext = "";
     try {
-        const memories = await queryMemory(lastMessage);
-        if (memories.length > 0) {
-            pastContext = `\nCONTEXTO DE MEMORIA RELEVANTE:\n${memories.join("\n---\n")}`;
+        let pastReflections = "";
+        try {
+            // Assuming 'queryMemory' is the intended function to be wrapped,
+            // and 'lastMessage' is the 'taskDescription'.
+            // The instruction's snippet uses 'recallFromMemory' which is not defined here.
+            // We'll use 'queryMemory' as it's available and fits the context.
+            const memories = await queryMemory(lastMessage);
+            if (memories.length > 0) {
+                pastReflections = memories.join("\n---\n");
+            }
+        } catch (e) {
+            console.warn("⚠️ [Analizador] Fallo al recuperar memoria. Continuando sin ella.", e);
+            pastReflections = "";
+        }
+        if (pastReflections.length > 0) {
+            pastContext = `\nCONTEXTO DE MEMORIA RELEVANTE:\n${pastReflections}`;
         }
     } catch (e) {
-        console.error("Error recuperando memoria:", e);
+        console.error("Error recuperando memoria (outer catch):", e);
     }
 
     // Configuración Dinámica del Agente
@@ -246,9 +259,9 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     };
 }
 
-// Nodo 3: Validador y Auto-sanación (Reflexión Crítica con Claude 3.7)
+// Nodo 3: Validador y Auto-sanación (Reflexión Crítica con Claude 3.5 Sonnet)
 export async function validatorNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: VALIDADOR (Auto-sanación Real con Claude 3.7) ---");
+    console.log("--- NODO: VALIDADOR (Auto-sanación Real con Claude 3.5 Sonnet) ---");
 
     const executionResults = state.context_memory.execution_results || [];
     const lastSummary = executionResults.map((r: any) => `${r.agent}: ${r.output}`).join("\n");
