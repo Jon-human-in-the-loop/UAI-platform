@@ -69,41 +69,44 @@ export async function POST(req: Request) {
             return NextResponse.json({ url: sessionStripe.url });
         }
 
-        // === MERCADO PAGO ===
+        // === MERCADO PAGO (SUSCRIPCIÓN RECURRENTE) ===
         if (provider === PAYMENT_PROVIDERS.MERCADOPAGO) {
-            const result = await preference.create({
+
+            if (!plan.mpPlanId) {
+                return NextResponse.json({ error: 'Plan de suscripción no configurado para Mercado Pago' }, { status: 400 });
+            }
+
+            // Para suscripciones, usamos el Preapproval de la API de Mercado Pago
+            // En el SDK de Node, esto se maneja vía 'preapproval' o directamente creando la suscripción
+            // Dado que el SDK oficial a veces tiene tipos complejos para preapproval,
+            // y que ya tenemos el ID del Plan (preapproval_plan_id), 
+            // la forma más directa y robusta es crear una "solicitud de suscripción" asociada a ese plan.
+
+            const { PreApproval } = await import('mercadopago');
+            const subscription = new PreApproval(mpClient);
+
+            const result = await subscription.create({
                 body: {
-                    items: [
-                        {
-                            id: plan.id,
-                            title: `UAI Platform - ${plan.name}`,
-                            quantity: 1,
-                            unit_price: plan.mpPrice || (plan.price * 1000), // Fallback conversion if not defined
-                            currency_id: 'ARS', // Mercado Pago suele requerir moneda local del país de la cuenta
-                        }
-                    ],
-                    payer: {
-                        email: userEmail,
-                        name: userEmail.split('@')[0], // Simplified name if not available
+                    preapproval_plan_id: plan.mpPlanId,
+                    payer_email: userEmail,
+                    external_reference: userId, // ID de usuario para el webhook
+                    back_url: successUrl,
+                    reason: `Suscripción ${plan.name} - UAI Platform`,
+                    auto_recurring: {
+                        currency_id: 'ARS',
+                        transaction_amount: plan.id === 'essentials' ? 15000 : 131000, // Fallback visual, el plan define el cobro real
+                        frequency: 1,
+                        frequency_type: 'months',
                     },
-                    back_urls: {
-                        success: successUrl,
-                        failure: cancelUrl,
-                        pending: cancelUrl,
-                    },
-                    auto_return: 'approved',
-                    external_reference: userId, // Para identificar al usuario en el webhook
-                    metadata: {
-                        plan_id: plan.id,
-                    }
+                    status: 'pending',
                 }
             });
 
             if (!result.init_point) {
-                throw new Error('No se pudo generar el link de pago de Mercado Pago');
+                console.error('Error MP Subscription:', result);
+                throw new Error('No se pudo generar la suscripción de Mercado Pago');
             }
 
-            // En modo sandbox, init_point redirecciona al sandbox. En prod, al checkout real.
             return NextResponse.json({ url: result.init_point });
         }
 
