@@ -60,15 +60,29 @@ export async function POST(req: NextRequest) {
             try {
                 await sendEvent('session_info', { threadId: currentThreadId });
 
-                // Usamos streamMode: "values" para tener el estado completo en cada paso
+                // StreamMode "values" nos da el estado completo de AgentState en cada paso
                 const graphStream = await app.stream(initialState, {
                     ...config,
                     streamMode: "values"
                 });
 
-                for await (const chunk of graphStream) {
-                    console.log("Enviando chunk al cliente...");
-                    await sendEvent('node_update', { chunk });
+                for await (const rawChunk of graphStream) {
+                    const chunk = rawChunk as any; // Forza el tipo para evitar error de Uint8Array en el build
+
+                    // SERIALIZACIÓN ROBUSTA: LangChain messages pueden tener estructuras complejas
+                    // Nos aseguramos de enviar un objeto limpio que el frontend pueda entender fácilmente.
+                    const simplifiedMessages = (chunk.messages || []).map((m: any) => ({
+                        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+                        role: m._getType ? m._getType() : 'ai'
+                    }));
+
+                    const cleanChunk = {
+                        ...chunk,
+                        messages: simplifiedMessages
+                    };
+
+                    console.log(`[Stream] Enviando actualización de nodo: ${chunk.next_node || 'FIN'}`);
+                    await sendEvent('node_update', { chunk: cleanChunk });
                 }
 
                 await sendEvent('complete', { success: true });

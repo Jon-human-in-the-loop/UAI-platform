@@ -92,72 +92,64 @@ export default function Dashboard() {
                             if (nodeMap[nodeName]) setActiveNodeId(nodeMap[nodeName]);
 
                             if (state.messages && Array.isArray(state.messages) && state.messages.length > 0) {
-                                // ANALIZAR HISTORIAL PARA RESULTADO ✨
-                                let bestCandidate = "";
+                                let latestMeaningfulText = "";
 
                                 state.messages.forEach((msg: any) => {
-                                    let mContent = typeof msg === 'string' ? msg : (msg?.content || "");
-                                    if (typeof mContent !== 'string') mContent = String(mContent);
+                                    const text = typeof msg === 'string' ? msg : (msg?.content || "");
+                                    const cleanText = String(text).trim();
 
-                                    if (!mContent || mContent.trim().length < 5) return;
+                                    if (cleanText.length > 10) {
+                                        latestMeaningfulText = cleanText;
 
-                                    // Prioridad 1: Marcadores explícitos
-                                    if (mContent.includes('### 🤖') || mContent.includes('RESULTADO:')) {
-                                        bestCandidate = mContent;
-                                    }
-                                    // Prioridad 2: Propuesta técnica (si no hay nada mejor)
-                                    else if (mContent.includes('PROPUESTA TÉCNICA') && !bestCandidate.includes('### 🤖')) {
-                                        bestCandidate = mContent;
-                                    }
-                                    // Prioridad 3: El más largo (si no hay nada mejor)
-                                    else if (mContent.length > bestCandidate.length) {
-                                        bestCandidate = mContent;
+                                        // Prioridad Máxima: Bloques de informe
+                                        if (cleanText.includes('### 🤖') || cleanText.includes('RESULTADO:') || cleanText.includes('PROPUESTA TÉCNICA')) {
+                                            setResult(prev => (cleanText.length >= (prev?.length || 0)) ? cleanText : prev);
+                                        }
+                                        // Backup: Si es un bloque largo (más de 200 chars), es probablemente un resultado
+                                        else if (cleanText.length > 200) {
+                                            setResult(prev => (cleanText.length >= (prev?.length || 0)) ? cleanText : prev);
+                                        }
                                     }
                                 });
 
-                                if (bestCandidate) {
-                                    console.log("Candidato a resultado encontrado (len):", bestCandidate.length);
-                                    setResult(prev => (bestCandidate.length >= (prev?.length || 0)) ? bestCandidate : prev);
-                                    accumulatedText = bestCandidate;
+                                if (latestMeaningfulText) {
+                                    accumulatedText = latestMeaningfulText;
                                 }
 
-                                // Registrar logs del último mensaje
+                                // Logs de sistema (siempre mostramos lo último que dijo el agente)
                                 const last = state.messages[state.messages.length - 1];
                                 let lastText = typeof last === 'string' ? last : (last?.content || "");
                                 if (lastText && String(lastText).trim()) {
                                     setLogs(prev => {
-                                        const textStr = String(lastText);
-                                        if (prev.length > 0 && prev[prev.length - 1].text === textStr) return prev;
-                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: textStr }];
+                                        const t = String(lastText);
+                                        if (prev.length > 0 && prev[prev.length - 1].text === t) return prev;
+                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: t }];
                                     });
                                 }
                             }
                         } else if (event.type === 'complete') {
-                            console.log("COMPLETADO. Texto acumulado final (len):", accumulatedText?.length || 0);
                             setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'success', text: '✅ Misión completada con éxito.' }]);
                             await awardXp(true, autoHealed, nodesCompleted);
 
-                            // ÚLTIMA OPORTUNIDAD: Si no hay resultado, forzar el acumulado
                             setResult(prev => {
-                                const finalVal = prev || accumulatedText;
-                                if (!finalVal || finalVal.length < 10) {
-                                    return "⚠️ El proceso terminó pero no se almacenó un bloque de respuesta largo. Por favor verifica los System Logs a la derecha para ver el hilo de mensajes.";
+                                const resolved = prev || accumulatedText;
+                                if (!resolved || resolved.length < 20) {
+                                    return "Misión finalizada. Por favor revisa los 'System Logs' para ver los detalles de la ejecución, ya que el agente no generó un bloque de resumen dedicado.";
                                 }
-                                return finalVal;
+                                return resolved;
                             });
                             setViewMode('output');
                         } else if (event.type === 'error') {
-                            console.error("EVENTO ERROR:", event.message);
                             setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `❌ Error: ${event.message}` }]);
                         }
                     } catch (e) {
-                        console.error('ERROR CRÍTICO PROCESANDO LÍNEA:', e, line);
+                        console.error('Line processing error:', e);
                     }
                 }
             }
         } catch (error: any) {
-            console.error("FALLO GLOBAL:", error);
-            setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `💀 Fallo: ${error.message}` }]);
+            console.error("Global crash:", error);
+            setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `💀 Fallo de sistema: ${error.message}` }]);
         } finally {
             setIsRunning(false);
             setActiveNodeId(undefined);
