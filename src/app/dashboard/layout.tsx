@@ -42,16 +42,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <AnimatePresence>
                 {showCelebration && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center bg-black/20 backdrop-blur-sm"
+                        initial={{ opacity: 0, x: 100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 100 }}
+                        className="fixed bottom-8 right-8 z-[200] pointer-events-none flex items-center justify-center pointer-events-none"
                     >
                         <motion.div
                             initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1.5, opacity: 1 }}
-                            exit={{ scale: 1.5, opacity: 0 }}
-                            className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 via-orange-500 to-red-600 drop-shadow-[0_0_30px_rgba(234,179,8,0.8)]"
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.5, opacity: 0 }}
+                            className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 via-orange-500 to-red-600 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]"
                         >
                             +{xpNotification?.xpTotal || 0} XP
                         </motion.div>
@@ -63,10 +63,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <AnimatePresence>
                 {xpNotification && (
                     <motion.div
-                        initial={{ y: -100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -100, opacity: 0 }}
-                        className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] min-w-[320px]"
+                        initial={{ x: 100, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: 100, opacity: 0 }}
+                        className="fixed top-24 right-8 z-[100] min-w-[300px]"
                     >
                         {/* Compact XP Notification (Top Center) */}
                         {!xpNotification.leveledUp && !xpNotification.rankChanged && (
