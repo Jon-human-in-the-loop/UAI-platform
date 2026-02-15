@@ -54,7 +54,9 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     console.log("--- NODO: ANALIZADOR (Claude 3.7 Real + Memoria) ---");
 
     // Guardrail de Seguridad: Verificación de Presupuesto y Abuso
-    if (state.is_blocked || state.budget_status.current >= state.budget_status.limit) {
+    const isAdmin = state.budget_status.plan === 'admin';
+
+    if (!isAdmin && (state.is_blocked || state.budget_status.current >= state.budget_status.limit)) {
         console.error("BLOQUEO: Límite excedido o usuario bloqueado.");
         return {
             next_node: "error",
