@@ -73,11 +73,16 @@ export default function Dashboard() {
                     if (!line.trim()) continue;
                     try {
                         const event = JSON.parse(line);
+                        console.log("Evento recibido:", event.type, event);
+
                         if (event.type === 'session_info') {
                             setCurrentThreadId(event.threadId);
                         } else if (event.type === 'node_update') {
                             nodesCompleted++;
+                            // Extraer el estado real (LangGraph puede anidar 'chunk' o enviarlo directo)
                             const state = event.chunk;
+                            if (!state) continue;
+
                             const nextNode = state.next_node;
                             const isFin = nextNode === 'FIN' || !nextNode;
                             const nodeName = isFin ? 'reflexion' : nextNode;
@@ -86,71 +91,72 @@ export default function Dashboard() {
                             const nodeMap: Record<string, string> = { 'analizador': '1', 'ejecutor': '2', 'validador': '3', 'reflexion': '4' };
                             if (nodeMap[nodeName]) setActiveNodeId(nodeMap[nodeName]);
 
-                            if (state.messages?.length > 0) {
-                                // CAPTURA DE RESULTADO INTELIGENTE v7 (Greedy)
-                                let bestText = "";
-                                for (let i = state.messages.length - 1; i >= 0; i--) {
-                                    const msg = state.messages[i];
-                                    let content = typeof msg === 'string' ? msg : (msg?.content || "");
-                                    if (typeof content !== 'string') content = String(content);
+                            if (state.messages && Array.isArray(state.messages) && state.messages.length > 0) {
+                                // ANALIZAR HISTORIAL PARA RESULTADO ✨
+                                let bestCandidate = "";
 
-                                    if (!content || content.trim().length < 5) continue;
+                                state.messages.forEach((msg: any) => {
+                                    let mContent = typeof msg === 'string' ? msg : (msg?.content || "");
+                                    if (typeof mContent !== 'string') mContent = String(mContent);
 
-                                    // Marcadores de alta prioridad
-                                    if (content.includes('### 🤖') || content.includes('RESULTADO:') || content.includes('PROPUESTA TÉCNICA')) {
-                                        bestText = content;
-                                        break;
+                                    if (!mContent || mContent.trim().length < 5) return;
+
+                                    // Prioridad 1: Marcadores explícitos
+                                    if (mContent.includes('### 🤖') || mContent.includes('RESULTADO:')) {
+                                        bestCandidate = mContent;
                                     }
-
-                                    // Fallback: el más largo
-                                    if (content.length > bestText.length) {
-                                        bestText = content;
+                                    // Prioridad 2: Propuesta técnica (si no hay nada mejor)
+                                    else if (mContent.includes('PROPUESTA TÉCNICA') && !bestCandidate.includes('### 🤖')) {
+                                        bestCandidate = mContent;
                                     }
+                                    // Prioridad 3: El más largo (si no hay nada mejor)
+                                    else if (mContent.length > bestCandidate.length) {
+                                        bestCandidate = mContent;
+                                    }
+                                });
+
+                                if (bestCandidate) {
+                                    console.log("Candidato a resultado encontrado (len):", bestCandidate.length);
+                                    setResult(prev => (bestCandidate.length >= (prev?.length || 0)) ? bestCandidate : prev);
+                                    accumulatedText = bestCandidate;
                                 }
 
-                                if (bestText) {
-                                    setResult(prev => (bestText.length >= (prev?.length || 0)) ? bestText : prev);
-                                    accumulatedText = bestText;
-                                }
-
-                                // Logs en tiempo real
-                                const lastMsg = state.messages[state.messages.length - 1];
-                                let lastText = typeof lastMsg === 'string' ? lastMsg : (lastMsg?.content || "");
-                                if (typeof lastText !== 'string') lastText = String(lastText);
-
-                                if (lastText && lastText.trim().length > 0) {
+                                // Registrar logs del último mensaje
+                                const last = state.messages[state.messages.length - 1];
+                                let lastText = typeof last === 'string' ? last : (last?.content || "");
+                                if (lastText && String(lastText).trim()) {
                                     setLogs(prev => {
-                                        if (prev.length > 0 && prev[prev.length - 1].text === lastText) return prev;
-                                        console.log("Añadiendo log:", lastText.substring(0, 50));
-                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: lastText }];
+                                        const textStr = String(lastText);
+                                        if (prev.length > 0 && prev[prev.length - 1].text === textStr) return prev;
+                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: textStr }];
                                     });
                                 }
                             }
                         } else if (event.type === 'complete') {
-                            console.log("Misión terminada. Resultado final:", accumulatedText);
+                            console.log("COMPLETADO. Texto acumulado final (len):", accumulatedText?.length || 0);
                             setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'success', text: '✅ Misión completada con éxito.' }]);
                             await awardXp(true, autoHealed, nodesCompleted);
 
+                            // ÚLTIMA OPORTUNIDAD: Si no hay resultado, forzar el acumulado
                             setResult(prev => {
-                                const final = prev || accumulatedText;
-                                if (!final || final.length < 10) return "La misión terminó pero no se generó un bloque de respuesta. Revisa los logs para más detalles.";
-                                return final;
+                                const finalVal = prev || accumulatedText;
+                                if (!finalVal || finalVal.length < 10) {
+                                    return "⚠️ El proceso terminó pero no se almacenó un bloque de respuesta largo. Por favor verifica los System Logs a la derecha para ver el hilo de mensajes.";
+                                }
+                                return finalVal;
                             });
-
                             setViewMode('output');
                         } else if (event.type === 'error') {
-                            console.error("Error en stream:", event.message);
-                            success = false;
+                            console.error("EVENTO ERROR:", event.message);
                             setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `❌ Error: ${event.message}` }]);
                         }
                     } catch (e) {
-                        console.error('Error parseando línea:', e, line);
+                        console.error('ERROR CRÍTICO PROCESANDO LÍNEA:', e, line);
                     }
                 }
             }
         } catch (error: any) {
-            console.error("Fallo ejecución:", error);
-            success = false;
+            console.error("FALLO GLOBAL:", error);
             setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `💀 Fallo: ${error.message}` }]);
         } finally {
             setIsRunning(false);
