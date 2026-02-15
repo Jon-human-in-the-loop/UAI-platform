@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
         console.log(`--- Ejecución Persistente (Thread: ${currentThreadId}) para: ${input} ---`);
         if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
 
+        // DIAGNÓSTICO DE KEYS (Solo mostramos si existen, no el valor)
+        console.log("--- DIAGNÓSTICO DE KEYS ---");
+        console.log("ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Presente (" + process.env.ANTHROPIC_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
+        console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Presente (" + process.env.OPENAI_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
+        console.log("GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? "✅ Presente (" + process.env.GOOGLE_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
+        console.log("---------------------------");
+
         const encoder = new TextEncoder();
         const stream = new TransformStream();
         const writer = stream.writable.getWriter();
