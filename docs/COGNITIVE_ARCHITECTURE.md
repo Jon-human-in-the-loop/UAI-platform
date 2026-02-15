@@ -7,11 +7,11 @@ Este documento detalla la jerarquía de modelos de IA y cómo interactúan los s
 ## 🧠 1. El Sistema Operativo Cognitivo (The Brain)
 Estos son los nodos de control de la plataforma. **Son invisibles para el usuario final** y actúan como "gerentes" o "supervisores". Su modelo está **fijado en el código base** para garantizar la máxima capacidad de razonamiento, planificación y validación.
 
-| Nodo | Función | Modelo (Hardcoded) | Razón de Elección |
+| Nodo | Función | Modelo (Vanguardia) | Razón de Elección |
 | :--- | :--- | :--- | :--- |
-| **Analizador (Planner)** | Desglosa la petición del usuario en pasos lógicos, asigna roles y consulta la memoria. | **Claude 3.5 Sonnet** | Requiere la máxima capacidad de contexto y razonamiento estructurado para no alucinar planes. |
-| **Validador (Critique)** | Revisa el trabajo entregado por los agentes, detecta errores y decide si se necesita re-trabajo. | **Claude 3.5 Sonnet** | Necesita ser "más inteligente" o igual que el ejecutor para poder corregirlo. |
-| **Reflexión (Memory)** | Sintetiza el aprendizaje final y lo guarda en la base de datos vectorial (Pinecone) para el futuro. | **Claude 3.5 Sonnet** | Capacidad de resumen precisa para no guardar basura en la memoria a largo plazo. |
+| **Analizador (Planner)** | Orquestador maestro. Implementa el **Protocolo de Razonamiento Avanzado** (Ramificación A/B/C). | **Claude 3.7 Sonnet / o1** | Máxima capacidad de contexto y planificación estratégica sin alucinaciones. |
+| **Validador (Critique)** | Control de calidad. Detecta fallos y activa el protocolo de **Auto-sanación**. | **Claude 3.7 / GPT-5 (o3)** | Necesita ser "más inteligente" o igual que el ejecutor para poder corregirlo. |
+| **Reflexión (Memory)** | Sintetiza el aprendizaje y lo inyecta en el **Nodo de Memoria Cognitiva (Pinecone)**. | **Claude 3.7 / Gemini 1.5 Pro** | Capacidad de resumen precisa para no guardar basura en la memoria de largo plazo. |
 
 > **Nota:** Estos modelos NO son configurables por el usuario. Son la infraestructura de inteligencia de la UAI.
 
@@ -46,8 +46,17 @@ Imagina que creas un agente llamado **"Marketer Pro"** y le asignas **Gemini 1.5
 
 ---
 
-## 🔑 Por qué esta separación es vital
+## 🛡️ 3. El Protocolo de Razonamiento Avanzado (UAI-ARP)
 
-1.  **Estabilidad:** Si dejáramos que un modelo "pequeño" o "rápido" (como un modelo local o una versión flash) hiciera la planificación (Analizador), el agente podría perder el rumbo o entrar en bucles infinitos.
-2.  **Especialización:** Tú eliges el modelo del agente por sus fortalezas (ej. Gemini para contexto largo, GPT para código, Claude para escritura), pero la UAI asegura que la **gestión** del proceso siempre sea de primer nivel.
-3.  **Costos vs. Calidad:** Usamos modelos "caros/inteligentes" solo donde es crítico (gestión), permitiéndote usar modelos más económicos o rápidos para la ejecución masiva.
+Para eliminar la **"Complacencia Algorítmica"**, la UAI no responde linealmente. Cada misión activa un proceso de **Ramificación Estratégica**:
+
+- **Ruta A (Operativa):** Basada en ejecución inmediata y búsqueda web intensiva.
+- **Ruta B (Cognitiva):** Basada en el entrenamiento del Nodo de Memoria con datos del sector.
+- **Ruta C (Agéntica):** Creación de micro-agentes autónomos de persistencia.
+
+## ⚡ 4. Hub de Skills Pro (Integración Real)
+
+La plataforma cuenta con un **Arsenal de 17+ Skills Profesionales** que los agentes invocan según la necesidad:
+- **Estrategia:** Pricing, Launch (GTM), Lead Gen, Content Strategy.
+- **Ingeniería:** Database Architect, Security Audit, MCP Builder, Systematic Debugging.
+- **Inteligencia:** RAG Optimizer, Marketing Psychology, Competitor Intelligence, UX/UI Pro Max.
