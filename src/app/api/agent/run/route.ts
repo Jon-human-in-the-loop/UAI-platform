@@ -14,11 +14,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Falta el input' }, { status: 400 });
         }
 
-        // Si no recibimos un threadId del frontend, generamos uno nuevo para la sesión
-        // FIX: Forzamos un nuevo threadId si no se envía explícitamente para evitar estados "zombies"
-        const currentThreadId = uuidv4();
+        // Persistencia: Usamos el threadId del frontend si existe, o generamos uno nuevo
+        const currentThreadId = threadId || uuidv4();
 
-        console.log(`--- Ejecución Persistente (Thread: ${currentThreadId}) para: ${input} ---`);
+        console.log(`--- Ejecución ${threadId ? 'Continua' : 'Nueva'} (Thread: ${currentThreadId}) ---`);
         if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
 
         // DIAGNÓSTICO DE KEYS (Solo mostramos si existen, no el valor)
@@ -41,19 +40,23 @@ export async function POST(req: NextRequest) {
             configurable: { thread_id: currentThreadId }
         };
 
-        const initialState = {
-            messages: [new HumanMessage(input)],
-            next_node: 'analizador',
-            errors: [],
-            skills_active: [],
-            context_memory: {},
-            agent_config: agent || {
-                name: "UAI Core",
-                role: "Orquestador Default",
-                model: "claude-3-opus",
-                system_prompt: "Eres el núcleo de la plataforma."
-            }
-        };
+        // Si hay threadId, enviamos solo el nuevo mensaje (LangGraph se encarga de la historia)
+        // Si no hay, enviamos el estado inicial completo
+        const payload = threadId
+            ? { messages: [new HumanMessage(input)] }
+            : {
+                messages: [new HumanMessage(input)],
+                next_node: 'analizador',
+                errors: [],
+                skills_active: [],
+                context_memory: {},
+                agent_config: agent || {
+                    name: "UAI Core",
+                    role: "Orquestador Default",
+                    model: "claude-3-opus",
+                    system_prompt: "Eres el núcleo de la plataforma."
+                }
+            };
 
         // Cambiamos a STREAM directamente en el cuerpo de la función para mayor estabilidad en Next.js
         const runStream = async () => {
@@ -61,7 +64,7 @@ export async function POST(req: NextRequest) {
                 await sendEvent('session_info', { threadId: currentThreadId });
 
                 // StreamMode "values" nos da el estado completo de AgentState en cada paso
-                const graphStream = await app.stream(initialState, {
+                const graphStream = await app.stream(payload, {
                     ...config,
                     streamMode: "values"
                 });
