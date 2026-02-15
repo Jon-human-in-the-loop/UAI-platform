@@ -87,64 +87,71 @@ export default function Dashboard() {
                             if (nodeMap[nodeName]) setActiveNodeId(nodeMap[nodeName]);
 
                             if (state.messages?.length > 0) {
-                                // CAPTURA DE RESULTADO INTELIGENTE v6
-                                // Buscamos en todo el historial del state actual el bloque de ejecución
-                                let foundResult = "";
+                                // CAPTURA DE RESULTADO INTELIGENTE v7 (Greedy)
+                                let bestText = "";
                                 for (let i = state.messages.length - 1; i >= 0; i--) {
                                     const msg = state.messages[i];
-                                    const content = typeof msg === 'string' ? msg : (msg?.content || "");
-                                    const contentStr = typeof content === 'string' ? content : String(content);
+                                    let content = typeof msg === 'string' ? msg : (msg?.content || "");
+                                    if (typeof content !== 'string') content = String(content);
 
-                                    if (contentStr.includes('### 🤖') || contentStr.includes('RESULTADO:')) {
-                                        foundResult = contentStr;
+                                    if (!content || content.trim().length < 5) continue;
+
+                                    // Marcadores de alta prioridad
+                                    if (content.includes('### 🤖') || content.includes('RESULTADO:') || content.includes('PROPUESTA TÉCNICA')) {
+                                        bestText = content;
                                         break;
                                     }
-                                    if (contentStr.length > foundResult.length && contentStr.length > 200) {
-                                        foundResult = contentStr;
+
+                                    // Fallback: el más largo
+                                    if (content.length > bestText.length) {
+                                        bestText = content;
                                     }
                                 }
 
-                                if (foundResult) {
-                                    setResult(prev => (foundResult.length > (prev?.length || 0)) ? foundResult : prev);
-                                    accumulatedText = foundResult;
+                                if (bestText) {
+                                    setResult(prev => (bestText.length >= (prev?.length || 0)) ? bestText : prev);
+                                    accumulatedText = bestText;
                                 }
 
-                                // Logs siguen usando el último mensaje para feedback en tiempo real
+                                // Logs en tiempo real
                                 const lastMsg = state.messages[state.messages.length - 1];
                                 let lastText = typeof lastMsg === 'string' ? lastMsg : (lastMsg?.content || "");
-                                if (typeof lastText === 'string' && lastText.trim().length > 0) {
+                                if (typeof lastText !== 'string') lastText = String(lastText);
+
+                                if (lastText && lastText.trim().length > 0) {
                                     setLogs(prev => {
                                         if (prev.length > 0 && prev[prev.length - 1].text === lastText) return prev;
-                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: lastText.substring(0, 500) }];
+                                        console.log("Añadiendo log:", lastText.substring(0, 50));
+                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: lastText }];
                                     });
                                 }
                             }
                         } else if (event.type === 'complete') {
-                            console.log("Misión terminada. Resultado final propuesto:", accumulatedText);
-                            setLogs(prev => [...prev, { id: Date.now(), type: 'success', text: '✅ Misión completada con éxito.' }]);
+                            console.log("Misión terminada. Resultado final:", accumulatedText);
+                            setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'success', text: '✅ Misión completada con éxito.' }]);
                             await awardXp(true, autoHealed, nodesCompleted);
 
-                            // Fallback final ultra-resiliente
                             setResult(prev => {
-                                if (prev && prev.length > 50) return prev;
-                                return accumulatedText || prev || "La misión se completó pero no se capturó un bloque de texto descriptivo.";
+                                const final = prev || accumulatedText;
+                                if (!final || final.length < 10) return "La misión terminó pero no se generó un bloque de respuesta. Revisa los logs para más detalles.";
+                                return final;
                             });
 
                             setViewMode('output');
                         } else if (event.type === 'error') {
-                            console.error("Error en el stream:", event);
+                            console.error("Error en stream:", event.message);
                             success = false;
-                            setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `❌ Error: ${event.message}` }]);
+                            setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `❌ Error: ${event.message}` }]);
                         }
                     } catch (e) {
-                        console.error('Error procesando evento del stream:', e, line);
+                        console.error('Error parseando línea:', e, line);
                     }
                 }
             }
         } catch (error: any) {
-            console.error("Fallo crítico en startAgent:", error);
+            console.error("Fallo ejecución:", error);
             success = false;
-            setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `💀 Fallo crítico: ${error.message}` }]);
+            setLogs(prev => [...prev, { id: Date.now() + Math.random(), type: 'error', text: `💀 Fallo: ${error.message}` }]);
         } finally {
             setIsRunning(false);
             setActiveNodeId(undefined);
