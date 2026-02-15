@@ -129,7 +129,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
             {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }}
         ],
-        "required_skills": ["search", "seo", "code"],
+        "required_skills": ["search", "seo", "code", "marketing", "competitor"],
         "tasks": ["Tarea 1 (KPI)", "Tarea 2 (KPI)"],
         "agents_to_synthesize": [
             {{
@@ -227,7 +227,9 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     // Herramientas disponibles mapeadas por skill
     const skillMap: Record<string, any> = {
         "search": availableSkills.search,
-        "seo": availableSkills.seo
+        "seo": availableSkills.seo,
+        "marketing": availableSkills.marketing,
+        "competitor": availableSkills.competitor
     };
 
     const results = await Promise.all(assignedAgents.map(async (agent: any) => {
@@ -237,6 +239,8 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
                 const roleLower = agent.role.toLowerCase();
                 if (s === "search" && (roleLower.includes("investig") || roleLower.includes("research") || roleLower.includes("marketing"))) return true;
                 if (s === "seo" && (roleLower.includes("seo") || roleLower.includes("visibilidad") || roleLower.includes("arquitecto"))) return true;
+                if (s === "marketing" && (roleLower.includes("psico") || roleLower.includes("copy") || roleLower.includes("creativo"))) return true;
+                if (s === "competitor" && (roleLower.includes("bench") || roleLower.includes("competidor") || roleLower.includes("analista"))) return true;
                 return false;
             });
 
