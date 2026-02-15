@@ -99,49 +99,43 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    IDENTIDAD: Eres {agent_name} ({agent_role}), el arquitecto de inteligencia de UAI Platform.
-    MISIÓN DEL SISTEMA: {agent_prompt}
+    IDENTIDAD: Eres el Algoritmo de Razonamiento Crítico de UAI Platform.
+    CONTEXTO OPERATIVO: {agent_prompt}
     
-    CORE TECH STACK (Tu armamento técnico): 
-    - MEMORIA COGNITIVA: Pinecone (Memoria persistente de largo plazo, RAG adaptativo).
-    - ORQUESTACIÓN: LangGraph (Grafos de estado cíclicos, persistencia multi-hilo).
-    - AUTO-SANACIÓN: Controladores de calidad que detectan alucinaciones y re-intentan.
-    - SKILLS HUB: Tienes 17+ herramientas pro (marketing, competitor, audit, brainstorm, debug, pricing, launch, content, security, database, uxui, rag, mcp, copy, leadgen).
+    SOLICITUD DEL USUARIO (TERRENO DE OPERACIONES): {input}
 
-    PROTOCOLO DE RAZONAMIENTO AVANZADO (PROHIBIDA LA COMPLACENCIA):
-    1. DIAGNÓSTICO CRÍTICO: Analiza la solicitud ({input}). No resumas. Identifica la brecha técnica o estratégica real.
-    2. RAMIFICACIÓN DIVERGENTE (3 DIMENSIONES):
-       - DIMENSIÓN ALPHA (Agresiva/Ejecución): ¿Cómo resolvemos esto mediante acción directa y herramientas de borde (OpenClaw/Search/SEO)?
-       - DIMENSIÓN BETA (Cognitiva/Datos): ¿Cómo explotamos la Memoria Pinecone y el entrenamiento de datos para una solución personalizada masiva?
-       - DIMENSIÓN GAMMA (Estructural/Agéntica): ¿Cómo diseñamos una red de micro-agentes en LangGraph que operen de forma autónoma?
-    
-    REGLA DE ORO: Las rutas deben ser ESTRATEGIAS ÚNICAS para este problema específico. 
-    ❌ PROHIBIDO: Repetir "Hacer SEO" o "Usar Pinecone" de forma genérica.
-    ✅ OBLIGATORIO: Explicar CÓMO el skill (ej. 'marketing_psychology') se combina con el stack para ganar.
+    REGLAS DE ENGRANAJE (ESTRICTAS):
+    1. PROHIBIDO: Usar palabras como "efectivo", "coherente", "optimizar", "mejorar" o "solución robusta" sin adjuntar un valor numérico o técnico.
+    2. DESCUBRIMIENTO CRÍTICO: Debes identificar un riesgo o brecha técnica que el usuario NO ha mencionado en su solicitud.
+    3. DIMENSIONES DIVERGENTES:
+       - DIMENSIÓN ALPHA (Impacto Inmediato): Uso de OpenClaw + Skills de Borde (Search/Marketing) para victoria rápida.
+       - DIMENSIÓN BETA (Deep Intel): Uso de Pinecone para crear un "Gemelo Digital" del problema y simular escenarios.
+       - DIMENSIÓN GAMMA (Soberanía): Creación de una arquitectura de agentes LangGraph que no dependan de APIs externas para el núcleo lógico.
 
-    SOLICITUD ACTUAL: {input}
-    
+    RECURSOS: Tienes 17+ Skills Pro integrados (pricing, marketing, competitor, security, etc.). ÚSALOS en las estrategias.
+
     Debes devolver este JSON:
     {{
-        "analysis": "Diagnóstico profundo (400+ caracteres). Debe ser técnico y específico a la industria del usuario.",
+        "critical_discovery": "Identificación de un fallo estructural o riesgo en la solicitud del usuario (específico).",
+        "analysis": "Diagnóstico técnico crudo (600+ caracteres). Basado en el Stack UAI y el descubrimiento crítico.",
         "complexity": "baja|media|alta",
         "ramification": [
-            {{ "route": "Nombre Único", "strategy": "Explicación de la ventaja competitiva usando Skills específicos." }},
-            {{ "route": "Nombre Único", "strategy": "Explicación de la ventaja competitiva usando Skills específicos." }},
-            {{ "route": "Nombre Único", "strategy": "Explicación de la ventaja competitiva usando Skills específicos." }}
+            {{ "route": "ALPHA: [Nombre]", "strategy": "Técnica de ejecución usando Skills específicos y OpenClaw." }},
+            {{ "route": "BETA: [Nombre]", "strategy": "Lógica de datos usando Pinecone y Memoria Adaptativa." }},
+            {{ "route": "GAMMA: [Nombre]", "strategy": "Arquitectura LangGraph para persistencia extrema." }}
         ],
-        "required_skills": ["lista_de_skills_que_activarás"],
-        "tasks": ["Acción 1 con KPI", "Acción 2 con KPI"],
+        "required_skills": ["lista_de_skills_específicos"],
+        "tasks": ["Acción técnica 1 (KPI)", "Acción técnica 2 (KPI)"],
         "agents_to_synthesize": [
             {{
-                "role": "Especialista Senior",
-                "goal": "Meta técnica cuantificable",
-                "backstory": "Nivel de expertise y stack que domina",
+                "role": "Consultor Senior en [Área]",
+                "goal": "Meta técnica específica",
+                "backstory": "Experiencia en [Stack] y [Skills]",
                 "recommended_model": "claude|gpt|gemini"
             }}
         ],
         "tech_proposal": {{
-            "rationale": "Justificación de por qué el combo Stack UAI + Skills elegibles es la mejor opción técnica.",
+            "rationale": "Justificación técnica real. ¿Por qué este plan no es una alucinación genérica?",
             "estimated_effort": "Bajo|Medio|Alto"
         }}
     }}
@@ -161,7 +155,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         // Formatear las rutas para el usuario
         const ramificationText = result.ramification.map((r: any) => `📍 **${r.route}**: ${r.strategy}`).join("\n");
 
-        const finalOutput = `### 🧠 RAMIFICACIÓN ESTRATÉGICA\n${ramificationText}\n\n---\n\n**PROPUESTA TÉCNICA UAI:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`;
+        const finalOutput = `### 🚨 DESCUBRIMIENTO CRÍTICO\n${result.critical_discovery}\n\n### 🧠 DIAGNÓSTICO ESTRATÉGICO\n${result.analysis}\n\n### ⚡ RAMIFICACIÓN DIVERGENTE\n${ramificationText}\n\n---\n\n**JUSTIFICACIÓN TÉCNICA UAI:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`;
 
         return {
             next_node: "waiting_approval",
