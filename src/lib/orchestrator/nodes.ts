@@ -196,7 +196,7 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
                 goal: agent.goal
             });
 
-            const outputText = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+            const outputText = typeof (response as any).content === "string" ? (response as any).content : JSON.stringify((response as any).content);
 
             return {
                 agent: agent.role,
