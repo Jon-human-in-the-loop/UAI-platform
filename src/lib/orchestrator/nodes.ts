@@ -13,16 +13,16 @@ import { uaiAgents } from "./agents";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 // --- CLIENTES DE MODELOS SOTA (Carga Perezosa para evitar fallos de build por llaves faltantes) ---
-let _claude37: ChatAnthropic | null = null;
-function getClaude37() {
-    if (!_claude37) {
-        _claude37 = new ChatAnthropic({
-            modelName: "claude-3-5-sonnet-20241022", // FIXED: Latest Stable Sonnet 3.5 (New Release)
-            anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+let _orchestratorModel: ChatOpenAI | null = null;
+function getOrchestratorModel() {
+    if (!_orchestratorModel) {
+        _orchestratorModel = new ChatOpenAI({
+            modelName: "gpt-4o", // FIXED: Usamos GPT-4o por estabilidad de API Key
+            openAIApiKey: process.env.OPENAI_API_KEY,
             temperature: 0,
         });
     }
-    return _claude37;
+    return _orchestratorModel;
 }
 
 let _gpt5: ChatOpenAI | null = null;
@@ -49,9 +49,9 @@ function getGeminiPro() {
     return _geminiPro;
 }
 
-// Nodo 1: Analizador de Requerimientos (Claude 3.7 - Razonamiento Profundo)
+// Nodo 1: Analizador de Requerimientos (GPT-4o - Razonamiento Profundo)
 export async function analyzerNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: ANALIZADOR (Claude 3.7 Real + Memoria) ---");
+    console.log("--- NODO: ANALIZADOR (GPT-4o Real + Memoria) ---");
 
     // Guardrail de Seguridad: Verificación de Presupuesto y Abuso
     const isAdmin = (state.budget_status.plan as any) === 'admin';
@@ -75,10 +75,6 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     try {
         let pastReflections = "";
         try {
-            // Assuming 'queryMemory' is the intended function to be wrapped,
-            // and 'lastMessage' is the 'taskDescription'.
-            // The instruction's snippet uses 'recallFromMemory' which is not defined here.
-            // We'll use 'queryMemory' as it's available and fits the context.
             const memories = await queryMemory(lastMessage);
             if (memories.length > 0) {
                 pastReflections = memories.join("\n---\n");
@@ -136,7 +132,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     - gemini: Para análisis de grandes volúmenes de datos o contextos extensos.
     `);
 
-    const chain = prompt.pipe(getClaude37()).pipe(parser);
+    const chain = prompt.pipe(getOrchestratorModel()).pipe(parser);
 
     try {
         const result: any = await chain.invoke({
@@ -199,7 +195,7 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     if (dynamicAgents.length > 0) {
         assignedAgents = dynamicAgents.map((agent: any) => {
             let configModel: any = getGpt5();
-            if (agent.recommended_model === "claude") configModel = getClaude37();
+            if (agent.recommended_model === "claude") configModel = getOrchestratorModel(); // Fallback to GPT-4o if Claude requested but unavailable
             if (agent.recommended_model === "gemini") configModel = getGeminiPro();
             return { ...agent, model: configModel };
         });
@@ -259,9 +255,9 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     };
 }
 
-// Nodo 3: Validador y Auto-sanación (Reflexión Crítica con Claude 3.5 Sonnet)
+// Nodo 3: Validador y Auto-sanación (Reflexión Crítica con GPT-4o)
 export async function validatorNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: VALIDADOR (Auto-sanación Real con Claude 3.5 Sonnet) ---");
+    console.log("--- NODO: VALIDADOR (Auto-sanación Real con GPT-4o) ---");
 
     const executionResults = state.context_memory.execution_results || [];
     const lastSummary = executionResults.map((r: any) => `${r.agent}: ${r.output}`).join("\n");
@@ -284,7 +280,7 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
     Si el score es menor a 85, debes marcar is_valid como false.
     `);
 
-    const chain = prompt.pipe(getClaude37()).pipe(parser);
+    const chain = prompt.pipe(getOrchestratorModel()).pipe(parser);
 
     try {
         const evaluation: any = await chain.invoke({ results: lastSummary });
