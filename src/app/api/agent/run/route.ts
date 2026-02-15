@@ -36,57 +36,58 @@ export async function POST(req: NextRequest) {
             await writer.write(encoder.encode(JSON.stringify({ type, ...data }) + '\n'));
         };
 
-        // Ejecución asíncrona con persistencia
-        (async () => {
+        const app = await getCompiledApp();
+        const config = {
+            configurable: { thread_id: currentThreadId }
+        };
+
+        const initialState = {
+            messages: [new HumanMessage(input)],
+            next_node: 'analizador',
+            errors: [],
+            skills_active: [],
+            context_memory: {},
+            agent_config: agent || {
+                name: "UAI Core",
+                role: "Orquestador Default",
+                model: "claude-3-opus",
+                system_prompt: "Eres el núcleo de la plataforma."
+            }
+        };
+
+        // Cambiamos a STREAM directamente en el cuerpo de la función para mayor estabilidad en Next.js
+        const runStream = async () => {
             try {
-                const app = await getCompiledApp();
+                await sendEvent('session_info', { threadId: currentThreadId });
 
-                // Configuración de la ejecución (Persistencia)
-                const config = {
-                    configurable: { thread_id: currentThreadId }
-                };
-
-                const initialState = {
-                    messages: [new HumanMessage(input)],
-                    next_node: 'analizador',
-                    errors: [],
-                    skills_active: [],
-                    context_memory: {},
-                    agent_config: agent || {
-                        name: "UAI Core",
-                        role: "Orquestador Default",
-                        model: "claude-3-opus",
-                        system_prompt: "Eres el núcleo de la plataforma."
-                    }
-                };
-
-                // Suscripción a eventos del grafo con persistencia activada
+                // Usamos streamMode: "values" para tener el estado completo en cada paso
                 const graphStream = await app.stream(initialState, {
                     ...config,
                     streamMode: "values"
                 });
 
-                // Enviar el thread_id al frontend para que pueda reconectarse si es necesario
-                await sendEvent('session_info', { threadId: currentThreadId });
-
                 for await (const chunk of graphStream) {
+                    console.log("Enviando chunk al cliente...");
                     await sendEvent('node_update', { chunk });
                 }
 
                 await sendEvent('complete', { success: true });
             } catch (err: any) {
-                console.error('Error en stream persistente:', err);
+                console.error('Error en orquestación:', err);
                 await sendEvent('error', { message: err.message });
             } finally {
                 await writer.close();
             }
-        })();
+        };
+
+        runStream();
 
         return new Response(stream.readable, {
             headers: {
-                'Content-Type': 'application/x-ndjson',
-                'Cache-Control': 'no-cache',
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache, no-transform',
                 'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no', // Crítico para Nginx/Railway
             },
         });
 
