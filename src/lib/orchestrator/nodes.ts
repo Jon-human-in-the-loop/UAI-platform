@@ -17,7 +17,7 @@ let _claude37: ChatAnthropic | null = null;
 function getClaude37() {
     if (!_claude37) {
         _claude37 = new ChatAnthropic({
-            modelName: "claude-3-5-sonnet-20240620", // Modelo estable y potente
+            modelName: "claude-3-5-sonnet-20240620", // FIXED: Modelo estable real
             anthropicApiKey: process.env.ANTHROPIC_API_KEY,
             temperature: 0,
         });
