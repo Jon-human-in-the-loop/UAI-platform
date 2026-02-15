@@ -1,4 +1,4 @@
-import { BaseMessage, HumanMessage } from "@langchain/core/messages";
+import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { saveReflection, queryMemory } from "../memory";
 import { AgentState, uaiGraph } from "./graph";
 import { END } from "@langchain/langgraph";
@@ -163,7 +163,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
                 ramification: result.ramification
             },
             skills_active: result.required_skills,
-            messages: [new HumanMessage(finalOutput)]
+            messages: [new AIMessage(finalOutput)]
         };
     } catch (e: any) {
         console.error("Error en Analizador Real:", e);
@@ -260,8 +260,8 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             execution_results: results
         },
         messages: [
-            new HumanMessage(`Iniciando orquestación con ${assignedAgents.length} agentes...`),
-            new HumanMessage(finalSummary) // Enviamos el contenido REAL al chat
+            new AIMessage(`Iniciando orquestación con ${assignedAgents.length} agentes...`),
+            new AIMessage(finalSummary) // Enviamos el contenido REAL al chat
         ]
     };
 }
@@ -301,19 +301,19 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
             return {
                 next_node: "analizador",
                 errors: [...state.errors, `Fallo de calidad (${evaluation.score}%): ${evaluation.critique}`],
-                messages: [new HumanMessage(`Calidad insuficiente detectada. Motivo: ${evaluation.critique}. Solicitando re-planificación.`)]
+                messages: [new AIMessage(`❌ RECHAZADO POR CALIDAD (${evaluation.score}/100): ${evaluation.critique}`)]
             };
         }
 
         return {
             next_node: "FIN",
-            messages: [new HumanMessage(`Validación UAI exitosa (${evaluation.score}%). Resultado óptimo entregado.`)]
+            messages: [new AIMessage(`✅ VALIDACIÓN EXITOSA: Los resultados cumplen con los estándares de calidad.`)]
         };
 
     } catch (e) {
         console.error("Error en Validador Real:", e);
         // Fallback optimista para evitar bucles infinitos por error técnico
-        return { next_node: "FIN", messages: [new HumanMessage("Validación completada (Modo Manual).")] };
+        return { next_node: "FIN", messages: [new AIMessage("Validación completada (Modo Manual).")] };
     }
 }
 
