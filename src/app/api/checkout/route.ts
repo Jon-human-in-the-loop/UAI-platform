@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { stripe } from '@/lib/stripe';
-import { preference } from '@/lib/mercadopago';
+import { preference, mpClient } from '@/lib/mercadopago';
 import { PAYMENT_PLANS, PAYMENT_PROVIDERS } from '@/lib/payments.config';
 
 export async function POST(req: Request) {
