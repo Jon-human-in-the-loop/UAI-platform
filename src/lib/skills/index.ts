@@ -56,16 +56,22 @@ Sugerencia: Mejorar las meta-etiquetas de descripción.`;
     }
 }
 
-import { MarketingPsychologyTool, CompetitorIntelligenceTool } from "./library";
+import { MarketingPsychologyTool, CompetitorIntelligenceTool, AuditWebsiteTool, BrainstormingTool, SystematicDebuggingTool } from "./library";
 
 export const webSearchSkill = new WebSearchTool();
 export const seoAnalysisSkill = new SeoAnalysisTool();
 export const marketingPsychologySkill = new MarketingPsychologyTool();
 export const competitorIntelligenceSkill = new CompetitorIntelligenceTool();
+export const auditWebsiteSkill = new AuditWebsiteTool();
+export const brainstormingSkill = new BrainstormingTool();
+export const systematicDebuggingSkill = new SystematicDebuggingTool();
 
 export const availableSkills = {
     search: webSearchSkill,
     seo: seoAnalysisSkill,
     marketing: marketingPsychologySkill,
     competitor: competitorIntelligenceSkill,
+    audit: auditWebsiteSkill,
+    brainstorm: brainstormingSkill,
+    debug: systematicDebuggingSkill,
 };
