@@ -92,17 +92,24 @@ export default function Dashboard() {
                                 // - Si nextNode es 'validador', entonces el 'ejecutor' acaba de terminar (aquí está el contenido rico).
                                 // - Si nextNode es 'reflexion', entonces el 'validador' acaba de terminar (aquí está el status).
 
-                                if (text && text.trim().length > 0) {
-                                    if (nodeName === 'validador') {
-                                        // Salida del Ejecutor (El contenido principal)
-                                        setResult(text);
-                                    } else if (nodeName === 'reflexion') {
-                                        // Salida del Validador (Status de calidad)
-                                        // Lo agregamos al final para no borrar el trabajo del ejecutor
-                                        setResult(prev => prev ? `${prev}\n\n---\n\n🔍 **Validación:** ${text}` : text);
-                                    } else if (nodeName === 'ejecutor' && !result) {
-                                        // Si estamos en fallback o algo temprano
-                                        setResult(text);
+                                // CAPTURA DE RESULTADO INTELIGENTE (Content-Aware v3):
+                                const isPlan = text.includes('PROPUESTA TÉCNICA UAI:');
+                                const isExecution = text.includes('### 🤖') || text.includes('Iniciando orquestación');
+                                const isValidation = text.includes('Validación UAI exitosa') || text.includes('Validación completada');
+
+                                console.log(`ANALYSIS: Plan=${isPlan}, Exec=${isExecution}, Valid=${isValidation} | Text len=${text.length}`);
+
+                                if (text && text.trim().length > 5) {
+                                    if (isExecution) {
+                                        setResult(text); // Resultado Principal
+                                    } else if (isValidation) {
+                                        setResult(prev => { // Reporte de Validación
+                                            if (!prev) return text;
+                                            if (prev.includes('Validación:')) return prev;
+                                            return `${prev}\n\n---\n\n🔍 **Validación:** ${text}`;
+                                        });
+                                    } else if (!isPlan && text.length > 50 && !result) {
+                                        setResult(text); // Fallback
                                     }
                                 }
 
