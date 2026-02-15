@@ -102,14 +102,24 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     IDENTIDAD: Eres {agent_name} ({agent_role}).
     MISIÓN PRINCIPAL: {agent_prompt}
     
-    Tu objetivo es analizar la solicitud del usuario y sintetizar una fuerza de trabajo dinámica para cumplirla.
+    Tu objetivo es analizar la solicitud siguiendo el PROTOCOLO DE RAZONAMIENTO AVANZADO:
+    1. ANÁLISIS: Desglose de la situación actual.
+    2. RAMIFICACIÓN: Genera 3 RUTAS ESTRATÉGICAS distintas para abordar el problema.
+    3. SÍNTESIS: Creación del workforce dinámico para ejecutar la mejor ruta.
+    
     {memory_context}
     
     SOLICITUD: {input}
     
     Debes devolver un JSON con el siguiente formato EXACTO:
     {{
+        "analysis": "Resumen ejecutivo",
         "complexity": "baja|media|alta",
+        "ramification": [
+            {{ "route": "Nombre Ruta A", "strategy": "Explicación" }},
+            {{ "route": "Nombre Ruta B", "strategy": "Explicación" }},
+            {{ "route": "Nombre Ruta C", "strategy": "Explicación" }}
+        ],
         "required_skills": ["search", "seo", "code", "etc"],
         "tasks": ["tarea 1", "tarea 2"],
         "agents_to_synthesize": [
@@ -121,15 +131,10 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             }}
         ],
         "tech_proposal": {{
-            "rationale": "Descripción de por qué se eligieron estos modelos y si es costo-eficiente",
+            "rationale": "Descripción de por qué se eligieron estos modelos",
             "estimated_effort": "Bajo|Medio|Alto"
         }}
     }}
-    
-    GUÍA DE MODELOS:
-    - claude: Para tareas de razonamiento complejo, ética y lógica pura.
-    - gpt: Para creatividad, ejecución rápida y tareas de propósito general.
-    - gemini: Para análisis de grandes volúmenes de datos o contextos extensos.
     `);
 
     const chain = prompt.pipe(getOrchestratorModel()).pipe(parser);
@@ -143,16 +148,22 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             agent_prompt: config.system_prompt
         });
 
+        // Formatear las rutas para el usuario
+        const ramificationText = result.ramification.map((r: any) => `📍 **${r.route}**: ${r.strategy}`).join("\n");
+
+        const finalOutput = `### 🧠 RAMIFICACIÓN ESTRATÉGICA\n${ramificationText}\n\n---\n\n**PROPUESTA TÉCNICA UAI:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`;
+
         return {
             next_node: "waiting_approval",
             context_memory: {
                 ...state.context_memory,
                 analysis: result,
                 dynamic_agents: result.agents_to_synthesize,
-                proposal: result.tech_proposal
+                proposal: result.tech_proposal,
+                ramification: result.ramification
             },
             skills_active: result.required_skills,
-            messages: [new HumanMessage(`PROPUESTA TÉCNICA UAI:\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`)]
+            messages: [new HumanMessage(finalOutput)]
         };
     } catch (e: any) {
         console.error("Error en Analizador Real:", e);

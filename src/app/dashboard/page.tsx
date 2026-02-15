@@ -102,7 +102,7 @@ export default function Dashboard() {
                                         latestMeaningfulText = cleanText;
 
                                         // Prioridad Máxima: Bloques de informe
-                                        if (cleanText.includes('### 🤖') || cleanText.includes('RESULTADO:') || cleanText.includes('PROPUESTA TÉCNICA')) {
+                                        if (cleanText.includes('### 🤖') || cleanText.includes('### 🧠') || cleanText.includes('RESULTADO:') || cleanText.includes('PROPUESTA TÉCNICA')) {
                                             setResult(prev => (cleanText.length >= (prev?.length || 0)) ? cleanText : prev);
                                         }
                                         // Backup: Si es un bloque largo (más de 200 chars), es probablemente un resultado
