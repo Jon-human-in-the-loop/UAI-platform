@@ -8,31 +8,13 @@ import FlowEditor from '@/components/flow-editor/FlowEditor';
 
 export default function Dashboard() {
     const { awardXp, activeAgent } = useDashboard();
-    const [isRunning, setIsRunning] = useState(false);
-    const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
-    const [currentThreadId, setCurrentThreadId] = useState<string | undefined>();
-    const [userInput, setUserInput] = useState('');
-    const [result, setResult] = useState<string | null>(null); // Nuevo estado para el resultado
-    const inputRef = useRef<HTMLTextAreaElement>(null);
-    const logsEndRef = useRef<HTMLDivElement>(null);
-    const [logs, setLogs] = useState<{ id: number; type: string; text: string }[]>([
-        { id: 1, type: 'info', text: '💡 Escribe una instrucción y lanza tu primera misión del día.' },
-    ]);
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
-
-    useEffect(() => {
-        if (logs.length > 1) {
-            logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }, [logs]);
+    const [viewMode, setViewMode] = useState<'graph' | 'output'>('graph'); // Toggle visualización
 
     const startAgent = async () => {
         if (isRunning || !userInput.trim()) return;
         setIsRunning(true);
-        setResult(null); // Limpiar resultado anterior
+        setResult(null);
+        setViewMode('graph'); // Resetear a grafo al inicio
         const instruction = userInput.trim();
         setUserInput('');
         setLogs([{ id: Date.now(), type: 'info', text: `🎯 Misión: "${instruction.substring(0, 80)}${instruction.length > 80 ? '...' : ''}"` }]);
@@ -40,6 +22,7 @@ export default function Dashboard() {
         let nodesCompleted = 0;
         let autoHealed = false;
         let success = true;
+        let accumulatedText = ""; // Capturar todo el texto por si acaso
 
         try {
             const response = await fetch('/api/agent/run', {
@@ -86,31 +69,24 @@ export default function Dashboard() {
                             if (state.messages?.length > 0) {
                                 const lastMsg = state.messages[state.messages.length - 1];
                                 const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;
+                                accumulatedText = text;
 
-                                // CAPTURA DE RESULTADO INTELIGENTE:
-                                // El 'nodeName' aquí representa el SIGUIENTE nodo, por lo que indica quién acaba de terminar.
-                                // - Si nextNode es 'validador', entonces el 'ejecutor' acaba de terminar (aquí está el contenido rico).
-                                // - Si nextNode es 'reflexion', entonces el 'validador' acaba de terminar (aquí está el status).
+                                // LÓGICA ROBUSTA DE CAPTURA DE RESULTADO v4
+                                // 1. Si el ejecutor termina (nextNode == validador o reflexion), es un candidato fuerte.
+                                const executorFinished = nextNode === 'validador' || nextNode === 'reflexion';
 
-                                // CAPTURA DE RESULTADO INTELIGENTE (Content-Aware v3):
-                                const isPlan = text.includes('PROPUESTA TÉCNICA UAI:');
-                                const isExecution = text.includes('### 🤖') || text.includes('Iniciando orquestación');
-                                const isValidation = text.includes('Validación UAI exitosa') || text.includes('Validación completada');
+                                // 2. Detectar marcadores explícitos o contenido rico
+                                const isCode = text.includes('```');
+                                const isLongResponse = text.length > 100;
+                                const isExplicitResult = text.includes('### 🤖') || text.includes('RESULTADO:');
 
-                                console.log(`ANALYSIS: Plan=${isPlan}, Exec=${isExecution}, Valid=${isValidation} | Text len=${text.length}`);
-
-                                if (text && text.trim().length > 5) {
-                                    if (isExecution) {
-                                        setResult(text); // Resultado Principal
-                                    } else if (isValidation) {
-                                        setResult(prev => { // Reporte de Validación
-                                            if (!prev) return text;
-                                            if (prev.includes('Validación:')) return prev;
-                                            return `${prev}\n\n---\n\n🔍 **Validación:** ${text}`;
-                                        });
-                                    } else if (!isPlan && text.length > 50 && !result) {
-                                        setResult(text); // Fallback
-                                    }
+                                if (executorFinished || isExplicitResult || (isLongResponse && isCode)) {
+                                    // Solo sobreescribir si es "mejor" o si no hay nada
+                                    setResult(prev => {
+                                        if (!prev) return text;
+                                        if (text.length > prev.length) return text; // Asumir que más texto = más completo
+                                        return prev;
+                                    });
                                 }
 
                                 setLogs(prev => {
@@ -121,6 +97,14 @@ export default function Dashboard() {
                         } else if (event.type === 'complete') {
                             setLogs(prev => [...prev, { id: Date.now(), type: 'success', text: '✅ Misión completada con éxito.' }]);
                             await awardXp(true, autoHealed, nodesCompleted);
+
+                            // Fallback final: Si el resultado es nulo, usar lo último que tengamos
+                            setResult(prev => {
+                                const finalRes = prev || accumulatedText || "No se generó contenido textual.";
+                                return finalRes;
+                            });
+
+                            setViewMode('output'); // Auto-switch al terminar
                         } else if (event.type === 'error') {
                             success = false;
                             setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `❌ Error: ${event.message}` }]);
@@ -194,63 +178,78 @@ export default function Dashboard() {
                     {/* Header Toolbar */}
                     <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5 z-20">
                         <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-white/60">
-                            {result ? <Maximize2 className="w-4 h-4 text-green-400" /> : <Terminal className="w-4 h-4 text-purple-400" />}
-                            <span>{result ? '✨ Misión Cumplida - Resultado Final' : '📡 Centro de Comando - Visualización en Tiempo Real'}</span>
+                            {viewMode === 'output' ? <Maximize2 className="w-4 h-4 text-green-400" /> : <Terminal className="w-4 h-4 text-purple-400" />}
+                            <span>{viewMode === 'output' ? '✨ Resultado de Misión' : '📡 Centro de Comando - Procesos'}</span>
                         </div>
 
-                        {result && (
+                        <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/10">
                             <button
-                                onClick={() => setResult(null)}
-                                className="flex items-center gap-2 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-white transition-all border border-white/10 hover:border-white/30"
+                                onClick={() => setViewMode('graph')}
+                                className={`px-3 py-1 text-[10px] rounded-md transition-all ${viewMode === 'graph' ? 'bg-white/10 text-white font-bold' : 'text-white/40 hover:text-white/70'}`}
                             >
-                                <RotateCcw className="w-3 h-3" /> Nueva Misión / Ver Grafo
+                                GRAFO
                             </button>
-                        )}
+                            <button
+                                onClick={() => setViewMode('output')}
+                                className={`flex items-center gap-1 px-3 py-1 text-[10px] rounded-md transition-all ${viewMode === 'output' ? 'bg-green-500/20 text-green-400 font-bold border border-green-500/30' : 'text-white/40 hover:text-white/70'}`}
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full ${result ? 'bg-green-500' : 'bg-gray-500'}`} />
+                                OUTPUT
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex-1 relative bg-grid-pattern overflow-hidden">
                         {/* Background Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-[#050505]/95 to-black/90 z-0" />
 
-                        {result ? (
+                        {viewMode === 'output' ? (
                             // --- RESULT VIEW (ENHANCED) ---
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
                                 className="absolute inset-0 overflow-auto custom-scrollbar z-10 p-6 md:p-10"
                             >
-                                <div className="max-w-4xl mx-auto">
-                                    <div className="bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
-                                        {/* Result Header */}
-                                        <div className="bg-gradient-to-r from-green-500/10 to-transparent p-4 border-b border-white/5 flex items-center gap-3">
-                                            <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                                            <span className="text-sm font-mono text-green-400/80">OUTPUT GENERADO POR UAI</span>
-                                        </div>
+                                {result ? (
+                                    <div className="max-w-4xl mx-auto">
+                                        <div className="bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
+                                            {/* Result Header */}
+                                            <div className="bg-gradient-to-r from-green-500/10 to-transparent p-4 border-b border-white/5 flex items-center gap-3">
+                                                <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                                                <span className="text-sm font-mono text-green-400/80">OUTPUT GENERADO POR UAI</span>
+                                            </div>
 
-                                        {/* Result Body */}
-                                        <div className="p-8 prose prose-invert prose-lg max-w-none 
-                                            prose-headings:font-bold prose-headings:tracking-tight prose-h1:text-3xl prose-h2:text-2xl 
-                                            prose-p:text-gray-300 prose-p:leading-relaxed 
-                                            prose-strong:text-white prose-strong:font-bold
-                                            prose-ul:list-disc prose-ul:pl-4
-                                            prose-code:bg-white/10 prose-code:rounded prose-code:px-1 prose-code:py-0.5 prose-code:text-yellow-300
-                                            font-sans">
-                                            {result}
-                                        </div>
+                                            {/* Result Body */}
+                                            <div className="p-8 prose prose-invert prose-lg max-w-none 
+                                                prose-headings:font-bold prose-headings:tracking-tight prose-h1:text-3xl prose-h2:text-2xl 
+                                                prose-p:text-gray-300 prose-p:leading-relaxed 
+                                                prose-strong:text-white prose-strong:font-bold
+                                                prose-ul:list-disc prose-ul:pl-4
+                                                prose-code:bg-white/10 prose-code:rounded prose-code:px-1 prose-code:py-0.5 prose-code:text-yellow-300
+                                                font-sans">
+                                                {result}
+                                            </div>
 
-                                        {/* Result Footer Actions */}
-                                        <div className="p-4 bg-white/5 border-t border-white/5 flex justify-end gap-3">
-                                            <button
-                                                onClick={() => { navigator.clipboard.writeText(result); alert("Copiado!"); }}
-                                                className="text-xs text-white/50 hover:text-white flex items-center gap-2 hover:underline"
-                                            >
-                                                [COPIAR TEXTO]
-                                            </button>
+                                            {/* Result Footer Actions */}
+                                            <div className="p-4 bg-white/5 border-t border-white/5 flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => { navigator.clipboard.writeText(result); alert("Copiado!"); }}
+                                                    className="text-xs text-white/50 hover:text-white flex items-center gap-2 hover:underline"
+                                                >
+                                                    [COPIAR TEXTO]
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-white/20 gap-4">
+                                        <Terminal className="w-12 h-12 opacity-50" />
+                                        <p className="text-sm font-mono">Esperando resultado de la misión...</p>
+                                    </div>
+                                )}
                             </motion.div>
                         ) : (
+
                             // --- FLOW EDITOR VIEW ---
                             <div className="absolute inset-0 overflow-hidden flex items-center justify-center z-10">
                                 <div className="w-full h-full scale-[0.85] opacity-90 hover:opacity-100 transition-opacity duration-500">
