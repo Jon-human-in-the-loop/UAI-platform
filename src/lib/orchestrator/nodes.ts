@@ -17,7 +17,7 @@ let _claude37: ChatAnthropic | null = null;
 function getClaude37() {
     if (!_claude37) {
         _claude37 = new ChatAnthropic({
-            modelName: "claude-3-7-sonnet-20250219",
+            modelName: "claude-3-5-sonnet-20240620", // Modelo estable y potente
             anthropicApiKey: process.env.ANTHROPIC_API_KEY,
             temperature: 0,
         });
@@ -29,7 +29,7 @@ let _gpt5: ChatOpenAI | null = null;
 function getGpt5() {
     if (!_gpt5) {
         _gpt5 = new ChatOpenAI({
-            modelName: "gpt-5-preview",
+            modelName: "gpt-4o", // Modelo insignia actual de OpenAI
             openAIApiKey: process.env.OPENAI_API_KEY,
             temperature: 0.2,
         });
@@ -41,8 +41,8 @@ let _geminiPro: ChatGoogleGenerativeAI | null = null;
 function getGeminiPro() {
     if (!_geminiPro) {
         _geminiPro = new ChatGoogleGenerativeAI({
-            model: "gemini-1.5-pro",
-            apiKey: process.env.GOOGLE_API_KEY,
+            model: "gemini-1.5-flash", // Modelo rápido y eficiente de Google
+            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY,
             temperature: 0.1,
         });
     }
