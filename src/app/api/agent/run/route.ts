@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Si no recibimos un threadId del frontend, generamos uno nuevo para la sesión
-        const currentThreadId = threadId || uuidv4();
+        // FIX: Forzamos un nuevo threadId si no se envía explícitamente para evitar estados "zombies"
+        const currentThreadId = uuidv4();
 
         console.log(`--- Ejecución Persistente (Thread: ${currentThreadId}) para: ${input} ---`);
         if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
