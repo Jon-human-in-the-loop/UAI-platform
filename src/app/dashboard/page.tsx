@@ -87,37 +87,37 @@ export default function Dashboard() {
                             if (nodeMap[nodeName]) setActiveNodeId(nodeMap[nodeName]);
 
                             if (state.messages?.length > 0) {
-                                const lastMsg = state.messages[state.messages.length - 1];
-                                let text = typeof lastMsg === 'string' ? lastMsg : (lastMsg?.content || "");
+                                // CAPTURA DE RESULTADO INTELIGENTE v6
+                                // Buscamos en todo el historial del state actual el bloque de ejecución
+                                let foundResult = "";
+                                for (let i = state.messages.length - 1; i >= 0; i--) {
+                                    const msg = state.messages[i];
+                                    const content = typeof msg === 'string' ? msg : (msg?.content || "");
+                                    const contentStr = typeof content === 'string' ? content : String(content);
 
-                                // Asegurar que sea string y no esté vacío
-                                if (typeof text !== 'string') text = String(text);
-                                if (!text || text.trim().length === 0) continue;
-
-                                accumulatedText = text;
-
-                                // LÓGICA ROBUSTA DE CAPTURA DE RESULTADO v5
-                                // 1. Si el ejecutor termina (nextNode == validador o reflexion), es un candidato fuerte.
-                                const executorFinished = nextNode === 'validador' || nextNode === 'reflexion';
-
-                                // 2. Detectar marcadores explícitos o contenido rico
-                                const isCode = text.includes('```');
-                                const isLongResponse = text.length > 100;
-                                const isExplicitResult = text.includes('### 🤖') || text.includes('RESULTADO:') || text.includes('PROPUESTA');
-
-                                if (executorFinished || isExplicitResult || (isLongResponse && isCode)) {
-                                    setResult(prev => {
-                                        if (!prev) return text;
-                                        // Preferir el mensaje más largo/completo
-                                        return (text.length > prev.length) ? text : prev;
-                                    });
+                                    if (contentStr.includes('### 🤖') || contentStr.includes('RESULTADO:')) {
+                                        foundResult = contentStr;
+                                        break;
+                                    }
+                                    if (contentStr.length > foundResult.length && contentStr.length > 200) {
+                                        foundResult = contentStr;
+                                    }
                                 }
 
-                                setLogs(prev => {
-                                    // Evitar duplicados consecutivos
-                                    if (prev.length > 0 && prev[prev.length - 1].text === text) return prev;
-                                    return [...prev, { id: Date.now() + Math.random(), type: 'process', text: text.substring(0, 500) }];
-                                });
+                                if (foundResult) {
+                                    setResult(prev => (foundResult.length > (prev?.length || 0)) ? foundResult : prev);
+                                    accumulatedText = foundResult;
+                                }
+
+                                // Logs siguen usando el último mensaje para feedback en tiempo real
+                                const lastMsg = state.messages[state.messages.length - 1];
+                                let lastText = typeof lastMsg === 'string' ? lastMsg : (lastMsg?.content || "");
+                                if (typeof lastText === 'string' && lastText.trim().length > 0) {
+                                    setLogs(prev => {
+                                        if (prev.length > 0 && prev[prev.length - 1].text === lastText) return prev;
+                                        return [...prev, { id: Date.now() + Math.random(), type: 'process', text: lastText.substring(0, 500) }];
+                                    });
+                                }
                             }
                         } else if (event.type === 'complete') {
                             console.log("Misión terminada. Resultado final propuesto:", accumulatedText);
