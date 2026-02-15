@@ -97,6 +97,58 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         system_prompt: "Eres el núcleo analítico de UAI Platform."
     };
 
+    // --- PINT DE ENRUTAMIENTO INTELIGENTE (Router Step) ---
+    // Antes de lanzar el análisis pesado, verificamos si el usuario ya eligió una ruta.
+    const routerPrompt = PromptTemplate.fromTemplate(`
+    Analiza el historial de conversación.
+    Última IA: {last_ai}
+    Último Usuario: {last_user}
+
+    Determina la INTENCIÓN del usuario:
+    1. "NEW_ANALYSIS": El usuario plantea un problema nuevo o pide recomendaciones.
+    2. "EXECUTE_ROUTE": El usuario ha seleccionado una ruta (A, B, C, Alpha, Beta...) o pide proceder con una acción concreta propuesta anteriormente.
+
+    Responde SOLO con un JSON: {{"intent": "NEW_ANALYSIS" | "EXECUTE_ROUTE", "selected_route_context": "Si es EXECUTE, resume qué eligió el usuario en 1 frase"}}
+    `);
+
+    let userIntent = "NEW_ANALYSIS";
+    let routeContext = "";
+
+    try {
+        const lastAiMsg = state.messages.slice().reverse().find(m => m._getType() === "ai");
+        const routerChain = routerPrompt.pipe(getGpt5()).pipe(new JsonOutputParser()); // Usamos GPT-4o mini/std para routing rápido
+        const routeResult: any = await routerChain.invoke({
+            last_ai: lastAiMsg?.content || "Inicio de conversación",
+            last_user: lastMessage
+        });
+        userIntent = routeResult.intent;
+        routeContext = routeResult.selected_route_context || "";
+        console.log(`[ROUTER] Intención detectada: ${userIntent} | Contexto: ${routeContext}`);
+    } catch (e) {
+        console.warn("[ROUTER] Fallo en clasificación, procediendo con análisis por defecto.", e);
+    }
+
+    // --- RAMIFICACIÓN DE FLUJO ---
+    if (userIntent === "EXECUTE_ROUTE") {
+        console.log("--- BYPASS ANALIZADOR -> EJECUTOR (Usuario confirmó ruta) ---");
+        return {
+            next_node: "ejecutor",
+            context_memory: {
+                ...state.context_memory,
+                analysis: {
+                    // Inyectamos un análisis sintético basado en la elección
+                    tasks: ["Ejecución de Estrategia Seleccionada"],
+                    required_skills: ["marketing", "copy", "content", "launch"], // Skills genéricos de ejecución, el ejecutor refinará
+                    complexity: "alta",
+                    user_selection: routeContext
+                },
+                proposal: { rationale: `El usuario seleccionó: ${routeContext}`, estimated_effort: "Variable" }
+            },
+            messages: [new AIMessage(`✅ Entendido. Procediendo con el despliegue de la estrategia: **${routeContext}**. Activando red de ejecución...`)]
+        };
+    }
+
+    // --- FLUJO DE ANÁLISIS (Solo si es NEW_ANALYSIS) ---
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
     IDENTIDAD: Eres el Algoritmo de Razonamiento Crítico de UAI Platform.
@@ -105,9 +157,10 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     SOLICITUD DEL USUARIO (TERRENO DE OPERACIONES): {input}
 
     REGLAS DE ENGRANAJE (ESTRICTAS):
-    1. PROHIBIDO: Usar palabras como "efectivo", "coherente", "optimizar", "mejorar" o "solución robusta" sin adjuntar un valor numérico o técnico.
-    2. DESCUBRIMIENTO CRÍTICO: Debes identificar un riesgo o brecha técnica que el usuario NO ha mencionado en su solicitud.
-    3. DIMENSIONES DIVERGENTES:
+    1. TONO: Usa un tono profesional, B2B, directo y técnico. Evita el "corporatés" vacío.
+    2. FORMATO: Usa Markdown limpio (encabezados, listas, negritas). EVITA EMOJIS INNECESARIOS y decoración infantil.
+    3. DESCUBRIMIENTO CRÍTICO: Debes identificar un riesgo o brecha técnica que el usuario NO ha mencionado.
+    4. DIMENSIONES DIVERGENTES:
        - DIMENSIÓN ALPHA (Impacto Inmediato): Uso de OpenClaw + Skills de Borde (Search/Marketing) para victoria rápida.
        - DIMENSIÓN BETA (Deep Intel): Uso de Pinecone para crear un "Gemelo Digital" del problema y simular escenarios.
        - DIMENSIÓN GAMMA (Soberanía): Creación de una arquitectura de agentes LangGraph que no dependan de APIs externas para el núcleo lógico.
@@ -152,10 +205,10 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             agent_prompt: config.system_prompt
         });
 
-        // Formatear las rutas para el usuario
-        const ramificationText = result.ramification.map((r: any) => `📍 **${r.route}**: ${r.strategy}`).join("\n");
+        // Formatear las rutas para el usuario de forma limpia
+        const ramificationText = result.ramification.map((r: any) => `- **${r.route}**: ${r.strategy}`).join("\n");
 
-        const finalOutput = `### 🚨 DESCUBRIMIENTO CRÍTICO\n${result.critical_discovery}\n\n### 🧠 DIAGNÓSTICO ESTRATÉGICO\n${result.analysis}\n\n### ⚡ RAMIFICACIÓN DIVERGENTE\n${ramificationText}\n\n---\n\n**JUSTIFICACIÓN TÉCNICA UAI:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la ejecución?`;
+        const finalOutput = `### Descubrimiento Crítico\n${result.critical_discovery}\n\n### Diagnóstico Estratégico\n${result.analysis}\n\n### Ramificación Divergente\n${ramificationText}\n\n---\n\n**Justificación Técnica:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la implementación de alguna ruta?`;
 
         return {
             next_node: "waiting_approval",
@@ -277,10 +330,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             TAREA ASIGNADA: {goal}
             
             INSTRUCCIÓN CRÍTICA DE PERSONALIDAD: 
-            - PROHIBIDO ser genérico. 
-            - Debes basar tus respuestas en DATOS REALES obtenidos (si usas herramientas).
-            - Si no usas herramientas, debes razonar sobre el stack técnico real (Next.js, LangGraph, Pinecone, etc.).
-            - Tu respuesta debe ser una "pieza de ingeniería" o "estrategia de alto impacto", no un resumen escolar.
+            - ADAPTABILIDAD: Si te piden un script, escribe el script. Si te piden código, escribe código. NO DIAGNOSTIQUES DE NUEVO.
+            - FORMATO: Usa Markdown profesional. Evita emojis excesivos o decoraciones infantiles.
+            - TONO: Eres un experto Senior B2B. Sé directo, técnico y persuasivo.
+            - CONTEXTO SELECCIONADO: {goal}
             `);
 
             // Ejecutamos la tarea
