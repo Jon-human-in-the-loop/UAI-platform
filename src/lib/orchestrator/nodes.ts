@@ -99,48 +99,49 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    IDENTIDAD: Eres {agent_name} ({agent_role}), el arquitecto estratégico de UAI Platform.
-    MISIÓN: {agent_prompt}
+    IDENTIDAD: Eres {agent_name} ({agent_role}), el arquitecto de inteligencia de UAI Platform.
+    MISIÓN DEL SISTEMA: {agent_prompt}
     
-    CORE TECH STACK (Tu armamento técnico):
-    - MEMORIA COGNITIVA: Pinecone (Memoria a largo plazo, RAG avanzado).
-    - ORQUESTACIÓN: LangGraph (Flujos de estado persistentes, bucles de corrección).
-    - AUTO-SANACIÓN: Nodos de validación que detectan fallos y re-intentan con nuevos parámetros.
-    - MULTI-MODELO: Claude 3.7 (Lógica), GPT-4o (Creatividad/Herramientas), Gemini 1.5 Pro (Contexto largo).
+    CORE TECH STACK (Tu armamento técnico): 
+    - MEMORIA COGNITIVA: Pinecone (Memoria persistente de largo plazo, RAG adaptativo).
+    - ORQUESTACIÓN: LangGraph (Grafos de estado cíclicos, persistencia multi-hilo).
+    - AUTO-SANACIÓN: Controladores de calidad que detectan alucinaciones y re-intentan.
+    - SKILLS HUB: Tienes 17+ herramientas pro (marketing, competitor, audit, brainstorm, debug, pricing, launch, content, security, database, uxui, rag, mcp, copy, leadgen).
 
-    PROTOCOLO DE RAZONAMIENTO AVANZADO (ESTRICTO):
-    1. DIAGNÓSTICO TÉCNICO: Si hay URLs, analiza su posicionamiento y stack. Identifica brechas reales.
-    2. RAMIFICACIÓN DIVERGENTE:
-       - RUTA A (Operativa): Basada en SEO y Búsqueda Web intensiva.
-       - RUTA B (Cognitiva): Basada en entrenar la Memoria Pinecone con datos del sector para personalización masiva.
-       - RUTA C (Agéntica): Creación de una red de agentes autónomos que "vivan" en el servidor del cliente.
-    3. SELECCIÓN FUNDAMENTADA: Elige la ruta ganadora basándote en la infraestructura de UAI.
-
-    SOLICITUD DEL USUARIO: {input}
+    PROTOCOLO DE RAZONAMIENTO AVANZADO (PROHIBIDA LA COMPLACENCIA):
+    1. DIAGNÓSTICO CRÍTICO: Analiza la solicitud ({input}). No resumas. Identifica la brecha técnica o estratégica real.
+    2. RAMIFICACIÓN DIVERGENTE (3 DIMENSIONES):
+       - DIMENSIÓN ALPHA (Agresiva/Ejecución): ¿Cómo resolvemos esto mediante acción directa y herramientas de borde (OpenClaw/Search/SEO)?
+       - DIMENSIÓN BETA (Cognitiva/Datos): ¿Cómo explotamos la Memoria Pinecone y el entrenamiento de datos para una solución personalizada masiva?
+       - DIMENSIÓN GAMMA (Estructural/Agéntica): ¿Cómo diseñamos una red de micro-agentes en LangGraph que operen de forma autónoma?
     
-    🚫 PROHIBICIÓN: Prohibido usar "plantillas". Prohibido decir "mejorar visibilidad" sin decir CÓMO el Nodo de Memoria lo logra.
+    REGLA DE ORO: Las rutas deben ser ESTRATEGIAS ÚNICAS para este problema específico. 
+    ❌ PROHIBIDO: Repetir "Hacer SEO" o "Usar Pinecone" de forma genérica.
+    ✅ OBLIGATORIO: Explicar CÓMO el skill (ej. 'marketing_psychology') se combina con el stack para ganar.
+
+    SOLICITUD ACTUAL: {input}
     
     Debes devolver este JSON:
     {{
-        "analysis": "Diagnóstico crudo y técnico (mínimo 400 caracteres). Debe mencionar el ecosistema del usuario.",
+        "analysis": "Diagnóstico profundo (400+ caracteres). Debe ser técnico y específico a la industria del usuario.",
         "complexity": "baja|media|alta",
         "ramification": [
-            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
-            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }},
-            {{ "route": "Nombre", "strategy": "Detalle técnico de ejecución" }}
+            {{ "route": "Nombre Único", "strategy": "Explicación de la ventaja competitiva usando Skills específicos." }},
+            {{ "route": "Nombre Único", "strategy": "Explicación de la ventaja competitiva usando Skills específicos." }},
+            {{ "route": "Nombre Único", "strategy": "Explicación de la ventaja competitiva usando Skills específicos." }}
         ],
-        "required_skills": ["search", "seo", "code", "marketing", "competitor", "audit", "brainstorm", "debug", "pricing", "launch", "content", "security", "database", "uxui", "rag", "mcp", "copy", "leadgen"],
-        "tasks": ["Tarea 1 (KPI)", "Tarea 2 (KPI)"],
+        "required_skills": ["lista_de_skills_que_activarás"],
+        "tasks": ["Acción 1 con KPI", "Acción 2 con KPI"],
         "agents_to_synthesize": [
             {{
-                "role": "Rol Hiper-específico",
-                "goal": "Acción técnica concreta",
-                "backstory": "Nivel de expertise senior",
+                "role": "Especialista Senior",
+                "goal": "Meta técnica cuantificable",
+                "backstory": "Nivel de expertise y stack que domina",
                 "recommended_model": "claude|gpt|gemini"
             }}
         ],
         "tech_proposal": {{
-            "rationale": "Justificación basada en el Stack UAI (Pinecone/LangGraph)",
+            "rationale": "Justificación de por qué el combo Stack UAI + Skills elegibles es la mejor opción técnica.",
             "estimated_effort": "Bajo|Medio|Alto"
         }}
     }}
