@@ -171,45 +171,80 @@ export default function Dashboard() {
             {/* Main Workspace Grid */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden min-h-0">
                 {/* Left: Visualization or Result */}
-                <div className="lg:col-span-2 glass-card relative overflow-hidden flex flex-col">
-                    <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/50 to-transparent z-10 pointer-events-none" />
+                <div className="lg:col-span-2 glass-card relative overflow-hidden flex flex-col h-full border border-white/10 shadow-2xl bg-[#0A0A0A]">
+                    {/* Header Toolbar */}
+                    <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5 z-20">
+                        <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-white/60">
+                            {result ? <Maximize2 className="w-4 h-4 text-green-400" /> : <Terminal className="w-4 h-4 text-purple-400" />}
+                            <span>{result ? '✨ Misión Cumplida - Resultado Final' : '📡 Centro de Comando - Visualización en Tiempo Real'}</span>
+                        </div>
 
-                    {/* Toolbar */}
-                    <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
-                        <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-white/40">
-                            {result ? <Maximize2 className="w-3 h-3 text-green-400" /> : <Terminal className="w-3 h-3" />}
-                            <span>{result ? 'Resultado de Misión' : 'Visualización de Proceso'}</span>
-                        </div>
-                        <div className="flex gap-2">
-                            {result && (
-                                <button
-                                    onClick={() => setResult(null)}
-                                    className="flex items-center gap-1 text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white transition-colors"
-                                >
-                                    <RotateCcw className="w-3 h-3" /> Volver al Grafo
-                                </button>
-                            )}
-                        </div>
+                        {result && (
+                            <button
+                                onClick={() => setResult(null)}
+                                className="flex items-center gap-2 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-white transition-all border border-white/10 hover:border-white/30"
+                            >
+                                <RotateCcw className="w-3 h-3" /> Nueva Misión / Ver Grafo
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex-1 relative bg-grid-pattern overflow-hidden">
-                        <div className="absolute inset-0 bg-black/80" />
+                        {/* Background Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-[#050505]/95 to-black/90 z-0" />
 
                         {result ? (
-                            // RESULT VIEW
-                            <div className="absolute inset-0 overflow-auto custom-scrollbar p-8">
-                                <div className="max-w-3xl mx-auto bg-[#0A0A0A] border border-white/10 p-6 rounded-xl shadow-2xl">
-                                    <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap font-mono text-white/80 leading-relaxed">
-                                        {result}
+                            // --- RESULT VIEW (ENHANCED) ---
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute inset-0 overflow-auto custom-scrollbar z-10 p-6 md:p-10"
+                            >
+                                <div className="max-w-4xl mx-auto">
+                                    <div className="bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
+                                        {/* Result Header */}
+                                        <div className="bg-gradient-to-r from-green-500/10 to-transparent p-4 border-b border-white/5 flex items-center gap-3">
+                                            <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                                            <span className="text-sm font-mono text-green-400/80">OUTPUT GENERADO POR UAI</span>
+                                        </div>
+
+                                        {/* Result Body */}
+                                        <div className="p-8 prose prose-invert prose-lg max-w-none 
+                                            prose-headings:font-bold prose-headings:tracking-tight prose-h1:text-3xl prose-h2:text-2xl 
+                                            prose-p:text-gray-300 prose-p:leading-relaxed 
+                                            prose-strong:text-white prose-strong:font-bold
+                                            prose-ul:list-disc prose-ul:pl-4
+                                            prose-code:bg-white/10 prose-code:rounded prose-code:px-1 prose-code:py-0.5 prose-code:text-yellow-300
+                                            font-sans">
+                                            {result}
+                                        </div>
+
+                                        {/* Result Footer Actions */}
+                                        <div className="p-4 bg-white/5 border-t border-white/5 flex justify-end gap-3">
+                                            <button
+                                                onClick={() => { navigator.clipboard.writeText(result); alert("Copiado!"); }}
+                                                className="text-xs text-white/50 hover:text-white flex items-center gap-2 hover:underline"
+                                            >
+                                                [COPIAR TEXTO]
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         ) : (
-                            // FLOW EDITOR VIEW
-                            <div className="absolute inset-0 overflow-auto custom-scrollbar p-8 flex items-center justify-center">
-                                <div className="scale-90 origin-center w-full h-full">
+                            // --- FLOW EDITOR VIEW ---
+                            <div className="absolute inset-0 overflow-hidden flex items-center justify-center z-10">
+                                <div className="w-full h-full scale-[0.85] opacity-90 hover:opacity-100 transition-opacity duration-500">
                                     <FlowEditor activeNodeId={activeNodeId} />
                                 </div>
+
+                                {/* Status Overlay when running */}
+                                {isRunning && (
+                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md border border-white/10 px-6 py-2 rounded-full flex items-center gap-3 shadow-xl">
+                                        <Activity className="w-4 h-4 text-green-500 animate-pulse" />
+                                        <span className="text-xs font-mono text-green-400">PROCESANDO TAREA...</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
