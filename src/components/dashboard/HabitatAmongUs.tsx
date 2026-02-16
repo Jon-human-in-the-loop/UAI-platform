@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from './DashboardContext';
-import { Rocket, Zap, Shield, MessageSquare, Coffee, Settings } from 'lucide-react';
+import { Rocket, Zap, Shield, MessageSquare, Coffee, Settings, Share2, Sparkles } from 'lucide-react';
 
 interface AgentPosition {
     id: string;
@@ -13,6 +13,13 @@ interface AgentPosition {
     color: string;
     avatar: string;
     name: string;
+}
+
+interface Synergy {
+    id: string;
+    agents: [string, string];
+    description: string;
+    status: 'pending' | 'active' | 'rejected';
 }
 
 const ROOMS = [
@@ -25,8 +32,10 @@ const ROOMS = [
 ];
 
 export default function HabitatAmongUs() {
-    const { agents, profile } = useDashboard();
+    const { agents, profile, awardXp } = useDashboard();
     const [agentPositions, setAgentPositions] = useState<AgentPosition[]>([]);
+    const [synergies, setSynergies] = useState<Synergy[]>([]);
+    const [activeSynergyId, setActiveSynergyId] = useState<string | null>(null);
     const isAdmin = profile?.email === 'jon@uai.com' || (profile as any)?.role === 'admin';
 
     // Inicializar posiciones de agentes
@@ -45,30 +54,66 @@ export default function HabitatAmongUs() {
         }
     }, [agents]);
 
-    // Simular movimiento de agentes
+    // Simular movimiento y detección de sinergias
     useEffect(() => {
         const interval = setInterval(() => {
-            setAgentPositions(prev => prev.map(agent => {
-                // 20% de probabilidad de moverse a una nueva sala
-                if (Math.random() > 0.8) {
-                    const randomRoom = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+            setAgentPositions(prev => {
+                const newPositions = prev.map(agent => {
+                    // 20% de probabilidad de moverse a una nueva sala
+                    if (Math.random() > 0.8) {
+                        const randomRoom = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+                        return {
+                            ...agent,
+                            room: randomRoom.id,
+                            x: randomRoom.x + (Math.random() * 15 - 7.5),
+                            y: randomRoom.y + (Math.random() * 15 - 7.5),
+                        };
+                    }
+                    // Pequeño movimiento dentro de la sala
                     return {
                         ...agent,
-                        room: randomRoom.id,
-                        x: randomRoom.x + (Math.random() * 15 - 7.5),
-                        y: randomRoom.y + (Math.random() * 15 - 7.5),
+                        x: agent.x + (Math.random() * 2 - 1),
+                        y: agent.y + (Math.random() * 2 - 1),
                     };
-                }
-                // Pequeño movimiento dentro de la sala
-                return {
-                    ...agent,
-                    x: agent.x + (Math.random() * 2 - 1),
-                    y: agent.y + (Math.random() * 2 - 1),
-                };
-            }));
-        }, 3000);
+                });
+
+                // Detectar sinergias por proximidad en la misma sala
+                newPositions.forEach((a1, i) => {
+                    newPositions.forEach((a2, j) => {
+                        if (i < j && a1.room === a2.room && a1.room !== 'cafeteria') {
+                            // 10% de probabilidad de generar una sinergia si están en la misma sala
+                            if (Math.random() > 0.9) {
+                                const synergyId = `${a1.id}-${a2.id}`;
+                                setSynergies(prevSyn => {
+                                    if (prevSyn.find(s => s.id === synergyId)) return prevSyn;
+                                    return [...prevSyn, {
+                                        id: synergyId,
+                                        agents: [a1.id, a2.id],
+                                        description: `Optimización de flujo en ${ROOMS.find(r => r.id === a1.room)?.name}`,
+                                        status: 'pending'
+                                    }];
+                                });
+                            }
+                        }
+                    });
+                });
+
+                return newPositions;
+            });
+        }, 4000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleAcceptSynergy = (synergy: Synergy) => {
+        setSynergies(prev => prev.map(s => s.id === synergy.id ? { ...s, status: 'active' } : s));
+        setActiveSynergyId(synergy.id);
+        awardXp(50); // Recompensa por aceptar sinergia
+        setTimeout(() => setActiveSynergyId(null), 5000); // La animación dura 5s
+    };
+
+    const handleRejectSynergy = (id: string) => {
+        setSynergies(prev => prev.filter(s => s.id !== id));
+    };
 
     return (
         <div className="relative w-full aspect-video bg-[#050505] rounded-3xl border border-white/10 overflow-hidden shadow-2xl group">
@@ -107,6 +152,36 @@ export default function HabitatAmongUs() {
                 ))}
             </div>
 
+            {/* Líneas de Sinergia Activa */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+                {synergies.filter(s => s.status === 'active' && s.id === activeSynergyId).map(s => {
+                    const a1 = agentPositions.find(a => a.id === s.agents[0]);
+                    const a2 = agentPositions.find(a => a.id === s.agents[1]);
+                    if (!a1 || !a2) return null;
+                    return (
+                        <motion.line
+                            key={s.id}
+                            x1={`${a1.x}%`} y1={`${a1.y}%`}
+                            x2={`${a2.x}%`} y2={`${a2.y}%`}
+                            stroke="url(#synergyGradient)"
+                            strokeWidth="4"
+                            strokeDasharray="10,5"
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <animate attributeName="stroke-dashoffset" from="0" to="30" dur="1s" repeatCount="indefinite" />
+                        </motion.line>
+                    );
+                })}
+                <defs>
+                    <linearGradient id="synergyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#ef4444" />
+                        <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                </defs>
+            </svg>
+
             {/* Agentes (Tripulantes) */}
             <AnimatePresence>
                 {agentPositions.map(agent => (
@@ -126,35 +201,63 @@ export default function HabitatAmongUs() {
                             {agent.name}
                         </div>
 
-                        {/* Cuerpo del Tripulante (Estilo Among Us simplificado) */}
+                        {/* Cuerpo del Tripulante */}
                         <div className="relative w-10 h-12">
-                            {/* Mochila */}
                             <div 
                                 className="absolute left-0 top-3 w-3 h-7 rounded-l-lg"
                                 style={{ backgroundColor: agent.color, filter: 'brightness(0.7)' }}
                             />
-                            {/* Cuerpo Principal */}
                             <div 
                                 className="absolute right-0 w-8 h-12 rounded-t-2xl rounded-b-lg border-2 border-black/40"
                                 style={{ backgroundColor: agent.color }}
                             >
-                                {/* Visor */}
                                 <div className="absolute top-2 left-1 w-6 h-4 bg-blue-200/80 rounded-full border border-black/20 overflow-hidden">
                                     <div className="absolute top-0 left-1 w-3 h-1 bg-white/60 rounded-full" />
                                 </div>
                             </div>
-                            
-                            {/* Sombrero de Admin (Solo para el primer agente si es admin) */}
                             {isAdmin && agentPositions[0].id === agent.id && (
                                 <div className="absolute -top-4 left-1 text-xl animate-bounce">👑</div>
                             )}
                         </div>
-
-                        {/* Sombra */}
                         <div className="w-6 h-1 bg-black/40 rounded-full blur-sm mt-1" />
                     </motion.div>
                 ))}
             </AnimatePresence>
+
+            {/* Notificaciones de Sinergia Pendiente */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-50 max-w-[200px]">
+                <AnimatePresence>
+                    {synergies.filter(s => s.status === 'pending').map(synergy => (
+                        <motion.div
+                            key={synergy.id}
+                            initial={{ x: 50, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 50, opacity: 0 }}
+                            className="bg-black/90 backdrop-blur-xl border border-accent/30 p-3 rounded-xl shadow-2xl space-y-2"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-3 h-3 text-accent animate-pulse" />
+                                <span className="text-[9px] font-black uppercase text-white">Sinergia Detectada</span>
+                            </div>
+                            <p className="text-[8px] text-white/60 leading-tight">{synergy.description}</p>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => handleAcceptSynergy(synergy)}
+                                    className="flex-1 py-1 bg-accent text-white text-[8px] font-bold uppercase rounded hover:bg-accent/80 transition-colors"
+                                >
+                                    Aceptar
+                                </button>
+                                <button 
+                                    onClick={() => handleRejectSynergy(synergy.id)}
+                                    className="px-2 py-1 bg-white/5 text-white/40 text-[8px] font-bold uppercase rounded hover:bg-white/10"
+                                >
+                                    X
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
 
             {/* Overlay de Interfaz */}
             <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
@@ -162,9 +265,19 @@ export default function HabitatAmongUs() {
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     <span className="text-[10px] font-black uppercase tracking-tighter text-red-500">UAI Habitat: Online</span>
                 </div>
+                {activeSynergyId && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-accent/20 border border-accent/50 px-3 py-1 rounded-full flex items-center gap-2"
+                    >
+                        <Share2 className="w-3 h-3 text-accent animate-spin" />
+                        <span className="text-[9px] font-black uppercase text-accent">Sinergia en Proceso...</span>
+                    </motion.div>
+                )}
             </div>
 
-            {/* Botón de Emergencia (Solo visual) */}
+            {/* Botón de Emergencia */}
             <div className="absolute bottom-4 right-4">
                 <button className="w-12 h-12 bg-red-600 rounded-full border-4 border-red-800 shadow-lg flex items-center justify-center hover:scale-110 transition-transform active:scale-95 group/btn">
                     <div className="w-8 h-8 bg-red-500 rounded-full border-2 border-red-700 flex items-center justify-center">
