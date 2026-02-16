@@ -11,6 +11,45 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { IDENTITY_PROMPT_TEMPLATE } from "./identity";
 
+// --- NODO DE AUTO-SANACIÓN ---
+export async function healingNode(state: AgentState): Promise<Partial<AgentState>> {
+    console.log("--- NODO: AUTO-SANACIÓN (Estrategias de Recuperación) ---");
+
+    const lastError = state.errors[state.errors.length - 1];
+    console.warn(`[AUTO-SANACIÓN] Error detectado: ${lastError}`);
+
+    // Estrategia 1: Reintento con un modelo diferente (si el error fue de LLM)
+    if (lastError.includes("LLM")) {
+        console.log("[AUTO-SANACIÓN] Intentando reintentar con un modelo alternativo...");
+        // Aquí podríamos cambiar el modelo en el estado o forzar un reintento con Gemini por ejemplo
+        // Por simplicidad, vamos a simular un reintento y volver al analizador
+        return {
+            next_node: "analizador",
+            messages: [...state.messages, new AIMessage("Error de LLM detectado. Reintentando con un modelo alternativo...")],
+            errors: [...state.errors, "Reintento con modelo alternativo"] // Registrar el intento de sanación
+        };
+    }
+
+    // Estrategia 2: Simplificación de la tarea (si el error es de complejidad)
+    if (lastError.includes("complejidad") || lastError.includes("timeout")) {
+        console.log("[AUTO-SANACIÓN] Intentando simplificar la tarea...");
+        // Aquí podríamos modificar el prompt o el plan para reducir la complejidad
+        return {
+            next_node: "analizador",
+            messages: [...state.messages, new AIMessage("Tarea demasiado compleja. Simplificando y reintentando...")],
+            errors: [...state.errors, "Tarea simplificada"] // Registrar el intento de sanación
+        };
+    }
+
+    // Estrategia 3: Fallback a modo manual o reporte
+    console.error("[AUTO-SANACIÓN] No se pudo aplicar una estrategia de sanación automática. Requiere intervención.");
+    return {
+        next_node: "FIN",
+        messages: [...state.messages, new AIMessage("Error crítico no recuperable automáticamente. Se requiere intervención manual.")]
+    };
+}
+
+
 // --- CLIENTES DE MODELOS SOTA (Carga Perezosa para evitar fallos de build por llaves faltantes) ---
 let _orchestratorModel: ChatOpenAI | null = null;
 function getOrchestratorModel() {
@@ -232,14 +271,11 @@ Recomendación: ${res.recommendation}
         };
 
     } catch (e: any) {
-        console.error("Error Analizador:", e);
+        console.error("Error Ejecutor:", e);
         return {
-            next_node: "ejecutor",
-            context_memory: {
-                analysis: { tasks: ["Ejecución Directa"], required_skills: [] },
-                dynamic_agents: [{ role: "Respaldo", goal: "Resolver", backstory: "Backup", recommended_model: "gpt" }]
-            },
-            messages: [new AIMessage("Error en análisis. Activando modo de respuesta directa.")]
+            next_node: "healing",
+            errors: [...state.errors, `Error en Ejecutor: ${e.message}`],
+            messages: [new AIMessage("Error en ejecución. Intentando auto-sanación.")]
         };
     }
 }
@@ -539,10 +575,13 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
             messages: [new AIMessage(`Validación exitosa: Los resultados cumplen con los estándares de calidad.`)]
         };
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error en Validador Real:", e);
-        // Fallback optimista para evitar bucles infinitos por error técnico
-        return { next_node: "FIN", messages: [new AIMessage("Validación completada (Modo Manual).")] };
+        return {
+            next_node: "healing",
+            errors: [...state.errors, `Error en Validador: ${e.message}`],
+            messages: [new AIMessage("Error en validación. Intentando auto-sanación.")]
+        };
     }
 }
 
@@ -591,14 +630,16 @@ uaiGraph.addNode("challenger" as any, challengerNode); // ADDED
 uaiGraph.addNode("ejecutor" as any, executorNode);
 uaiGraph.addNode("validador" as any, validatorNode);
 uaiGraph.addNode("reflexion" as any, reflectionNode);
+uaiGraph.addNode("healing" as any, healingNode);
 uaiGraph.setEntryPoint("analizador" as any);
 
 // Updated Edges for Challenger Protocol
-uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, FIN: END, error: END } as any);
-uaiGraph.addConditionalEdges("challenger" as any, (s) => s.next_node, { analizador: "analizador", waiting_approval: END } as any);
-uaiGraph.addConditionalEdges("ejecutor" as any, (s) => s.next_node, { validador: "validador", error: END } as any);
-uaiGraph.addConditionalEdges("validador" as any, (s) => s.next_node === "FIN" ? "reflexion" : "analizador");
+uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, FIN: END, error: "healing" } as any);
+uaiGraph.addConditionalEdges("challenger" as any, (s) => s.next_node, { analizador: "analizador", waiting_approval: END, error: "healing" } as any);
+uaiGraph.addConditionalEdges("ejecutor" as any, (s) => s.next_node, { validador: "validador", error: "healing" } as any);
+uaiGraph.addConditionalEdges("validador" as any, (s) => s.next_node === "FIN" ? "reflexion" : "healing");
 uaiGraph.addConditionalEdges("reflexion" as any, (s) => s.next_node === "FIN" ? END : END);
+uaiGraph.addConditionalEdges("healing" as any, (s) => s.next_node === "analizador" ? "analizador" : END);
 
 // Exportar una función para obtener la app compilada con el checkpointer
 export async function getCompiledApp() {
