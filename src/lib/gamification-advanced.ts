@@ -30,15 +30,34 @@ export interface Perk {
 }
 
 /**
+ * Aplica los bonos de los personajes activos a una ejecución.
+ */
+export function applyCharacterBonuses(baseValue: number, bonusType: Character['bonusType'], activeCharacters: Character[]): number {
+    let totalBonus = 0;
+    
+    activeCharacters.forEach(char => {
+        if (char.bonusType === bonusType) {
+            totalBonus += char.bonusValue;
+        }
+    });
+
+    // Los bonos son porcentuales
+    return Math.round(baseValue * (1 + totalBonus / 100));
+}
+
+/**
  * Calcula el "Proof of Work" agéntico basado en la calidad de la ejecución.
  */
-export function calculateProofOfWork(executionResult: any): number {
+export function calculateProofOfWork(executionResult: any, activeCharacters: Character[] = []): number {
     let powScore = 0;
     
-    // Factores de calidad
+    // Factores de calidad base
     if (executionResult.success) powScore += 50;
     if (executionResult.tokensUsed < 5000) powScore += 20; // Eficiencia
-    if (executionResult.autoHealed) powScore -= 10; // Penalización por error inicial, pero compensado por éxito
+    if (executionResult.autoHealed) powScore -= 10; // Penalización por error inicial
+    
+    // Aplicar bonos de personajes (ej. El Centinela aumenta la precisión/PoW)
+    powScore = applyCharacterBonuses(powScore, 'ACCURACY', activeCharacters);
     
     return Math.max(0, powScore);
 }
@@ -57,4 +76,11 @@ export function checkCharacterUnlocks(level: number): Character[] {
 export function calculateTrustLevel(totalExecutions: number, perfectExecutions: number): number {
     if (totalExecutions === 0) return 0;
     return Math.floor((perfectExecutions / totalExecutions) * 100);
+}
+
+/**
+ * Calcula la XP final ganada aplicando bonos de personajes.
+ */
+export function calculateFinalXP(baseXP: number, activeCharacters: Character[]): number {
+    return applyCharacterBonuses(baseXP, 'XP', activeCharacters);
 }
