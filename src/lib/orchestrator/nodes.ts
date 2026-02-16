@@ -117,6 +117,23 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             const routeResult: any = await routerChain.invoke({ input: lastMessage });
             category = routeResult.category;
 
+            // HIGIENE COGNITIVA: Si el tema cambia drásticamente, reseteamos el contexto anterior
+            const previousContext = state.context_memory.analysis?.audit || "";
+            const changeDetectorPrompt = PromptTemplate.fromTemplate(`
+            ¿El nuevo mensaje trata sobre el mismo tema que el contexto anterior?
+            Contexto previo: {prev}
+            Nuevo mensaje: {next}
+            Responde SOLO "SAME" o "CHANGE".
+            `);
+            const changeChain = changeDetectorPrompt.pipe(getGpt5());
+            const changeDecision = await changeChain.invoke({ prev: previousContext, next: lastMessage });
+
+            if (changeDecision.content.toString().includes("CHANGE")) {
+                console.log("[HIGIENE] Cambio de tema detectado. Limpiando memoria de corto plazo.");
+                state.context_memory.analysis = null;
+                state.context_memory.dynamic_agents = [];
+            }
+
             // Mejora: Si es EXECUTE pero el mensaje es largo, probablemente hay instrucciones nuevas -> PLANNING
             if (category === "EXECUTE" && lastMessage.length > 100) {
                 category = "PLANNING";
