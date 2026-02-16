@@ -32,11 +32,13 @@ export const HEALING_STRATEGIES: HealingStrategy[] = [
  */
 export function diagnoseError(errorMessage: string): HealingStrategy {
     for (const strategy of HEALING_STRATEGIES) {
-        const pattern = typeof strategy.errorPattern === 'string' 
-            ? new RegExp(strategy.errorPattern, 'i') 
-            : strategy.errorPattern;
+        // Solución robusta para evitar errores de tipos en el build de Railway
+        const pattern = strategy.errorPattern;
+        const isMatch = typeof pattern === 'string' 
+            ? errorMessage.toLowerCase().includes(pattern.toLowerCase())
+            : pattern.test(errorMessage);
             
-        if (pattern.test(errorMessage)) {
+        if (isMatch) {
             return strategy;
         }
     }
