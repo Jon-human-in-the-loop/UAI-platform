@@ -103,7 +103,7 @@ async function triggerOrchestrationAsync(
                 };
 
                 let finalResponse = '';
-                const stream = await app.stream(payload, {
+                const stream = await app.stream(payload as any, {
                     ...config,
                     streamMode: 'values'
                 });

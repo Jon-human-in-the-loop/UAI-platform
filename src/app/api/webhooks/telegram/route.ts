@@ -82,7 +82,7 @@ async function triggerOrchestrationAsync(userId: string, input: string, chatId: 
                 };
 
                 let finalResponse = '';
-                const stream = await app.stream(payload, {
+                const stream = await app.stream(payload as any, {
                     ...config,
                     streamMode: 'values'
                 });

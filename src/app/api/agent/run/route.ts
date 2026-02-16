@@ -66,6 +66,8 @@ export async function POST(req: NextRequest) {
                 errors: [],
                 skills_active: [],
                 context_memory: {},
+                budget_status: { current: 0, limit: 100, plan: "free" },
+                is_blocked: false,
                 agent_config: agent ? {
                     ...agent,
                     system_prompt: (agent.system_prompt || "") + memoryContext
@@ -83,7 +85,7 @@ export async function POST(req: NextRequest) {
                 await sendEvent('session_info', { threadId: currentThreadId });
 
                 // StreamMode "values" nos da el estado completo de AgentState en cada paso
-                const graphStream = await app.stream(payload, {
+                const graphStream = await app.stream(payload as any, {
                     ...config,
                     streamMode: "values"
                 });

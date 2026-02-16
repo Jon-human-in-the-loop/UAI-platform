@@ -1,36 +1,49 @@
 import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitters";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-const pinecone = new Pinecone({
-    apiKey: process.env.PINECONE_API_KEY,
-});
+// Lazy initialization to avoid build errors when API keys are missing
+let pineconeInstance: Pinecone | null = null;
+function getPinecone() {
+    if (!pineconeInstance) {
+        pineconeInstance = new Pinecone({
+            apiKey: process.env.PINECONE_API_KEY || "dummy-key-for-build",
+        });
+    }
+    return pineconeInstance;
+}
 
-const embeddings = new OpenAIEmbeddings({
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    modelName: "text-embedding-3-small", // Modelo eficiente para embeddings
-});
+let embeddingsInstance: OpenAIEmbeddings | null = null;
+function getEmbeddings() {
+    if (!embeddingsInstance) {
+        embeddingsInstance = new OpenAIEmbeddings({
+            openAIApiKey: process.env.OPENAI_API_KEY || "dummy-key-for-build",
+            modelName: "text-embedding-3-small",
+        });
+    }
+    return embeddingsInstance;
+}
 
 /**
  * Optimiza la recuperación semántica de reflexiones en Pinecone.
- * Utiliza búsqueda por similitud con filtrado por usuario y contexto.
- * @param query La consulta de búsqueda.
- * @param userId El ID del usuario para filtrar resultados.
- * @param topK El número de resultados a retornar.
- * @returns Un array de reflexiones relevantes.
  */
 export async function semanticRetrievalOptimized(
     query: string,
     userId: string,
     topK: number = 5
 ): Promise<Array<{ id: string; text: string; score: number; metadata: any }>> {
+    if (!process.env.PINECONE_API_KEY || !process.env.OPENAI_API_KEY) {
+        console.warn("[Recuperación Semántica] API Keys faltantes, retornando resultados vacíos.");
+        return [];
+    }
+
     try {
+        const pinecone = getPinecone();
+        const embeddings = getEmbeddings();
         const index = pinecone.Index("uai-memory");
 
-        // Generar embedding de la consulta
         const queryEmbedding = await embeddings.embedQuery(query);
 
-        // Buscar en Pinecone con filtro por usuario
         const results = await index.query({
             vector: queryEmbedding,
             topK,
@@ -40,7 +53,6 @@ export async function semanticRetrievalOptimized(
             includeMetadata: true,
         });
 
-        // Procesar resultados
         const retrievedItems = results.matches.map((match: any) => ({
             id: match.id,
             text: match.metadata?.text || "",
@@ -53,16 +65,12 @@ export async function semanticRetrievalOptimized(
         return retrievedItems;
     } catch (error) {
         console.error("Error en recuperación semántica:", error);
-        throw new Error("Fallo en la recuperación semántica de memoria.");
+        return [];
     }
 }
 
 /**
  * Recupera reflexiones relacionadas con un tema específico.
- * Utiliza búsqueda semántica para encontrar patrones y lecciones aprendidas.
- * @param topic El tema a buscar.
- * @param userId El ID del usuario.
- * @returns Un array de reflexiones relacionadas.
  */
 export async function retrieveReflectionsByTopic(
     topic: string,
@@ -75,20 +83,16 @@ export async function retrieveReflectionsByTopic(
 
 /**
  * Recupera patrones de error recurrentes en las misiones del usuario.
- * @param userId El ID del usuario.
- * @returns Un array de patrones de error identificados.
  */
 export async function retrieveErrorPatterns(userId: string): Promise<Array<{ pattern: string; frequency: number; solutions: string[] }>> {
     const query = "Patrones de error, fallos recurrentes y soluciones aplicadas";
     const results = await semanticRetrievalOptimized(query, userId, 20);
 
-    // Agrupar por patrón de error
     const patterns: Record<string, { frequency: number; solutions: Set<string> }> = {};
 
     results.forEach(result => {
         const text = result.text.toLowerCase();
         
-        // Detectar patrones comunes
         if (text.includes("timeout") || text.includes("lentitud")) {
             const pattern = "Timeout/Rendimiento";
             if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
@@ -111,7 +115,6 @@ export async function retrieveErrorPatterns(userId: string): Promise<Array<{ pat
         }
     });
 
-    // Convertir a array y ordenar por frecuencia
     return Object.entries(patterns)
         .map(([pattern, data]) => ({
             pattern,
@@ -123,9 +126,6 @@ export async function retrieveErrorPatterns(userId: string): Promise<Array<{ pat
 
 /**
  * Recupera estrategias exitosas que pueden aplicarse a nuevas misiones.
- * @param userId El ID del usuario.
- * @param missionType El tipo de misión (ej. "planning", "technical_analysis").
- * @returns Un array de estrategias exitosas.
  */
 export async function retrieveSuccessfulStrategies(
     userId: string,
@@ -134,13 +134,11 @@ export async function retrieveSuccessfulStrategies(
     const query = `Estrategias exitosas para misiones de tipo ${missionType}`;
     const results = await semanticRetrievalOptimized(query, userId, 15);
 
-    // Extraer estrategias de los resultados
     const strategies: Record<string, { count: number; description: string }> = {};
 
     results.forEach(result => {
         const text = result.text;
         
-        // Buscar menciones de estrategias
         if (text.includes("Recomendación") || text.includes("estrategia")) {
             const strategyMatch = text.match(/Recomendación[:\s]+([^.]+)/);
             if (strategyMatch) {
@@ -153,7 +151,6 @@ export async function retrieveSuccessfulStrategies(
         }
     });
 
-    // Convertir a array y calcular tasa de éxito
     return Object.entries(strategies)
         .map(([strategy, data]) => ({
             strategy,
@@ -165,15 +162,17 @@ export async function retrieveSuccessfulStrategies(
 
 /**
  * Mejora la memoria de largo plazo mediante la consolidación de reflexiones relacionadas.
- * Agrupa reflexiones similares y genera un resumen consolidado.
- * @param userId El ID del usuario.
- * @returns Un resumen consolidado de las lecciones aprendidas.
  */
 export async function consolidateLongTermMemory(userId: string): Promise<string> {
+    if (!process.env.PINECONE_API_KEY || !process.env.OPENAI_API_KEY) {
+        return "API Keys faltantes para consolidación de memoria.";
+    }
+
     try {
+        const pinecone = getPinecone();
+        const embeddings = getEmbeddings();
         const index = pinecone.Index("uai-memory");
 
-        // Recuperar todas las reflexiones del usuario
         const query = "Resumen general de todas las lecciones aprendidas";
         const queryEmbedding = await embeddings.embedQuery(query);
 
@@ -186,13 +185,13 @@ export async function consolidateLongTermMemory(userId: string): Promise<string>
             includeMetadata: true,
         });
 
-        // Consolidar reflexiones
         const consolidatedText = results.matches
             .map((match: any) => match.metadata?.text || "")
             .filter((text: string) => text.length > 0)
             .join("\n---\n");
 
-        // Generar resumen consolidado
+        if (consolidatedText.length === 0) return "No hay reflexiones para consolidar.";
+
         const { ChatOpenAI } = await import("@langchain/openai");
         const llm = new ChatOpenAI({
             modelName: "gpt-4o",
@@ -219,6 +218,6 @@ export async function consolidateLongTermMemory(userId: string): Promise<string>
         return response.content.toString();
     } catch (error) {
         console.error("Error consolidando memoria de largo plazo:", error);
-        throw new Error("Fallo en la consolidación de memoria.");
+        return "Error en la consolidación de memoria.";
     }
 }

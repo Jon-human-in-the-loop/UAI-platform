@@ -12,7 +12,7 @@ const openai = new OpenAI();
 export async function transcribeAudio(audioBuffer: Buffer, format: string): Promise<string> {
     try {
         const response = await openai.audio.transcriptions.create({
-            file: new File([audioBuffer], `audio.${format}`),
+            file: new File([audioBuffer as any], `audio.${format}`),
             model: "whisper-1",
         });
         return response.text;
@@ -46,7 +46,7 @@ export function processMultimodalInput(input: string): MessageContent {
         content.push({ type: "text", text: input.substring(lastIndex) });
     }
 
-    return content.filter(item => (typeof item === 'string' && item.trim() !== '') || (typeof item === 'object' && item.type === 'image_url'));
+    return content.filter(item => (typeof item === 'string' &&  (item as string).trim() !== '') || (typeof item === 'object' && item.type === 'image_url'));
 }
 
 /**

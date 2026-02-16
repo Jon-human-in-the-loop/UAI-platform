@@ -129,7 +129,7 @@ async function executeScheduledMission(task: ScheduledTask) {
         };
 
         // Ejecutar la misión y esperar el resultado (o manejar el stream si es necesario)
-        const result = await app.invoke(payload, config);
+        const result = await app.invoke(payload as any, config);
         console.log(`[Scheduler] Misión programada ${task.id} completada. Resultado:`, result);
 
         await updateScheduledTaskStatus(task.id, { last_run: new Date(), next_run: calculateNextRun(task.cron_expression), status: "COMPLETED" });
@@ -145,7 +145,7 @@ async function executeScheduledMission(task: ScheduledTask) {
 function calculateNextRun(cronExpression: string): Date {
     try {
         const job = new CronJob(cronExpression, () => {});
-        return job.nextDates().toDate();
+        return  (job.nextDate() as any).toDate();
     } catch (error) {
         console.error("Error al calcular la próxima ejecución cron:", error);
         return new Date(Date.now() + 60 * 60 * 1000); // Fallback: 1 hora en el futuro
@@ -165,8 +165,8 @@ export function scheduleTask(task: ScheduledTask) {
     }, null, true, 'America/Los_Angeles'); // Usar una zona horaria consistente
 
     activeCronJobs.set(task.id, job);
-    console.log(`[Scheduler] Tarea ${task.id} programada para ${job.nextDates().toDate()}`);
-    updateScheduledTaskStatus(task.id, { next_run: job.nextDates().toDate() });
+    console.log(`[Scheduler] Tarea ${task.id} programada para ${ (job.nextDate() as any).toDate()}`);
+    updateScheduledTaskStatus(task.id, { next_run:  (job.nextDate() as any).toDate() });
 }
 
 /**

@@ -1,10 +1,10 @@
 import { StateGraph, END } from "@langchain/langgraph";
-import { BaseMessage } from "@langchain/core/messages";
+import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 
 // Definición del Estado del Agente
 export interface AgentState {
     userId: string;
-    messages: (BaseMessage | HumanMessage)[]; // Permite mensajes multimodales
+    messages: BaseMessage[]; // Permite mensajes multimodales
     next_node: string;
     errors: string[];
     skills_active: string[];
@@ -34,6 +34,10 @@ export interface AgentState {
 // Inicialización del Grafo
 const workflow = new StateGraph<AgentState>({
     channels: {
+        userId: {
+            value: (x: string, y: string) => y ?? x,
+            default: () => "",
+        },
         messages: {
             value: (x: BaseMessage[], y: BaseMessage[]) => x.concat(y),
             default: () => [],
