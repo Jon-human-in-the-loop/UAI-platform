@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Bot, Zap, Code, BarChart3, Briefcase, Plus, Check, Star, Info, Rocket } from 'lucide-react';
+import { ShoppingBag, Bot, Zap, Code, BarChart3, Briefcase, Plus, Check, Star, Info, Rocket, Activity } from 'lucide-react';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 
 interface Template {
