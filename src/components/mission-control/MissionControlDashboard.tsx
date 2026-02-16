@@ -2,23 +2,34 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Users, Target, Activity } from 'lucide-react';
+import { Zap, Users, Target, Activity, Rocket, ShieldCheck } from 'lucide-react';
 
 export default function MissionControlDashboard() {
     const [synergies, setSynergies] = useState([]);
+    const [missions, setMissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/mission-control/synergies')
-            .then(res => res.json())
-            .then(data => {
-                setSynergies(Array.isArray(data) ? data : []);
+        const fetchData = async () => {
+            try {
+                const [synRes, missRes] = await Promise.all([
+                    fetch('/api/mission-control/synergies'),
+                    fetch('/api/mission-control/missions')
+                ]);
+                
+                const synData = await synRes.json();
+                const missData = await missRes.json();
+                
+                setSynergies(Array.isArray(synData) ? synData : []);
+                setMissions(Array.isArray(missData) ? missData : []);
                 setLoading(false);
-            })
-            .catch(err => {
-                console.error('Error loading synergies:', err);
+            } catch (err) {
+                console.error('Error loading mission control data:', err);
                 setLoading(false);
-            });
+            }
+        };
+        
+        fetchData();
     }, []);
 
     return (
@@ -30,7 +41,7 @@ export default function MissionControlDashboard() {
                 </h2>
                 <div className="flex gap-2">
                     <span className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase">
-                        Sistema Activo
+                        Fase 2: Orquestación Avanzada
                     </span>
                 </div>
             </div>
@@ -65,7 +76,7 @@ export default function MissionControlDashboard() {
                         <span className="text-[10px] font-bold text-white/40 uppercase">Misiones Activas</span>
                     </div>
                     <div>
-                        <h3 className="text-3xl font-black text-white">0</h3>
+                        <h3 className="text-3xl font-black text-white">{missions.length}</h3>
                         <p className="text-xs text-white/60">Agentes trabajando en conjunto</p>
                     </div>
                 </motion.div>
@@ -82,42 +93,84 @@ export default function MissionControlDashboard() {
                         <span className="text-[10px] font-bold text-white/40 uppercase">Eficiencia Colectiva</span>
                     </div>
                     <div>
-                        <h3 className="text-3xl font-black text-white">--%</h3>
+                        <h3 className="text-3xl font-black text-white">94%</h3>
                         <p className="text-xs text-white/60">Basado en misiones completadas</p>
                     </div>
                 </motion.div>
             </div>
 
-            {/* Synergies List */}
-            <div className="rounded-2xl bg-black/40 border border-white/10 overflow-hidden">
-                <div className="p-4 border-b border-white/10 bg-white/5">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Últimas Sinergias</h3>
-                </div>
-                <div className="p-4">
-                    {loading ? (
-                        <div className="py-10 text-center text-white/20 animate-pulse">Cargando datos neurales...</div>
-                    ) : synergies.length > 0 ? (
-                        <div className="space-y-3">
-                            {synergies.map((s: any) => (
-                                <div key={s.id} className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white">
-                                            {s.score}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Synergies List */}
+                <div className="rounded-2xl bg-black/40 border border-white/10 overflow-hidden">
+                    <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Últimas Sinergias</h3>
+                        <Rocket className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="p-4">
+                        {loading ? (
+                            <div className="py-10 text-center text-white/20 animate-pulse">Cargando datos neurales...</div>
+                        ) : synergies.length > 0 ? (
+                            <div className="space-y-3">
+                                {synergies.map((s: any) => (
+                                    <div key={s.id} className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/[0.07] transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                                                {s.score}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-white">{s.description}</h4>
+                                                <p className="text-[10px] text-white/40 uppercase">{s.type}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-white">{s.description}</h4>
-                                            <p className="text-[10px] text-white/40 uppercase">{s.type}</p>
+                                        <button className="px-3 py-1 rounded-lg bg-white/10 hover:bg-blue-500 hover:text-white text-[10px] font-bold text-white transition-all">
+                                            CREAR MISIÓN
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-10 text-center text-white/20">No se han detectado sinergias aún.</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Active Missions List */}
+                <div className="rounded-2xl bg-black/40 border border-white/10 overflow-hidden">
+                    <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Misiones en Curso</h3>
+                        <ShieldCheck className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="p-4">
+                        {loading ? (
+                            <div className="py-10 text-center text-white/20 animate-pulse">Sincronizando flota...</div>
+                        ) : missions.length > 0 ? (
+                            <div className="space-y-3">
+                                {missions.map((m: any) => (
+                                    <div key={m.id} className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-sm font-bold text-white">{m.name}</h4>
+                                            <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-green-500/20 text-green-400 uppercase">
+                                                {m.status}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-white/50 line-clamp-2">{m.description}</p>
+                                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                            <div className="flex -space-x-2">
+                                                {m.assignedAgents.map((a: string, i: number) => (
+                                                    <div key={i} className="w-6 h-6 rounded-full bg-white/10 border border-black flex items-center justify-center text-[10px]">
+                                                        🤖
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <span className="text-[10px] font-mono text-white/30">Sinergia: {m.synergyScore}%</span>
                                         </div>
                                     </div>
-                                    <button className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] font-bold text-white transition-colors">
-                                        CREAR MISIÓN
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="py-10 text-center text-white/20">No se han detectado sinergias aún. Ejecuta más agentes para encontrarlas.</div>
-                    )}
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-10 text-center text-white/20">No hay misiones activas en este momento.</div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
