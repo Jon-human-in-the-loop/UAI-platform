@@ -139,20 +139,20 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             const planningPrompt = PromptTemplate.fromTemplate(`
             ${IDENTITY_PROMPT_TEMPLATE}
             
-            Eres el Estratega de UAI Platform. Diseña un plan técnico para: {input}
+            Eres el Estratega de UAI Platform. Si hay números en el input, DEBES realizar cálculos de ROI y sustitución.
             
             REGLAS:
-            - NO uses símbolos de formato como asteriscos (**), numerales (#) o iconos.
-            - Usa texto plano con espaciados naturales.
-            - Divide en secciones narrativas simples si es necesario.
+            - PROHIBIDO crear planes genéricos o metodologías.
+            - Si te dan $5,000, opera con esos $5,000.
+            - Crea agentes con roles de ANALISTA TÉCNICO, no de gestor.
             
             Responde JSON:
-                {{
+            {{
                 "audit": "Análisis crítico real del problema.",
                 "tasks": ["Lista de hitos técnicos concretos"],
                 "routes": [{{ "name": "Nombre", "strategy": "Descripción" }}],
                 "recommendation": "Cuál elegir y por qué.",
-                "agents": [...]
+                "agents": [{{ "role": "...", "goal": "Misión específica INCLUYENDO los datos del usuario ($5k, bufete, etc.)", "backstory": "...", "required_skills": [...] }}]
             }}
             `);
 
@@ -266,15 +266,16 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             ${IDENTITY_PROMPT_TEMPLATE}
             
             ROL: {role}
-            CONTEXTO: {backstory}
+            CONCHAS: El usuario está pagando por INGENIERÍA, no por formato.
             
-            TAREA ASIGNADA: {goal}
+            TAREA: {goal}
             
-            INSTRUCCIÓN CRÍTICA: 
-            - PROHIBIDO: No uses asteriscos (**), numerales (#), guiones de lista (-) ni iconos.
-            - FORMATO: Texto plano conversacional limpio. Usa saltos de línea para separar ideas.
-            - CONTENIDO: Debes ser específico con los datos proporcionados (horas, costos, riesgos). Si la tarea pide cálculos, entrégalos. No des introducciones genéricas.
-            - TONO: Auditor cínico. Sin optimismo.
+            RESTRICCIONES FÍSICAS DE SALIDA (LEER O MORIR):
+            - PROHIBIDO USAR NINGÚN SÍMBOLO DE MARKDOWN.
+            - PROHIBIDO: No saludes, no expliques qué vas a hacer, no des teorías.
+            - OBLIGATORIO: Empieza directamente con los datos, cálculos y el análisis de riesgo brutal.
+            - Si no hay números ni métricas en tu respuesta técnica, será rechazada.
+            - Responde como una terminal de datos pura.
             `);
 
             // Ejecutamos la tarea
@@ -333,9 +334,14 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         }
     }));
 
-    // Formato de chat limpio con purga de símbolos residuales
+    // PURGA NUCLEAR DE SÍMBOLOS MARKDOWN
     const finalSummary = results.map(r => {
-        const cleanOutput = r.output.replace(/\*\*/g, "").replace(/#/g, "").replace(/^- /gm, "").replace(/^> /gm, "");
+        // Eliminar numerales, asteriscos, guiones al inicio de línea y mayor que (bloques)
+        const cleanOutput = r.output
+            .replace(/[#*]/g, "") // Elimina todo # y * en cualquier parte
+            .replace(/^[ \t]*[-+>][ \t]+/gm, "") // Elimina viñetas y blockquotes
+            .replace(/\n{3,}/g, "\n\n") // Colapsa saltos de línea excesivos
+            .trim();
         return `Agente ${r.agent}:\n\n${cleanOutput}`;
     }).join("\n\n");
 
@@ -375,9 +381,10 @@ export async function challengerNode(state: AgentState): Promise<Partial<AgentSt
     
     Eres el "Technical Skeptic" y Auditor de Lealtad de Vanguard Crux. 
     Tu trabajo es DESTRUIR el plan si detectas:
-    1. Lenguaje de marketing ("sinergia", "holístico", "revolucionario").
-    2. Falta de métricas o protocolos técnicos (debe haber datos, no solo promesas).
-    3. Fuego Amigo contra Vanguard Crux o UAI Platform.
+    1. Evasión de cálculos cuando hay datos financieros ($).
+    2. Lenguaje de marketing o planes abstractos.
+    3. Falta de advertencia sobre responsabilidad civil (ej. el riesgo legal de herrar en un contrato).
+    4. Fuego Amigo contra Vanguard Crux.
     
     PLAN A AUDITAR:
     {plan}
