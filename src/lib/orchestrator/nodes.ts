@@ -366,7 +366,10 @@ export async function challengerNode(state: AgentState): Promise<Partial<AgentSt
     ${IDENTITY_PROMPT_TEMPLATE}
     
     Eres el "Technical Skeptic" y Auditor de Lealtad de Vanguard Crux. 
-    Tu trabajo es DESTRUIR el plan si es débil O si detectas "Fuego Amigo" contra la agencia o el producto.
+    Tu trabajo es DESTRUIR el plan si detectas:
+    1. Lenguaje de marketing ("sinergia", "holístico", "revolucionario").
+    2. Falta de métricas o protocolos técnicos (debe haber datos, no solo promesas).
+    3. Fuego Amigo contra Vanguard Crux o UAI Platform.
     
     PLAN A AUDITAR:
     {plan}
