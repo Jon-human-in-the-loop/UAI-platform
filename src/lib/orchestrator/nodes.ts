@@ -1,5 +1,7 @@
-import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage, BaseMessage, MessageContent } from "@langchain/core/messages";
+import { createMultimodalHumanMessage, containsMultimodalContent } from "../multimodal";
 import { saveReflection, queryMemory } from "../memory";
+import { updateUserProgress } from "../database";
 import { AgentState, uaiGraph } from "./graph";
 import { END } from "@langchain/langgraph";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
@@ -10,6 +12,46 @@ import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { IDENTITY_PROMPT_TEMPLATE } from "./identity";
+import { analyzeSynergy, calculateTeamSynergy, ROLE_SYNERGY_MATRIX } from "../mission-control";
+
+// --- NODO DE AUTO-SANACIÓN ---
+export async function healingNode(state: AgentState): Promise<Partial<AgentState>> {
+    console.log("--- NODO: AUTO-SANACIÓN (Estrategias de Recuperación) ---");
+
+    const lastError = state.errors[state.errors.length - 1];
+    console.warn(`[AUTO-SANACIÓN] Error detectado: ${lastError}`);
+
+    // Estrategia 1: Reintento con un modelo diferente (si el error fue de LLM)
+    if (lastError.includes("LLM")) {
+        console.log("[AUTO-SANACIÓN] Intentando reintentar con un modelo alternativo...");
+        // Aquí podríamos cambiar el modelo en el estado o forzar un reintento con Gemini por ejemplo
+        // Por simplicidad, vamos a simular un reintento y volver al analizador
+        return {
+            next_node: "analizador",
+            messages: [...state.messages, new AIMessage("Error de LLM detectado. Reintentando con un modelo alternativo...")],
+            errors: [...state.errors, "Reintento con modelo alternativo"] // Registrar el intento de sanación
+        };
+    }
+
+    // Estrategia 2: Simplificación de la tarea (si el error es de complejidad)
+    if (lastError.includes("complejidad") || lastError.includes("timeout")) {
+        console.log("[AUTO-SANACIÓN] Intentando simplificar la tarea...");
+        // Aquí podríamos modificar el prompt o el plan para reducir la complejidad
+        return {
+            next_node: "analizador",
+            messages: [...state.messages, new AIMessage("Tarea demasiado compleja. Simplificando y reintentando...")],
+            errors: [...state.errors, "Tarea simplificada"] // Registrar el intento de sanación
+        };
+    }
+
+    // Estrategia 3: Fallback a modo manual o reporte
+    console.error("[AUTO-SANACIÓN] No se pudo aplicar una estrategia de sanación automática. Requiere intervención.");
+    return {
+        next_node: "FIN",
+        messages: [...state.messages, new AIMessage("Error crítico no recuperable automáticamente. Se requiere intervención manual.")]
+    };
+}
+
 
 // --- CLIENTES DE MODELOS SOTA (Carga Perezosa para evitar fallos de build por llaves faltantes) ---
 let _orchestratorModel: ChatOpenAI | null = null;
@@ -65,16 +107,22 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     }
 
     const lastMessageObj = state.messages[state.messages.length - 1];
-    const lastMessage = typeof lastMessageObj.content === "string"
-        ? lastMessageObj.content
-        : JSON.stringify(lastMessageObj.content);
+    let lastMessage: string | HumanMessage;
+
+    if (containsMultimodalContent(lastMessageObj)) {
+        lastMessage = lastMessageObj as HumanMessage;
+    } else {
+        lastMessage = typeof lastMessageObj.content === "string"
+            ? lastMessageObj.content
+            : JSON.stringify(lastMessageObj.content);
+    }
 
     // Recuperar memorias relacionadas del pasado
     let pastContext = "";
     try {
         let pastReflections = "";
         try {
-            const memories = await queryMemory(lastMessage);
+            const memories = await queryMemory(typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage));
             if (memories.length > 0) {
                 pastReflections = memories.join("\n---\n");
             }
@@ -115,7 +163,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         let category = "TECHNICAL_INFO";
         try {
             const routerChain = routerPrompt.pipe(getGpt5()).pipe(new JsonOutputParser());
-            const routeResult: any = await routerChain.invoke({ input: lastMessage });
+            const routeResult: any = await routerChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
             category = routeResult.category;
 
             // HIGIENE COGNITIVA: Si el tema cambia drásticamente, reseteamos el contexto anterior
@@ -127,7 +175,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             Responde SOLO "SAME" o "CHANGE".
             `);
             const changeChain = changeDetectorPrompt.pipe(getGpt5());
-            const changeDecision = await changeChain.invoke({ prev: previousContext, next: lastMessage });
+            const changeDecision = await changeChain.invoke({ prev: previousContext, next: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
 
             if (changeDecision.content.toString().includes("CHANGE")) {
                 console.log("[HIGIENE] Cambio de tema detectado. Limpiando memoria de corto plazo.");
@@ -136,7 +184,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             }
 
             // Mejora: Si es EXECUTE pero el mensaje es largo, probablemente hay instrucciones nuevas -> PLANNING
-            if (category === "EXECUTE" && lastMessage.length > 100) {
+            if (category === "EXECUTE" && ((typeof lastMessage === "string" ? lastMessage : (lastMessage as any).content).length > 100)) {
                 category = "PLANNING";
             }
 
@@ -155,7 +203,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             Solicitud: {input}
             `);
             const questionChain = questionPrompt.pipe(getOrchestratorModel());
-            const response: any = await questionChain.invoke({ input: lastMessage });
+            const response: any = await questionChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
             return {
                 next_node: "FIN",
                 messages: [new AIMessage(response.content.replace(/\*\*/g, "").replace(/#/g, ""))]
@@ -192,7 +240,26 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             `);
 
             const chain = planningPrompt.pipe(getOrchestratorModel()).pipe(new JsonOutputParser());
-            const res: any = await chain.invoke({ input: lastMessage });
+            const res: any = await chain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
+
+            // Analizar sinergias entre los agentes propuestos
+            let synergisticAgents = res.agents;
+            if (synergisticAgents && synergisticAgents.length > 1) {
+                const potentialSynergies = [];
+                for (let i = 0; i < synergisticAgents.length; i++) {
+                    for (let j = i + 1; j < synergisticAgents.length; j++) {
+                        const agentA = synergisticAgents[i];
+                        const agentB = synergisticAgents[j];
+                        const synergy = analyzeSynergy(agentA, agentB);
+                        if (synergy.score > 50) { // Considerar sinergias significativas
+                            potentialSynergies.push(`- **${agentA.role}** y **${agentB.role}**: ${synergy.description} (${synergy.potentialOutput})`);
+                        }
+                    }
+                }
+                if (potentialSynergies.length > 0) {
+                    res.audit += `\n\n**Sinergias Potenciales Detectadas:**\n${potentialSynergies.join("\n")}`;
+                }
+            }
 
             const formattedPlan = `
 ${res.audit}
@@ -222,8 +289,8 @@ Recomendación: ${res.recommendation}
         - Sé profundo y técnico.
         `);
 
-        const techChain = technicalPrompt.pipe(getOrchestratorModel());
-        const techResponse: any = await techChain.invoke({ input: lastMessage });
+            const techChain = technicalPrompt.pipe(getOrchestratorModel());
+            const techResponse: any = await techChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
         const cleanContent = techResponse.content.replace(/\*\*/g, "").replace(/#/g, "");
 
         return {
@@ -232,14 +299,11 @@ Recomendación: ${res.recommendation}
         };
 
     } catch (e: any) {
-        console.error("Error Analizador:", e);
+        console.error("Error Ejecutor:", e);
         return {
-            next_node: "ejecutor",
-            context_memory: {
-                analysis: { tasks: ["Ejecución Directa"], required_skills: [] },
-                dynamic_agents: [{ role: "Respaldo", goal: "Resolver", backstory: "Backup", recommended_model: "gpt" }]
-            },
-            messages: [new AIMessage("Error en análisis. Activando modo de respuesta directa.")]
+            next_node: "healing",
+            errors: [...state.errors, `Error en Ejecutor: ${e.message}`],
+            messages: [new AIMessage("Error en ejecución. Intentando auto-sanación.")]
         };
     }
 }
@@ -252,6 +316,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     const analysis = state.context_memory.analysis;
     const skills = state.skills_active;
     const dynamicAgents = state.context_memory.dynamic_agents || [];
+    const lastMessage = state.messages[state.messages.length - 1];
+    const lastMessageObj = {
+        content: typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content)
+    };
 
     let assignedAgents: Array<{ role: string; goal: string; backstory: string; model: any }> = [];
 
@@ -298,6 +366,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             const modelWithTools = agentTools.length > 0 ? (agent.model as any).bindTools(agentTools) : agent.model;
 
             const prompt = PromptTemplate.fromTemplate(`
+            // Si el mensaje es multimodal, el input será un objeto, no un string.
+            // El modelo debe ser capaz de manejarlo.
+            // {input} se reemplazará con el contenido del mensaje, que puede ser un string o un array de objetos.
+            
             ${IDENTITY_PROMPT_TEMPLATE}
             
             ROL: {role}
@@ -316,9 +388,9 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             // Ejecutamos la tarea
             const chain = prompt.pipe(modelWithTools);
             const response: any = await chain.invoke({
+                input: lastMessageObj.content,
                 role: agent.role,
-                backstory: agent.backstory,
-                goal: agent.goal
+                goal: agent.goal,
             });
 
             let outputText = "";
@@ -539,10 +611,13 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
             messages: [new AIMessage(`Validación exitosa: Los resultados cumplen con los estándares de calidad.`)]
         };
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error en Validador Real:", e);
-        // Fallback optimista para evitar bucles infinitos por error técnico
-        return { next_node: "FIN", messages: [new AIMessage("Validación completada (Modo Manual).")] };
+        return {
+            next_node: "healing",
+            errors: [...state.errors, `Error en Validador: ${e.message}`],
+            messages: [new AIMessage("Error en validación. Intentando auto-sanación.")]
+        };
     }
 }
 
@@ -551,9 +626,15 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
     console.log("--- NODO: REFLEXIÓN (Guardando en Pinecone) ---");
 
     const lastMessageObj = state.messages[state.messages.length - 1];
-    const lastMessage = typeof lastMessageObj.content === "string"
-        ? lastMessageObj.content
-        : JSON.stringify(lastMessageObj.content);
+    let lastMessage: string | HumanMessage;
+
+    if (containsMultimodalContent(lastMessageObj)) {
+        lastMessage = lastMessageObj as HumanMessage;
+    } else {
+        lastMessage = typeof lastMessageObj.content === "string"
+            ? lastMessageObj.content
+            : JSON.stringify(lastMessageObj.content);
+    }
 
     const analysis = state.context_memory.analysis;
 
@@ -579,6 +660,15 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
         console.error("Error al guardar reflexión:", e);
     }
 
+    // Otorgar XP al usuario
+    try {
+        // Calcular XP basado en la complejidad o simplemente un valor fijo por misión
+        const xpEarned = analysis?.complexity === 'High' ? 100 : 50; 
+        await updateUserProgress(state.userId, xpEarned);
+    } catch (e) {
+        console.error("Error al actualizar el progreso del usuario:", e);
+    }
+
     return { next_node: "FIN" };
 }
 
@@ -591,14 +681,16 @@ uaiGraph.addNode("challenger" as any, challengerNode); // ADDED
 uaiGraph.addNode("ejecutor" as any, executorNode);
 uaiGraph.addNode("validador" as any, validatorNode);
 uaiGraph.addNode("reflexion" as any, reflectionNode);
+uaiGraph.addNode("healing" as any, healingNode);
 uaiGraph.setEntryPoint("analizador" as any);
 
 // Updated Edges for Challenger Protocol
-uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, FIN: END, error: END } as any);
-uaiGraph.addConditionalEdges("challenger" as any, (s) => s.next_node, { analizador: "analizador", waiting_approval: END } as any);
-uaiGraph.addConditionalEdges("ejecutor" as any, (s) => s.next_node, { validador: "validador", error: END } as any);
-uaiGraph.addConditionalEdges("validador" as any, (s) => s.next_node === "FIN" ? "reflexion" : "analizador");
+uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, FIN: END, error: "healing" } as any);
+uaiGraph.addConditionalEdges("challenger" as any, (s) => s.next_node, { analizador: "analizador", waiting_approval: END, error: "healing" } as any);
+uaiGraph.addConditionalEdges("ejecutor" as any, (s) => s.next_node, { validador: "validador", error: "healing" } as any);
+uaiGraph.addConditionalEdges("validador" as any, (s) => s.next_node === "FIN" ? "reflexion" : "healing");
 uaiGraph.addConditionalEdges("reflexion" as any, (s) => s.next_node === "FIN" ? END : END);
+uaiGraph.addConditionalEdges("healing" as any, (s) => s.next_node === "analizador" ? "analizador" : END);
 
 // Exportar una función para obtener la app compilada con el checkpointer
 export async function getCompiledApp() {

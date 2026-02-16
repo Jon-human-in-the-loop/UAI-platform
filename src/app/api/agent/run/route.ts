@@ -4,12 +4,19 @@ import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { retrieveCollectiveKnowledge, abstractLearning } from '@/lib/collective-memory';
 import { trackTokenUsage } from '@/lib/billing';
 import { v4 as uuidv4 } from 'uuid';
+import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session || !session.user?.id) {
+            return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+        }
+        const userId = session.user.id;
+
         const { input, threadId, agent } = await req.json();
 
         if (!input) {
@@ -53,11 +60,14 @@ export async function POST(req: NextRequest) {
         const payload = threadId
             ? { messages: [new HumanMessage(input)] }
             : {
+                userId: userId,
                 messages: [new HumanMessage(input)],
                 next_node: 'analizador',
                 errors: [],
                 skills_active: [],
                 context_memory: {},
+                budget_status: { current: 0, limit: 100, plan: "free" },
+                is_blocked: false,
                 agent_config: agent ? {
                     ...agent,
                     system_prompt: (agent.system_prompt || "") + memoryContext
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
                 await sendEvent('session_info', { threadId: currentThreadId });
 
                 // StreamMode "values" nos da el estado completo de AgentState en cada paso
-                const graphStream = await app.stream(payload, {
+                const graphStream = await app.stream(payload as any, {
                     ...config,
                     streamMode: "values"
                 });

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Search, Cpu, Database, Network, Zap, Shield, Sparkles, Terminal, Activity } from 'lucide-react';
+import NeuralNetworkVisualization from '@/components/memory/NeuralNetworkVisualization';
 
 interface Learning {
     id: string;
@@ -15,6 +16,7 @@ interface Learning {
 }
 
 export default function CollectiveMemoryPage() {
+    const [viewMode, setViewMode] = useState<'network' | 'list'>('network');
     const [learnings, setLearnings] = useState<Learning[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +58,12 @@ export default function CollectiveMemoryPage() {
     }, []);
 
     return (
+        <div className="h-full flex flex-col overflow-hidden">
+            {/* Vista de Red Neuronal */}
+            {viewMode === 'network' && <NeuralNetworkVisualization />}
+
+            {/* Vista de Lista (Anterior) */}
+            {viewMode === 'list' && (
         <div className="h-full flex flex-col p-6 overflow-hidden max-w-7xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -148,6 +156,8 @@ export default function CollectiveMemoryPage() {
                     </AnimatePresence>
                 )}
             </div>
+        </div>
+            )}
         </div>
     );
 }

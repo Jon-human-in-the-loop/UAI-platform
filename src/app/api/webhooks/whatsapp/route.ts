@@ -1,79 +1,160 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { transcribeAudio, sendWhatsAppMessage } from '@/lib/multimedia';
+import { processWhatsAppMessage, sendWhatsAppMessage, getWhatsAppConfig, getTwilioNumber, getTwilioAuthToken } from '@/lib/whatsapp-integration';
+import { dbPool } from '@/lib/database';
 import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage } from '@langchain/core/messages';
-import { dbPool } from '@/lib/database';
 
-// Verificación del Webhook de WhatsApp (GET)
-export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const mode = searchParams.get('hub.mode');
-    const token = searchParams.get('hub.verify_token');
-    const challenge = searchParams.get('hub.challenge');
-
-    if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-        return new NextResponse(challenge, { status: 200 });
-    }
-    return new NextResponse('Forbidden', { status: 403 });
-}
-
-/**
- * Webhook para recibir mensajes de WhatsApp (Fase 4 - Evolución)
- * Ahora soporta mensajes de voz y procesamiento cognitivo.
- */
 export async function POST(req: NextRequest) {
     try {
-        const payload = await req.json();
+        const formData = await req.formData();
+        const payload = Object.fromEntries(formData);
         
-        // Ignorar notificaciones de estado
-        if (payload.entry?.[0]?.changes?.[0]?.value?.statuses) {
-            return NextResponse.json({ ok: true });
+        console.log('[Webhook WhatsApp] Recibido mensaje');
+
+        // 1. Procesar y normalizar el mensaje
+        const result = await processWhatsAppMessage(payload);
+        
+        if (!result.success) {
+            console.warn('[Webhook WhatsApp] Mensaje rechazado');
+            return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+                headers: { 'Content-Type': 'application/xml' }
+            });
         }
 
-        const value = payload.entry?.[0]?.changes?.[0]?.value;
-        const message = value?.messages?.[0];
-        
-        if (!message) return NextResponse.json({ ok: true });
+        const { phoneNumber, text } = result;
+        const userId = phoneNumber;
 
-        const from = message.from;
-        const messageType = message.type;
-        let userInput = "";
-
-        // 1. Manejo de Voz (Whisper)
-        if (messageType === 'audio') {
-            console.log(`--- [WhatsApp] Recibido mensaje de voz de ${from} ---`);
-            // En una implementación real, descargaríamos el media y transcribiríamos
-            // const audioBuffer = await downloadWhatsAppMedia(message.audio.id);
-            // userInput = await transcribeAudio(audioBuffer);
-            userInput = "[Voz Transcrita]: " + (message.audio.caption || "¿Cómo va mi ROI hoy?");
-        } else if (messageType === 'text') {
-            userInput = message.text.body;
+        // 2. Obtener configuración de WhatsApp del usuario
+        const config = await getWhatsAppConfig(userId);
+        if (!config) {
+            console.warn(`[Webhook WhatsApp] No hay configuracion para usuario ${userId}`);
+            return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+                headers: { 'Content-Type': 'application/xml' }
+            });
         }
 
-        if (!userInput) return NextResponse.json({ ok: true });
+        // 3. Enviar mensaje de "Procesando"
+        const fromNumber = getTwilioNumber(config);
+        const accountSid = config.api_key;
+        const authToken = getTwilioAuthToken(config);
 
-        // 2. Procesamiento Cognitivo con UAI Orchestrator
-        const app = await getCompiledApp();
-        const result = await app.invoke({
-            messages: [new HumanMessage(userInput)],
-            agent_config: {
-                name: "UAI WhatsApp Bot",
-                role: "Asistente Móvil",
-                model: "gpt-4-turbo",
-                system_prompt: "Eres el asistente de UAI Platform en WhatsApp. Responde de forma concisa, humana y profesional. Tienes acceso a la memoria colectiva de la plataforma."
-            }
-        }, { configurable: { thread_id: `wa_${from}` } });
+        try {
+            await sendWhatsAppMessage(
+                accountSid,
+                authToken,
+                fromNumber,
+                phoneNumber,
+                'Procesando tu solicitud...'
+            );
+        } catch (e) {
+            console.warn('[Webhook WhatsApp] No se pudo enviar feedback');
+        }
 
-        const messages = result.messages as any[];
-        const aiResponse = messages[messages.length - 1].content.toString();
+        // 4. Disparar la orquestación asíncrona
+        triggerOrchestrationAsync(userId, text, phoneNumber, fromNumber, accountSid, authToken);
 
-        // 3. Respuesta Multimodal (Texto o Voz)
-        // Por ahora respondemos con texto, pero podríamos generar audio con TTS
-        await sendWhatsAppMessage("system", from, aiResponse);
-
-        return NextResponse.json({ ok: true });
+        return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+            headers: { 'Content-Type': 'application/xml' }
+        });
     } catch (error: any) {
-        console.error("--- [WhatsApp Webhook] Error:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        console.error('[Webhook WhatsApp] Error:', error);
+        return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+            status: 500,
+            headers: { 'Content-Type': 'application/xml' }
+        });
+    }
+}
+
+async function triggerOrchestrationAsync(
+    userId: string,
+    input: string,
+    toNumber: string,
+    fromNumber: string,
+    accountSid: string,
+    authToken: string
+) {
+    try {
+        (async () => {
+            try {
+                const app = await getCompiledApp();
+                const config = {
+                    configurable: { thread_id: `whatsapp-${toNumber}-${Date.now()}` }
+                };
+
+                const payload = {
+                    userId: userId,
+                    messages: [new HumanMessage(input)],
+                    next_node: 'analizador',
+                    errors: [],
+                    skills_active: [],
+                    context_memory: {},
+                    budget_status: {
+                        current: 0,
+                        limit: 1000,
+                        plan: 'professional'
+                    },
+                    is_blocked: false,
+                    agent_config: {
+                        name: 'UAI WhatsApp Agent',
+                        role: 'Asistente de WhatsApp',
+                        model: 'gpt-4o',
+                        system_prompt: 'Eres un asistente de IA para WhatsApp. Responde de forma concisa y util.'
+                    }
+                };
+
+                let finalResponse = '';
+                const stream = await app.stream(payload as any, {
+                    ...config,
+                    streamMode: 'values'
+                });
+
+                for await (const chunk of stream) {
+                    const messages = (chunk as any).messages || [];
+                    if (messages.length > 0) {
+                        const lastMsg = messages[messages.length - 1];
+                        const content = typeof lastMsg.content === 'string'
+                            ? lastMsg.content
+                            : JSON.stringify(lastMsg.content);
+                        finalResponse = content;
+                    }
+                }
+
+                if (finalResponse) {
+                    const chunks = finalResponse.match(/[\s\S]{1,1500}/g) || [finalResponse];
+                    for (const chunk of chunks) {
+                        await sendWhatsAppMessage(accountSid, authToken, fromNumber, toNumber, chunk);
+                    }
+                }
+
+                const dbClient = await dbPool.connect();
+                try {
+                    await dbClient.query(
+                        `INSERT INTO channel_messages 
+                         (channel_type, sender_id, message_text, direction, status, created_at) 
+                         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+                        ['WHATSAPP', toNumber, finalResponse, 'OUT', 'SENT']
+                    );
+                } finally {
+                    dbClient.release();
+                }
+
+                console.log(`[WhatsApp] Respuesta enviada a ${toNumber}`);
+            } catch (e: any) {
+                console.error('[WhatsApp Orchestration] Error:', e);
+                try {
+                    const twilio = require('twilio');
+                    const twilioClient = twilio(accountSid, authToken);
+                    await twilioClient.messages.create({
+                        from: `whatsapp:${fromNumber}`,
+                        to: `whatsapp:${toNumber}`,
+                        body: 'Error procesando tu solicitud. Por favor, intenta de nuevo.'
+                    });
+                } catch (sendErr) {
+                    console.error('[WhatsApp] Error enviando mensaje de error:', sendErr);
+                }
+            }
+        })();
+    } catch (e) {
+        console.error('[WhatsApp] Error disparando orquestacion:', e);
     }
 }
