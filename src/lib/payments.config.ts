@@ -8,8 +8,8 @@ export const PAYMENT_PLANS = {
     },
     essentials: {
         id: 'essentials',
-        name: 'Essentials',
-        price: 9, // USD
+        name: 'Básico',
+        price: 9, // Sincronizado con Landing Oficial
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_ESSENTIALS || 'price_1T0t1QFCIL2k9dafVkXIUzmw',
         mpPlanId: 'cf46ed5e87694454bd36d1b59e222fb1', // Plan $15.000 ARS Mensual
@@ -17,8 +17,8 @@ export const PAYMENT_PLANS = {
     },
     professional: {
         id: 'professional',
-        name: 'Professional',
-        price: 79, // USD
+        name: 'Pro',
+        price: 29, // Sincronizado con Landing Oficial
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_PROFESSIONAL || 'price_1T0t1QFCIL2k9dafZf008rAa',
         mpPlanId: 'dd7f8a178d544993bb835425a530a4d4', // Plan $131.000 ARS Mensual

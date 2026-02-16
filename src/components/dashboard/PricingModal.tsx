@@ -69,7 +69,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                     {/* Region Selector */}
                     <div className="p-6 pb-0 flex justify-center">
                         <div className="bg-white/5 p-1 rounded-full flex relative">
-                            <div className={`absolute inset-y-1 w-1/2 bg-accent/20 rounded-full transition-all duration-300 ${region === 'GLOBAL' ? 'left-1' : 'left-[calc(50%-4px)] translate-x-full'}`} />
+                            <div className={`absolute inset-y-1 w-1/2 bg-red-500/20 rounded-full transition-all duration-300 ${region === 'GLOBAL' ? 'left-1' : 'left-[calc(50%-4px)] translate-x-full'}`} />
                             <button
                                 onClick={() => setRegion('GLOBAL')}
                                 className={`relative z-10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 ${region === 'GLOBAL' ? 'text-white' : 'text-white/40'}`}
@@ -86,12 +86,9 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                     </div>
 
                     {/* Plans Grid */}
-                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
+                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar">
                         {/* Essentials */}
-                        <div className="glass-card p-6 border-accent/30 bg-accent/5 rounded-2xl space-y-6 relative overflow-hidden group hover:border-accent/50 transition-all">
-                            <div className="absolute top-0 right-0 p-3">
-                                <span className="bg-accent text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Recomendado</span>
-                            </div>
+                        <div className="glass-card p-6 border-white/10 bg-white/[0.02] rounded-2xl space-y-6 hover:border-white/20 transition-all">
                             <div className="space-y-2">
                                 <h3 className="text-xl font-bold text-white">Essentials</h3>
                                 <div className="flex items-baseline gap-1">
@@ -103,16 +100,16 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                                 <p className="text-xs text-white/50">Para creadores y early adopters.</p>
                             </div>
                             <ul className="space-y-3">
-                                {['Agentes ilimitados', 'Modelos SOTA (GPT-4, Claude 3)', 'Prioridad alta', 'Soporte por email'].map(feat => (
+                                {PAYMENT_PLANS.essentials.features.map(feat => (
                                     <li key={feat} className="flex items-center gap-2 text-xs text-white/70">
-                                        <CheckCircle2 className="w-4 h-4 text-accent" /> {feat}
+                                        <CheckCircle2 className="w-4 h-4 text-red-500" /> {feat}
                                     </li>
                                 ))}
                             </ul>
                             <button
                                 onClick={() => handleUpgrade('essentials')}
                                 disabled={loadingPlan !== null || currentPlan === 'essentials'}
-                                className="w-full py-3 rounded-xl bg-accent text-white font-bold hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {loadingPlan === 'essentials' ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
                                 {currentPlan === 'essentials' ? 'Plan Actual' : 'Activar Essentials'}
@@ -120,28 +117,31 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                         </div>
 
                         {/* Professional */}
-                        <div className="glass-card p-6 border-white/10 bg-white/[0.02] rounded-2xl space-y-6 hover:border-white/20 transition-all">
+                        <div className="glass-card p-6 border-red-500/30 bg-red-500/5 rounded-2xl space-y-6 relative overflow-hidden group hover:border-red-500/50 transition-all">
+                            <div className="absolute top-0 right-0 p-3">
+                                <span className="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Recomendado</span>
+                            </div>
                             <div className="space-y-2">
                                 <h3 className="text-xl font-bold text-white">Professional</h3>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-4xl font-black font-mono text-white">
-                                        {region === 'GLOBAL' ? '$79' : '$79.000'}
+                                        {region === 'GLOBAL' ? '$99' : '$99.000'}
                                     </span>
                                     <span className="text-white/40 text-xs font-bold">/{region === 'GLOBAL' ? 'mes' : 'h approx'}</span>
                                 </div>
                                 <p className="text-xs text-white/50">Para power users y agencias.</p>
                             </div>
                             <ul className="space-y-3">
-                                {['Todo en Essentials', 'Acceso a API', 'Fine-tuning', 'Soporte 24/7 dedicado', 'Funciones de acceso anticipado'].map(feat => (
+                                {PAYMENT_PLANS.professional.features.map(feat => (
                                     <li key={feat} className="flex items-center gap-2 text-xs text-white/70">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20" /> {feat}
+                                        <CheckCircle2 className="w-4 h-4 text-red-500" /> {feat}
                                     </li>
                                 ))}
                             </ul>
                             <button
                                 onClick={() => handleUpgrade('professional')}
                                 disabled={loadingPlan !== null || currentPlan === 'professional'}
-                                className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/20"
                             >
                                 {loadingPlan === 'professional' ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Rocket className="w-4 h-4" />}
                                 {currentPlan === 'professional' ? 'Plan Actual' : 'Activar Professional'}
