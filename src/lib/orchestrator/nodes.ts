@@ -97,177 +97,106 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         system_prompt: "Eres el núcleo analítico de UAI Platform."
     };
 
-    // --- PINT DE ENRUTAMIENTO INTELIGENTE (Router Step) ---
-    // Antes de lanzar el análisis pesado, verificamos si el usuario ya eligió una ruta.
-    const routerPrompt = PromptTemplate.fromTemplate(`
-    Analiza el historial de conversación.
-    Última IA: {last_ai}
-    Último Usuario: {last_user}
-
-    Determina la INTENCIÓN del usuario:
-    1. "NEW_ANALYSIS": El usuario plantea un problema nuevo o pide recomendaciones.
-    2. "EXECUTE_ROUTE": El usuario ha seleccionado una ruta (A, B, C, Alpha, Beta...) o pide proceder con una acción concreta propuesta anteriormente.
-
-    Responde SOLO con un JSON: {{"intent": "NEW_ANALYSIS" | "EXECUTE_ROUTE", "selected_route_context": "Si es EXECUTE, resume qué eligió el usuario en 1 frase"}}
-    `);
-
-    let userIntent = "NEW_ANALYSIS";
-    let routeContext = "";
-
+    // --- ROUTER AVANZADO (Multimodal) ---
     try {
-        const lastAiMsg = state.messages.slice().reverse().find(m => m._getType() === "ai");
-        const routerChain = routerPrompt.pipe(getGpt5()).pipe(new JsonOutputParser()); // Usamos GPT-4o mini/std para routing rápido
-        const routeResult: any = await routerChain.invoke({
-            last_ai: lastAiMsg?.content || "Inicio de conversación",
-            last_user: lastMessage
-        });
-        userIntent = routeResult.intent;
-        routeContext = routeResult.selected_route_context || "";
-        console.log(`[ROUTER] Intención detectada: ${userIntent} | Contexto: ${routeContext}`);
-    } catch (e) {
-        console.warn("[ROUTER] Fallo en clasificación, procediendo con análisis por defecto.", e);
-    }
+        const routerPrompt = PromptTemplate.fromTemplate(`
+        Analiza la solicitud y clasifícala:
+        1. "PLANNING": Estrategia o plan de acción.
+        2. "TECHNICAL_INFO": Explicaciones técnicas o comparaciones.
+        3. "EXECUTE": Acción concreta o confirmación.
 
-    // --- RAMIFICACIÓN DE FLUJO ---
-    if (userIntent === "EXECUTE_ROUTE") {
-        console.log("--- BYPASS ANALIZADOR -> EJECUTOR (Usuario confirmó ruta) ---");
-        return {
-            next_node: "ejecutor",
-            context_memory: {
-                ...state.context_memory,
-                analysis: {
-                    // Inyectamos un análisis sintético basado en la elección
-                    tasks: ["Ejecución de Estrategia Seleccionada"],
-                    required_skills: ["marketing", "copy", "content", "launch"], // Skills genéricos de ejecución, el ejecutor refinará
-                    complexity: "alta",
-                    user_selection: routeContext
-                },
-                proposal: { rationale: `El usuario seleccionó: ${routeContext}`, estimated_effort: "Variable" }
-            },
-            messages: [new AIMessage(`✅ Entendido. Procediendo con el despliegue de la estrategia: **${routeContext}**. Activando red de ejecución...`)]
-        };
-    }
+        Responde SOLO JSON: {{"category": "PLANNING" | "TECHNICAL_INFO" | "EXECUTE"}}
+        
+        Solicitud: {input}
+        `);
 
-    // --- FLUJO DE ANÁLISIS (Solo si es NEW_ANALYSIS) ---
-    const parser = new JsonOutputParser();
-    const skillsList = Object.keys(availableSkills).join(", ");
+        let category = "TECHNICAL_INFO";
+        try {
+            const routerChain = routerPrompt.pipe(getGpt5()).pipe(new JsonOutputParser());
+            const routeResult: any = await routerChain.invoke({ input: lastMessage });
+            category = routeResult.category;
+            console.log(`[ROUTER] Categoría: ${category}`);
+        } catch (e) {
+            console.warn("[ROUTER] Fallo clasificación.");
+        }
 
-    const prompt = PromptTemplate.fromTemplate(`
-    IDENTIDAD: Eres el Algoritmo de Razonamiento Crítico de UAI Platform.
-    CONTEXTO OPERATIVO: {agent_prompt}
-    
-    SOLICITUD DEL USUARIO: {input}
-    {feedback}
+        if (category === "EXECUTE") {
+            return {
+                next_node: "ejecutor",
+                context_memory: { ...state.context_memory, direct_execution: true },
+                messages: [new AIMessage("Entendido. Procediendo con la ejecución.")]
+            };
+        }
 
-    CATÁLOGO DE SKILLS DISPONIBLES (ÚNICOS PERMITIDOS):
-    [${skillsList}]
-
-    REGLAS DE ENGRANAJE:
-    1. ANTI-ECHO CHAMBER: No valides, cuestiona. Si el plan es débil, destrúyelo y propón algo técnica y cínicamente superior.
-    2. ASIGNACIÓN EXPLÍCITA: Cada agente en 'agents_to_synthesize' DEBE tener una lista de 'required_skills' tomada estrictamente del catálogo.
-    3. DIMENSIONES: ALPHA (Guerrilla), BETA (Data), GAMMA (Systemic).
-    4. SIN TECH-MAGIC: No menciones herramientas que no estén en el catálogo anterior.
-
-    Responde JSON:
-    {{
-        "critical_discovery": "Fallo estructural detectado.",
-        "analysis": "Diagnóstico crudo.",
-        "complexity": "baja|media|alta",
-        "ramification": [
-            {{ "route": "ALPHA: [Nombre]", "strategy": "Estrategia técnica" }},
-            {{ "route": "BETA: [Nombre]", "strategy": "Estrategia técnica" }},
-            {{ "route": "GAMMA: [Nombre]", "strategy": "Estrategia técnica" }}
-        ],
-        "agents_to_synthesize": [
+        if (category === "PLANNING") {
+            const planningPrompt = PromptTemplate.fromTemplate(`
+            Eres el Estratega de UAI Platform. Diseña un plan técnico para: {input}
+            
+            REGLAS:
+            - NO uses símbolos de formato como asteriscos (**), numerales (#) o iconos.
+            - Usa texto plano con espaciados naturales.
+            - Divide en secciones narrativas simples si es necesario.
+            
+            Responde JSON:
             {{
-                "role": "Nombre del Rol",
-                "goal": "Meta técnica",
-                "backstory": "Experiencia relevante",
-                "recommended_model": "claude|gpt|gemini",
-                "required_skills": ["skill1", "skill2"]
+                "audit": "Análisis crítico sin símbolos.",
+                "routes": [{{ "name": "Nombre", "strategy": "Descripción" }}],
+                "recommendation": "Recomendación final.",
+                "agents": [...]
             }}
-        ],
-        "tech_proposal": {{ "rationale": "Por qué esto funciona.", "estimated_effort": "Bajo|Medio|Alto" }}
-    }}
-    `);
+            `);
 
+            const chain = planningPrompt.pipe(getOrchestratorModel()).pipe(new JsonOutputParser());
+            const res: any = await chain.invoke({ input: lastMessage });
 
-    const chain = prompt.pipe(getOrchestratorModel()).pipe(parser);
+            const formattedPlan = `
+${res.audit}
 
-    try {
-        // Recuperar feedback del Challenger si existe
-        const challengerErrors = state.errors.filter(e => e.includes("RECHAZADO POR CHALLENGER"));
-        const feedbackContext = challengerErrors.length > 0
-            ? `⚠️ INTENTOS FALLIDOS PREVIOS (CORRIGE ESTO): \n${challengerErrors.join("\n")}`
-            : "No hay errores previos.";
+Opciones estratégicas:
+${res.routes.map((r: any) => `${r.name}: ${r.strategy}`).join("\n\n")}
 
-        const result: any = await chain.invoke({
-            input: lastMessage,
-            memory_context: pastContext,
-            agent_name: config.name,
-            agent_role: config.role,
-            agent_prompt: config.system_prompt,
-            feedback: feedbackContext
-        });
+Recomendación: ${res.recommendation}
+            `.trim().replace(/\*\*/g, "").replace(/#/g, "");
 
-        // FORMATO DE CHAT LIMPIO (Paradigma ChatGPT)
-        const ramificationClean = result.ramification.map((r: any) => `**${r.route}**: ${r.strategy}`).join("\n\n");
+            return {
+                next_node: "challenger",
+                context_memory: { ...state.context_memory, analysis: res, dynamic_agents: res.agents },
+                messages: [new AIMessage(formattedPlan)]
+            };
+        }
 
-        const finalOutput = `
-He analizado tu solicitud y estas son mis conclusiones técnicas.
+        const technicalPrompt = PromptTemplate.fromTemplate(`
+        Eres ingeniero de UAI Platform. Responde a: {input}
+        
+        REGLAS DE FORMATO:
+        - TOTALMENTE PROHIBIDO usar asteriscos para negrita (**).
+        - TOTALMENTE PROHIBIDO usar numerales para títulos (#).
+        - Usa solo texto plano y saltos de línea.
+        - Sé profundo y técnico.
+        `);
 
-En cuanto a la auditoría crítica del plan, he detectado que ${result.critical_discovery}. 
-
-${result.analysis}
-
-Para la ejecución, he diseñado tres rutas estratégicas:
-
-${ramificationClean}
-
-He basado esta propuesta en que ${result.tech_proposal.rationale}. El esfuerzo estimado es ${result.tech_proposal.estimated_effort} y el nivel de complejidad se considera ${result.complexity}.
-
-¿Cómo te gustaría proceder con estas opciones?
-        `.trim();
+        const techChain = technicalPrompt.pipe(getOrchestratorModel());
+        const techResponse: any = await techChain.invoke({ input: lastMessage });
+        const cleanContent = techResponse.content.replace(/\*\*/g, "").replace(/#/g, "");
 
         return {
-            next_node: "challenger",
-            context_memory: {
-                ...state.context_memory,
-                analysis: result,
-                dynamic_agents: result.agents_to_synthesize,
-                proposal: result.tech_proposal,
-                ramification: result.ramification
-            },
-            skills_active: result.required_skills,
-            messages: [new AIMessage(finalOutput)]
+            next_node: "FIN",
+            messages: [new AIMessage(cleanContent)]
         };
+
     } catch (e: any) {
-        console.error("Error en Analizador Real:", e);
-
-        // Fallback Robusto: Si falla la planificación, asignamos un agente de emergencia
-        // para que intente resolver la tarea directamente.
-        const fallbackAgent = {
-            role: "Agente de Respuesta Rápida",
-            goal: "Intentar resolver la solicitud del usuario directamente dado que el planificador falló.",
-            backstory: "IA de respaldo experta en resolución de conflictos y ejecución directa.",
-            recommended_model: "gpt" // Usamos GPT como backup si Claude falló
-        };
-
+        console.error("Error Analizador:", e);
         return {
             next_node: "ejecutor",
             context_memory: {
-                analysis: {
-                    tasks: ["Ejecución Directa de Respaldo"],
-                    required_skills: [],
-                    complexity: "media"
-                },
-                dynamic_agents: [fallbackAgent], // ¡IMPORTANTE! Asignamos un agente para que el Executor no esté vacío
-                proposal: { rationale: "Modo de recuperación por fallo en API de planificación.", estimated_effort: "Medio" }
+                analysis: { tasks: ["Ejecución Directa"], required_skills: [] },
+                dynamic_agents: [{ role: "Respaldo", goal: "Resolver", backstory: "Backup", recommended_model: "gpt" }]
             },
-            messages: [new HumanMessage(`⚠️ ALERTA: Fallo en el sistema de planificación (${e.message}). Activando protocolo de emergencia con Agente de Respaldo.`)]
+            messages: [new AIMessage("Error en análisis. Activando modo de respuesta directa.")]
         };
     }
 }
+
 
 // Nodo 2: Ejecución Workforce Dinámico (GPT-5/o3 - Operación Masiva)
 export async function executorNode(state: AgentState): Promise<Partial<AgentState>> {
@@ -421,7 +350,7 @@ export async function challengerNode(state: AgentState): Promise<Partial<AgentSt
         console.warn("MAX RETRIES REACHED. Aprobando por desgaste.");
         return {
             next_node: "waiting_approval",
-            messages: [new AIMessage("⚠️ APROBADO CON RESERVAS (Límite de reintentos alcanzado).")]
+            messages: [new AIMessage("Aprobado con reservas (límite de reintentos alcanzado).")]
         };
     }
 
@@ -536,13 +465,13 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
             return {
                 next_node: "analizador",
                 errors: [...state.errors, `Fallo de calidad (${evaluation.score}%): ${evaluation.critique}`],
-                messages: [new AIMessage(`❌ RECHAZADO POR CALIDAD (${evaluation.score}/100): ${evaluation.critique}`)]
+                messages: [new AIMessage(`Rechazado por calidad (${evaluation.score}/100): ${evaluation.critique}`)]
             };
         }
 
         return {
             next_node: "FIN",
-            messages: [new AIMessage(`✅ VALIDACIÓN EXITOSA: Los resultados cumplen con los estándares de calidad.`)]
+            messages: [new AIMessage(`Validación exitosa: Los resultados cumplen con los estándares de calidad.`)]
         };
 
     } catch (e) {
