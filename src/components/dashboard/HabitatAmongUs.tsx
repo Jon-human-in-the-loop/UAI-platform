@@ -107,7 +107,10 @@ export default function HabitatAmongUs() {
     const handleAcceptSynergy = (synergy: Synergy) => {
         setSynergies(prev => prev.map(s => s.id === synergy.id ? { ...s, status: 'active' } : s));
         setActiveSynergyId(synergy.id);
-        awardXp(50); // Recompensa por aceptar sinergia
+        
+        // Corregido: awardXp requiere (success: boolean, autoHealed: boolean, nodesCompleted: number)
+        awardXp(true, false, 5); 
+        
         setTimeout(() => setActiveSynergyId(null), 5000); // La animación dura 5s
     };
 
