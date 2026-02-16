@@ -246,6 +246,10 @@ export async function initDatabase() {
     }
 }
 
+// Importar y llamar al inicializador del scheduler
+import { initializeScheduler } from "./scheduled-tasks";
+initializeScheduler().catch(console.error);
+
 export async function updateUserProgress(userId: string, xpEarned: number) {
     const client = await dbPool.connect();
     try {
