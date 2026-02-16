@@ -25,7 +25,7 @@ export interface Mission {
 /**
  * Matriz de compatibilidad de roles para el motor de sinergias.
  */
-const ROLE_SYNERGY_MATRIX: Record<string, Record<string, { score: number, type: Synergy['type'], desc: string }>> = {
+export const ROLE_SYNERGY_MATRIX: Record<string, Record<string, { score: number, type: Synergy['type'], desc: string }>> = {
     'investigador': {
         'coder': { score: 95, type: 'TECHNICAL', desc: 'Ciclo de I+D acelerado: De la teoría al código en un solo paso.' },
         'analista': { score: 88, type: 'STRATEGIC', desc: 'Profundidad analítica: Datos validados con investigación de campo.' },

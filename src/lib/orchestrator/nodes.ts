@@ -184,7 +184,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             }
 
             // Mejora: Si es EXECUTE pero el mensaje es largo, probablemente hay instrucciones nuevas -> PLANNING
-            if (category === "EXECUTE" && lastMessage.length > 100) {
+            if (category === "EXECUTE" && ((typeof lastMessage === "string" ? lastMessage : (lastMessage as any).content).length > 100)) {
                 category = "PLANNING";
             }
 
@@ -316,6 +316,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     const analysis = state.context_memory.analysis;
     const skills = state.skills_active;
     const dynamicAgents = state.context_memory.dynamic_agents || [];
+    const lastMessage = state.messages[state.messages.length - 1];
+    const lastMessageObj = {
+        content: typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content)
+    };
 
     let assignedAgents: Array<{ role: string; goal: string; backstory: string; model: any }> = [];
 
@@ -381,12 +385,15 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             - Responde como una terminal de datos pura.
             `);
 
-            // Ejecutamos la ta            const chain = prompt.pipe(modelWithTools);
+            // Ejecutamos la tarea
+            const chain = prompt.pipe(modelWithTools);
             const response: any = await chain.invoke({
                 input: lastMessageObj.content,
                 role: agent.role,
                 goal: agent.goal,
-            });t = "";
+            });
+
+            let outputText = "";
 
             // Manejo de Tool Calling (Simpificado para esta arquitectura)
             if (response.tool_calls && response.tool_calls.length > 0) {
