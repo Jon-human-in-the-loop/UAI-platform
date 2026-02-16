@@ -150,84 +150,87 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
     // --- FLUJO DE ANÁLISIS (Solo si es NEW_ANALYSIS) ---
     const parser = new JsonOutputParser();
+    const skillsList = Object.keys(availableSkills).join(", ");
+
     const prompt = PromptTemplate.fromTemplate(`
     IDENTIDAD: Eres el Algoritmo de Razonamiento Crítico de UAI Platform.
     CONTEXTO OPERATIVO: {agent_prompt}
     
-    SOLICITUD DEL USUARIO (TERRENO DE OPERACIONES): {input}
+    SOLICITUD DEL USUARIO: {input}
+    {feedback}
 
-    REGLAS DE ENGRANAJE (ESTRICTAS - PROTOCOLO VANGUARD CRUX):
-    
-    1. ANTI-ECHO CHAMBER (Verdades Incómodas):
-       - PROHIBIDO validar la premisa del usuario sin cuestionarla. Si el usuario pide "Cold Email", TÚ DEBES HABLAR DE "SPF/DKIM/DMARC y Warm-up de 14 días". Si no lo mencionas, FALLAS.
-       - Si el usuario dice "Mercado saturado", TÚ DEBES DAR UN DATO TÉCNICO de por qué (ej: "CAC disparado un 300% en LinkedIn Ads").
-       - Tu valor no es obedecer, es EVITAR EL DESASTRE. Sé cínico, técnico y brutalmente honesto.
+    CATÁLOGO DE SKILLS DISPONIBLES (ÚNICOS PERMITIDOS):
+    [${skillsList}]
 
-    2. PROHIBICIÓN DE ALUCINACIONES DE INFRAESTRUCTURA:
-       - NUNCA uses Pinecone, LangGraph o OpenClaw como "soluciones" para problemas de mensaje o ventas. No digas "Usaremos Pinecone para analizar el mercado". Eso es mentira. Pinecone es para búsqueda vectorial.
-       - Si el problema es de COPY, la solución es COPY (Psicología, Hooks, Ángulos), no "Vectores".
+    REGLAS DE ENGRANAJE:
+    1. ANTI-ECHO CHAMBER: No valides, cuestiona. Si el plan es débil, destrúyelo y propón algo técnica y cínicamente superior.
+    2. ASIGNACIÓN EXPLÍCITA: Cada agente en 'agents_to_synthesize' DEBE tener una lista de 'required_skills' tomada estrictamente del catálogo.
+    3. DIMENSIONES: ALPHA (Guerrilla), BETA (Data), GAMMA (Systemic).
+    4. SIN TECH-MAGIC: No menciones herramientas que no estén en el catálogo anterior.
 
-    3. DIMENSIONES DIVERGENTES (TACTICAS DE GUERRA):
-       - DEBEN SER ACCIONES, NO INTENCIONES.
-       - MAL: "Estrategia de contenido viral."
-       - BIEN: "Scraping de comentarios de competidores con OpenClaw -> Análisis de quejas recurrentes -> Generación de posts 'Solución vs Problema' automatizados."
-       
-       DEFINICIÓN TÁCTICA:
-       - ALPHA (Guerrilla / Infiltración): Tácticas de scrappy growth, comunidades, hacks de distribución. 0 coste, alto esfuerzo.
-       - BETA (Sniper / Data-Enriched): Uso de datos enriquecidos (Clearbit, Apollo) para ataques de ultra-precisión. Calidad sobre cantidad.
-       - GAMMA (Systemic Loop): Sistemas que "trabajan solos" (SEO Programático, Newsletters automatizadas con RAG real).
-
-    4. VOCABULARIO PROHIBIDO (BULLSHIT FILTER):
-       - "Optimizar", "Potenciar", "Solución integral", "Ecosistema robusto", "Sinergia".
-       - SI USAS ESTAS PALABRAS SIN UN NÚMERO O KPI AL LADO, EL SISTEMA TE REINICIARÁ.
-
-    RECURSOS TÉCNICOS: Tienes acceso a Skills (search, marketing, copy, etc). Úsalos para EJECUTAR acciones tangibles.
-
-    Debes devolver este JSON:
+    Responde JSON:
     {{
-        "critical_discovery": "Identificación de un fallo estructural o riesgo en la solicitud del usuario (específico).",
-        "analysis": "Diagnóstico técnico crudo (600+ caracteres). Basado en el Stack UAI y el descubrimiento crítico.",
+        "critical_discovery": "Fallo estructural detectado.",
+        "analysis": "Diagnóstico crudo.",
         "complexity": "baja|media|alta",
         "ramification": [
-            {{ "route": "ALPHA: [Nombre]", "strategy": "Técnica de ejecución usando Skills específicos y OpenClaw." }},
-            {{ "route": "BETA: [Nombre]", "strategy": "Lógica de datos usando Pinecone y Memoria Adaptativa." }},
-            {{ "route": "GAMMA: [Nombre]", "strategy": "Arquitectura LangGraph para persistencia extrema." }}
+            {{ "route": "ALPHA: [Nombre]", "strategy": "Estrategia técnica" }},
+            {{ "route": "BETA: [Nombre]", "strategy": "Estrategia técnica" }},
+            {{ "route": "GAMMA: [Nombre]", "strategy": "Estrategia técnica" }}
         ],
-        "required_skills": ["lista_de_skills_específicos"],
-        "tasks": ["Acción técnica 1 (KPI)", "Acción técnica 2 (KPI)"],
         "agents_to_synthesize": [
             {{
-                "role": "Consultor Senior en [Área]",
-                "goal": "Meta técnica específica",
-                "backstory": "Experiencia en [Stack] y [Skills]",
-                "recommended_model": "claude|gpt|gemini"
+                "role": "Nombre del Rol",
+                "goal": "Meta técnica",
+                "backstory": "Experiencia relevante",
+                "recommended_model": "claude|gpt|gemini",
+                "required_skills": ["skill1", "skill2"]
             }}
         ],
-        "tech_proposal": {{
-            "rationale": "Justificación técnica real. ¿Por qué este plan no es una alucinación genérica?",
-            "estimated_effort": "Bajo|Medio|Alto"
-        }}
+        "tech_proposal": {{ "rationale": "Por qué esto funciona.", "estimated_effort": "Bajo|Medio|Alto" }}
     }}
     `);
+
 
     const chain = prompt.pipe(getOrchestratorModel()).pipe(parser);
 
     try {
+        // Recuperar feedback del Challenger si existe
+        const challengerErrors = state.errors.filter(e => e.includes("RECHAZADO POR CHALLENGER"));
+        const feedbackContext = challengerErrors.length > 0
+            ? `⚠️ INTENTOS FALLIDOS PREVIOS (CORRIGE ESTO): \n${challengerErrors.join("\n")}`
+            : "No hay errores previos.";
+
         const result: any = await chain.invoke({
             input: lastMessage,
             memory_context: pastContext,
             agent_name: config.name,
             agent_role: config.role,
-            agent_prompt: config.system_prompt
+            agent_prompt: config.system_prompt,
+            feedback: feedbackContext
         });
 
-        // Formatear las rutas para el usuario de forma limpia
-        const ramificationText = result.ramification.map((r: any) => `- **${r.route}**: ${r.strategy}`).join("\n");
+        // FORMATO DE CHAT LIMPIO (Paradigma ChatGPT)
+        const ramificationClean = result.ramification.map((r: any) => `**${r.route}**: ${r.strategy}`).join("\n\n");
 
-        const finalOutput = `### Descubrimiento Crítico\n${result.critical_discovery}\n\n### Diagnóstico Estratégico\n${result.analysis}\n\n### Ramificación Divergente\n${ramificationText}\n\n---\n\n**Justificación Técnica:**\n${result.tech_proposal.rationale}\n\n¿Deseas proceder con la implementación de alguna ruta?`;
+        const finalOutput = `
+He analizado tu solicitud y estas son mis conclusiones técnicas.
+
+En cuanto a la auditoría crítica del plan, he detectado que ${result.critical_discovery}. 
+
+${result.analysis}
+
+Para la ejecución, he diseñado tres rutas estratégicas:
+
+${ramificationClean}
+
+He basado esta propuesta en que ${result.tech_proposal.rationale}. El esfuerzo estimado es ${result.tech_proposal.estimated_effort} y el nivel de complejidad se considera ${result.complexity}.
+
+¿Cómo te gustaría proceder con estas opciones?
+        `.trim();
 
         return {
-            next_node: "waiting_approval",
+            next_node: "challenger",
             context_memory: {
                 ...state.context_memory,
                 analysis: result,
@@ -311,29 +314,8 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
 
     const results = await Promise.all(assignedAgents.map(async (agent: any) => {
         try {
-            // Seleccionar herramientas para este agente específico
-            const agentSkills = (analysis.required_skills || []).filter((s: string) => {
-                const roleLower = agent.role.toLowerCase();
-                if (s === "search" && (roleLower.includes("investig") || roleLower.includes("research") || roleLower.includes("busc"))) return true;
-                if (s === "seo" && (roleLower.includes("seo") || roleLower.includes("visibil") || roleLower.includes("rank"))) return true;
-                if (s === "marketing" && (roleLower.includes("psico") || roleLower.includes("marketing") || roleLower.includes("growth"))) return true;
-                if (s === "competitor" && (roleLower.includes("bench") || roleLower.includes("competid") || roleLower.includes("espia"))) return true;
-                if (s === "audit" && (roleLower.includes("audit") || roleLower.includes("inspeccion") || roleLower.includes("revisa"))) return true;
-                if (s === "brainstorm" && (roleLower.includes("brain") || roleLower.includes("creativo") || roleLower.includes("ideador"))) return true;
-                if (s === "debug" && (roleLower.includes("debug") || roleLower.includes("error") || roleLower.includes("fallo") || roleLower.includes("dev"))) return true;
-                if (s === "pricing" && (roleLower.includes("precio") || roleLower.includes("financ") || roleLower.includes("monetiz"))) return true;
-                if (s === "launch" && (roleLower.includes("launch") || roleLower.includes("lanz") || roleLower.includes("gtm"))) return true;
-                if (s === "content" && (roleLower.includes("contenid") || roleLower.includes("estrateg") || roleLower.includes("autorid"))) return true;
-                if (s === "security" && (roleLower.includes("segurid") || roleLower.includes("hack") || roleLower.includes("seg"))) return true;
-                if (s === "database" && (roleLower.includes("data") || roleLower.includes("db") || roleLower.includes("sql") || roleLower.includes("no-sql"))) return true;
-                if (s === "uxui" && (roleLower.includes("ux") || roleLower.includes("ui") || roleLower.includes("disen") || roleLower.includes("interfaz"))) return true;
-                if (s === "rag" && (roleLower.includes("rag") || roleLower.includes("vector") || roleLower.includes("memory") || roleLower.includes("pinecone"))) return true;
-                if (s === "mcp" && (roleLower.includes("mcp") || roleLower.includes("conector") || roleLower.includes("api") || roleLower.includes("integrac"))) return true;
-                if (s === "copy" && (roleLower.includes("copy") || roleLower.includes("escrit") || roleLower.includes("ventas"))) return true;
-                if (s === "leadgen" && (roleLower.includes("lead") || roleLower.includes("prospect") || roleLower.includes("captac"))) return true;
-                return false;
-            });
-
+            // Mapeo EXPLÍCITO de herramientas (Sin adivinanzas)
+            const agentSkills = agent.required_skills || [];
             const agentTools = agentSkills.map((s: string) => skillMap[s]).filter(Boolean);
 
             // Vincular herramientas al modelo
@@ -408,8 +390,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         }
     }));
 
-    // Formatear el resultado final para el chat
-    const finalSummary = results.map(r => `### 🤖 ${r.agent}\n${r.output}`).join("\n\n---\n\n");
+    // Formato de chat limpio
+    const finalSummary = results.map(r => {
+        return `Agente ${r.agent}:\n\n${r.output}`;
+    }).join("\n\n");
 
     return {
         next_node: "validador",
@@ -418,11 +402,104 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             execution_results: results
         },
         messages: [
-            new AIMessage(`Iniciando orquestación con ${assignedAgents.length} agentes especializados...`),
+            new AIMessage(`Sincronización completada. Aquí tienes los resultados de la ejecución de ${assignedAgents.length} agentes especializados:`),
             new AIMessage(finalSummary)
         ]
     };
 }
+
+// Nodo 2.5: The Challenger (Auditoría Técnica Hostil)
+// "Tu único trabajo es DESTRUIR este plan."
+export async function challengerNode(state: AgentState): Promise<Partial<AgentState>> {
+    console.log("--- NODO: CHALLENGER (Protocolo de Verdades Incómodas) ---");
+
+    const analysis = state.context_memory.analysis;
+    // Si ya falló 2 veces, aprobamos por desgaste para evitar bucle infinito (pero con advertencia)
+    const failureCount = state.errors.filter(e => e.includes("RECHAZADO POR CHALLENGER")).length;
+
+    if (failureCount >= 2) {
+        console.warn("MAX RETRIES REACHED. Aprobando por desgaste.");
+        return {
+            next_node: "waiting_approval",
+            messages: [new AIMessage("⚠️ APROBADO CON RESERVAS (Límite de reintentos alcanzado).")]
+        };
+    }
+
+    const parser = new JsonOutputParser();
+    const prompt = PromptTemplate.fromTemplate(`
+    Eres el "Technical Skeptic" de UAI Platform. Tu único trabajo es DESTRUIR el plan del agente anterior.
+    
+    PLAN A AUDITAR:
+    {plan}
+
+    BUSCA 3 FALLOS TÉCNICOS FATALES (Hard Truths):
+    1. ¿Ignora limitaciones de infraestructura real? (Ej: DNS, Latencia, Rate Limits).
+    2. ¿Usa "Tecno-Magia"? (Ej: Pinecone para marketing).
+    3. ¿Es genérico o específico?
+
+    Si encuentras fallos, RECHAZA. Si es sólido, APRUEBA.
+
+    Responde SOLO JSON:
+    {{
+        "status": "APPROVED" | "REJECTED",
+        "critique": "Razón técnica del rechazo (si aplica). Sé brutal.",
+        "score": 0-100
+    }}
+    `);
+
+    try {
+        // Ejecutar Auditoría Lógica Real (Protocolo jbrukh/Logic)
+        const logicalAudit = await availableSkills.critical._call({
+            claim: `PLAN PROPUESTO: ${JSON.stringify(analysis)}`
+        });
+
+        const prompt = PromptTemplate.fromTemplate(`
+        Eres el Auditor Adversario de UAI Platform.
+        Has recibido este análisis lógico preventivo:
+        {audit}
+
+        PLAN ORIGINAL:
+        {plan}
+
+        Tu misión es dar el veredicto FINAL. No seas blando. Si el plan tiene "tech-magic" o es genérico, RECHÁZALO.
+        
+        Responde SOLO JSON:
+        {{
+            "status": "APPROVED" | "REJECTED",
+            "critique": "Razón técnica brutal",
+            "score": 0-100
+        }}
+        `);
+
+        const chain = prompt.pipe(getGpt5()).pipe(parser);
+        const result: any = await chain.invoke({
+            audit: logicalAudit,
+            plan: JSON.stringify(analysis)
+        });
+
+        console.log(`[CHALLENGER] Veredicto: ${result.status} (${result.score}/100)`);
+
+        if (result.status === "REJECTED" || result.score < 85) {
+            return {
+                next_node: "analizador",
+                errors: [...state.errors, `RECHAZADO POR CHALLENGER: ${result.critique}`],
+                messages: [
+                    new AIMessage(`Auditoría Crítica: \n${logicalAudit}\n\nVeredicto: ${result.critique}. Estoy re-evaluando la arquitectura para corregir estos puntos.`)
+                ]
+            };
+        }
+
+        return {
+            next_node: "waiting_approval",
+            messages: [new AIMessage(`La auditoría ha sido superada con éxito.\n\n${logicalAudit}`)]
+        };
+
+    } catch (e) {
+        console.error("Error en Challenger Real:", e);
+        return { next_node: "waiting_approval" };
+    }
+}
+
 
 // Nodo 3: Validador y Auto-sanación (Reflexión Crítica con GPT-4o)
 export async function validatorNode(state: AgentState): Promise<Partial<AgentState>> {
@@ -507,12 +584,15 @@ import { dbPool } from "../database";
 
 // Registro de nodos y lógica de grafo
 uaiGraph.addNode("analizador" as any, analyzerNode);
+uaiGraph.addNode("challenger" as any, challengerNode); // ADDED
 uaiGraph.addNode("ejecutor" as any, executorNode);
 uaiGraph.addNode("validador" as any, validatorNode);
 uaiGraph.addNode("reflexion" as any, reflectionNode);
 uaiGraph.setEntryPoint("analizador" as any);
 
-uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { ejecutor: "ejecutor", waiting_approval: END, error: END } as any);
+// Updated Edges for Challenger Protocol
+uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, error: END } as any);
+uaiGraph.addConditionalEdges("challenger" as any, (s) => s.next_node, { analizador: "analizador", waiting_approval: END } as any);
 uaiGraph.addConditionalEdges("ejecutor" as any, (s) => s.next_node, { validador: "validador", error: END } as any);
 uaiGraph.addConditionalEdges("validador" as any, (s) => s.next_node === "FIN" ? "reflexion" : "analizador");
 uaiGraph.addConditionalEdges("reflexion" as any, (s) => s.next_node === "FIN" ? END : END);

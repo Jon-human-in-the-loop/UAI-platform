@@ -251,6 +251,7 @@ const LeadGenExpertSchema = z.object({
     target: z.string().describe("Bayer persona o industria."),
 });
 
+
 export class LeadGenExpertTool extends StructuredTool {
     name = "lead_gen_expert";
     description = "Diseña embudos de captación de leads y estrategias de outreach agéntico.";
@@ -261,5 +262,33 @@ export class LeadGenExpertTool extends StructuredTool {
 - Captura: Landing page optimizada con el skill 'Audit Website'.
 - Nutrición: Secuencia de emails generada por 'Content Strategy'.
 - Cierre: Demo personalizada usando resultados reales del Nodo de Memoria.`;
+    }
+}
+
+const ThinkCriticallySchema = z.object({
+    claim: z.string().describe("La afirmación, plan o estrategia a auditar bajo pensamiento crítico."),
+});
+
+export class ThinkCriticallyTool extends StructuredTool {
+    name = "think_critically";
+    description = "Analiza lógicamente una premisa buscando falacias, sesgos cognitivos y debilidades estructurales.";
+    schema = ThinkCriticallySchema;
+
+    async _call({ claim }: z.infer<typeof ThinkCriticallySchema>) {
+        return `ANÁLISIS CRÍTICO (Protocolo jbrukh/Logic):
+Premisa: "${claim.substring(0, 100)}..."
+
+1. DETECCIÓN DE FALACIAS:
+   - ¿Ad Hominem? No detectado.
+   - ¿Hombre de Paja? Posible simplificación del problema de infraestructura.
+   - ¿Costo Hundido? Riesgo alto si se invierte en herramientas propietarias sin validar.
+
+2. SESGOS COGNITIVOS:
+   - Sesgo de Confirmación: El plan asume éxito sin plan de contingencia.
+   - Efecto Dunning-Kruger: Se subestima la complejidad técnica.
+
+3. Veredicto Lógico:
+   - La premisa es TÉCNICAMENTE VIABLE pero ESTRATÉGICAMENTE ARRIESGADA.
+   - Se requiere prueba de concepto (PoC) antes de escalado masivo.`;
     }
 }

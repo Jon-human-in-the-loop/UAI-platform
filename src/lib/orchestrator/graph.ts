@@ -20,7 +20,15 @@ export interface AgentState {
         model: string;
         system_prompt: string;
     };
+    dynamic_agents?: Array<{
+        role: string;
+        goal: string;
+        backstory: string;
+        recommended_model: string;
+        required_skills: string[];
+    }>;
 }
+
 
 // Inicialización del Grafo
 const workflow = new StateGraph<AgentState>({

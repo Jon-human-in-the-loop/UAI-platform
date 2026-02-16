@@ -71,7 +71,8 @@ import {
     RAGOptimizerTool,
     MCPBuilderTool,
     CopywritingMasterTool,
-    LeadGenExpertTool
+    LeadGenExpertTool,
+    ThinkCriticallyTool
 } from "./library";
 
 export const webSearchSkill = new WebSearchTool();
@@ -91,6 +92,7 @@ export const ragOptimizerSkill = new RAGOptimizerTool();
 export const mcpBuilderSkill = new MCPBuilderTool();
 export const copywritingMasterSkill = new CopywritingMasterTool();
 export const leadGenExpertSkill = new LeadGenExpertTool();
+export const thinkCriticallySkill = new ThinkCriticallyTool();
 
 export const availableSkills = {
     search: webSearchSkill,
@@ -110,4 +112,5 @@ export const availableSkills = {
     mcp: mcpBuilderSkill,
     copy: copywritingMasterSkill,
     leadgen: leadGenExpertSkill,
+    critical: thinkCriticallySkill,
 };
