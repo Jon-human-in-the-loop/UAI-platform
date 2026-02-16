@@ -30,21 +30,20 @@ body {
   overflow-x: hidden;
 }
 
-@media (min-width: 1536px) {
-  html {
-    font-size: 14px;
-  }
+/* Ajuste de escala para que al 100% se vea fluido */
+html {
+  font-size: 14px;
 }
 
-@media (max-width: 1535px) {
+@media (min-width: 1536px) {
   html {
-    font-size: 13px;
+    font-size: 15px;
   }
 }
 
 @media (max-width: 1280px) {
   html {
-    font-size: 12px;
+    font-size: 13px;
   }
 }
 
@@ -79,13 +78,10 @@ body {
 }
 
 @keyframes pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 0.5;
     transform: scale(1);
   }
-
   50% {
     opacity: 1;
     transform: scale(1.02);
@@ -93,22 +89,17 @@ body {
 }
 
 @keyframes shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-
-  to {
-    transform: translateX(100%);
-  }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }
 
-/* Custom Scrollbar Premium */
+/* Custom Scrollbar Premium - Visible y Estilizada */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -117,5 +108,5 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.3);
+  background: rgba(212, 175, 55, 0.4);
 }

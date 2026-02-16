@@ -18,7 +18,7 @@ export const PAYMENT_PLANS = {
     advanced: {
         id: 'advanced',
         name: 'Advanced',
-        price: 29,
+        price: 29, // Sincronizado con Landing Oficial
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_ADVANCED || 'price_1T0t1QFCIL2k9dafAdvanced',
         mpPlanId: 'advanced_mp_plan_id',
@@ -27,7 +27,7 @@ export const PAYMENT_PLANS = {
     professional: {
         id: 'professional',
         name: 'Pro',
-        price: 29, // Sincronizado con Landing Oficial
+        price: 79, // Sincronizado con Landing Oficial (79 según la landing para el plan más alto)
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_PROFESSIONAL || 'price_1T0t1QFCIL2k9dafZf008rAa',
         mpPlanId: 'dd7f8a178d544993bb835425a530a4d4',

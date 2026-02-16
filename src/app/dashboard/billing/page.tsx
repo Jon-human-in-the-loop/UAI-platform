@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Zap, Shield, Rocket, Check, ArrowRight, History, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import { CreditCard, Zap, Shield, Rocket, Check, ArrowRight, History, TrendingUp, DollarSign, Activity, Star } from 'lucide-react';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 import { PAYMENT_PLANS } from '@/lib/payments.config';
 
@@ -19,7 +19,20 @@ export default function BillingPage() {
             features: PAYMENT_PLANS.essentials.features,
             color: 'text-blue-500',
             bg: 'bg-blue-500/10',
-            border: 'border-blue-500/20'
+            border: 'border-blue-500/20',
+            icon: Zap
+        },
+        {
+            id: 'advanced',
+            name: 'Advanced',
+            price: PAYMENT_PLANS.advanced.price.toString(),
+            credits: '2,500',
+            features: PAYMENT_PLANS.advanced.features,
+            color: 'text-accent',
+            bg: 'bg-accent/10',
+            border: 'border-accent/20',
+            icon: Star,
+            popular: true
         },
         {
             id: 'professional',
@@ -30,7 +43,7 @@ export default function BillingPage() {
             color: 'text-red-500',
             bg: 'bg-red-500/10',
             border: 'border-red-500/20',
-            popular: true
+            icon: Rocket
         }
     ];
 
@@ -117,14 +130,14 @@ export default function BillingPage() {
             </div>
 
             {/* Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-10">
                 {plans.map((plan) => (
                     <div 
                         key={plan.id}
-                        className={`bg-[#0a0a0a] border ${plan.popular ? 'border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.1)]' : 'border-white/5'} rounded-3xl p-8 flex flex-col relative overflow-hidden`}
+                        className={`bg-[#0a0a0a] border ${plan.popular ? 'border-accent/50 shadow-[0_0_40px_rgba(212,175,55,0.1)]' : 'border-white/5'} rounded-3xl p-8 flex flex-col relative overflow-hidden`}
                     >
                         {plan.popular && (
-                            <div className="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-bl-xl">
+                            <div className="absolute top-0 right-0 bg-accent text-white px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-bl-xl">
                                 Recomendado
                             </div>
                         )}
@@ -138,7 +151,7 @@ export default function BillingPage() {
                         
                         <div className="mt-8 space-y-4 flex-1">
                             <div className="flex items-center gap-2 p-3 bg-white/5 rounded-2xl border border-white/5">
-                                <Zap className={`w-5 h-5 ${plan.color}`} />
+                                <plan.icon className={`w-5 h-5 ${plan.color}`} />
                                 <span className="text-sm font-bold text-white">{plan.credits} Créditos <span className="text-white/40 font-normal">incluidos</span></span>
                             </div>
                             <ul className="space-y-3">
@@ -156,7 +169,7 @@ export default function BillingPage() {
                             disabled={loading === plan.id}
                             className={`mt-8 w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                                 plan.popular 
-                                ? 'bg-red-500 text-white hover:bg-red-600 shadow-xl' 
+                                ? 'bg-accent text-white hover:bg-accent/80 shadow-xl' 
                                 : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
                             }`}
                         >
