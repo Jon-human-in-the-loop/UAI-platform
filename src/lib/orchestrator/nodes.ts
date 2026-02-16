@@ -105,8 +105,9 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         1. "PLANNING": Estrategia o plan de acción.
         2. "TECHNICAL_INFO": Explicaciones técnicas o comparaciones.
         3. "EXECUTE": Acción concreta o confirmación.
+        4. "QUESTION": Si la solicitud es una pregunta que requiere aclaración o es ambigua.
 
-        Responde SOLO JSON: {{"category": "PLANNING" | "TECHNICAL_INFO" | "EXECUTE"}}
+        Responde SOLO JSON: {{"category": "PLANNING" | "TECHNICAL_INFO" | "EXECUTE" | "QUESTION"}}
         
         Solicitud: {input}
         `);
@@ -142,6 +143,23 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             console.log(`[ROUTER] Categoría: ${category}`);
         } catch (e) {
             console.warn("[ROUTER] Fallo clasificación.");
+        }
+
+        if (category === "QUESTION") {
+            const questionPrompt = PromptTemplate.fromTemplate(`
+            ${IDENTITY_PROMPT_TEMPLATE}
+            
+            El usuario ha hecho una pregunta o su solicitud es ambigua. 
+            Responde de forma técnica y cínica, pidiendo los datos que faltan si es necesario.
+            
+            Solicitud: {input}
+            `);
+            const questionChain = questionPrompt.pipe(getOrchestratorModel());
+            const response: any = await questionChain.invoke({ input: lastMessage });
+            return {
+                next_node: "FIN",
+                messages: [new AIMessage(response.content.replace(/\*\*/g, "").replace(/#/g, ""))]
+            };
         }
 
         if (category === "EXECUTE") {
