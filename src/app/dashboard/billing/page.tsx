@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Zap, Shield, Rocket, Check, ArrowRight, History, TrendingUp, DollarSign } from 'lucide-react';
+import { CreditCard, Zap, Shield, Rocket, Check, ArrowRight, History, TrendingUp, DollarSign, Activity } from 'lucide-react';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 
 export default function BillingPage() {
