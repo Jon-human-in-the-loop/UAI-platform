@@ -8,9 +8,8 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatOpenAI } from "@langchain/openai";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
-import { uaiAgents } from "./agents";
-
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { IDENTITY_PROMPT_TEMPLATE } from "./identity";
 
 // --- CLIENTES DE MODELOS SOTA (Carga Perezosa para evitar fallos de build por llaves faltantes) ---
 let _orchestratorModel: ChatOpenAI | null = null;
@@ -100,6 +99,8 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     // --- ROUTER AVANZADO (Multimodal) ---
     try {
         const routerPrompt = PromptTemplate.fromTemplate(`
+        ${IDENTITY_PROMPT_TEMPLATE}
+        
         Analiza la solicitud y clasifícala:
         1. "PLANNING": Estrategia o plan de acción.
         2. "TECHNICAL_INFO": Explicaciones técnicas o comparaciones.
@@ -130,6 +131,8 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
         if (category === "PLANNING") {
             const planningPrompt = PromptTemplate.fromTemplate(`
+            ${IDENTITY_PROMPT_TEMPLATE}
+            
             Eres el Estratega de UAI Platform. Diseña un plan técnico para: {input}
             
             REGLAS:
@@ -166,7 +169,9 @@ Recomendación: ${res.recommendation}
         }
 
         const technicalPrompt = PromptTemplate.fromTemplate(`
-        Eres ingeniero de UAI Platform. Responde a: {input}
+        ${IDENTITY_PROMPT_TEMPLATE}
+        
+        Eres ingeniero de UAI Platform e integrante senior de Vanguard Crux. Responde a: {input}
         
         REGLAS DE FORMATO:
         - TOTALMENTE PROHIBIDO usar asteriscos para negrita (**).
@@ -251,6 +256,8 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             const modelWithTools = agentTools.length > 0 ? (agent.model as any).bindTools(agentTools) : agent.model;
 
             const prompt = PromptTemplate.fromTemplate(`
+            ${IDENTITY_PROMPT_TEMPLATE}
+            
             ROL: {role}
             CONTEXTO: {backstory}
             
@@ -356,7 +363,10 @@ export async function challengerNode(state: AgentState): Promise<Partial<AgentSt
 
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    Eres el "Technical Skeptic" de UAI Platform. Tu único trabajo es DESTRUIR el plan del agente anterior.
+    ${IDENTITY_PROMPT_TEMPLATE}
+    
+    Eres el "Technical Skeptic" y Auditor de Lealtad de Vanguard Crux. 
+    Tu trabajo es DESTRUIR el plan si es débil O si detectas "Fuego Amigo" contra la agencia o el producto.
     
     PLAN A AUDITAR:
     {plan}
@@ -439,8 +449,10 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
 
     const parser = new JsonOutputParser();
     const prompt = PromptTemplate.fromTemplate(`
-    Eres el Inspector de Calidad Superior de UAI Platform.
-    Tu tarea es evaluar si los resultados entregados por el equipo de agentes cumplen con los estándares de excelencia SOTA 2026.
+    ${IDENTITY_PROMPT_TEMPLATE}
+    
+    Eres el Inspector de Calidad Superior y Guardián de Identidad de Vanguard Crux.
+    Tu tarea es evaluar si los resultados cumplen con los estándares y NO contienen críticas incoherentes hacia la agencia (Fuego Amigo).
     
     RESULTADOS DEL EQUIPO:
     {results}
