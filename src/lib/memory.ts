@@ -46,9 +46,9 @@ export async function saveReflection(text: string, agent_id: string, mission_id:
 }
 
 /**
- * Busca contextos relevantes del pasado.
+ * Busca contextos relevantes del pasado con recuperación semántica optimizada.
  */
-export async function queryMemory(query: string, limit: number = 3, learning_type: string | null = null, agent_id: string | null = null) {
+export async function queryMemory(query: string, limit: number = 3, learning_type: string | null = null, agent_id: string | null = null, userId?: string) {
     console.log(`--- Buscando en Memoria: "${query}" ---`);
 
     const queryVector = await embeddings.embedQuery(query);
@@ -70,4 +70,126 @@ export async function queryMemory(query: string, limit: number = 3, learning_typ
     }
 
     return filteredMatches.map(match => match.metadata).filter(Boolean);
+}
+
+
+/**
+ * Recupera patrones de error recurrentes en las misiones del usuario.
+ */
+export async function getErrorPatterns(userId: string) {
+    console.log(`--- Analizando Patrones de Error para Usuario ${userId} ---`);
+
+    const queryVector = await embeddings.embedQuery("Patrones de error, fallos recurrentes y soluciones aplicadas");
+
+    const queryResponse = await index.query({
+        vector: queryVector,
+        topK: 20,
+        includeMetadata: true,
+        filter: {
+            agent_id: { $eq: userId }
+        }
+    });
+
+    const patterns: Record<string, { frequency: number; solutions: Set<string> }> = {};
+
+    queryResponse.matches.forEach((match: any) => {
+        const text = (match.metadata?.text || "").toLowerCase();
+        
+        if (text.includes("timeout") || text.includes("lentitud")) {
+            const pattern = "Timeout/Rendimiento";
+            if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
+            patterns[pattern].frequency++;
+            patterns[pattern].solutions.add("Simplificar tarea, usar modelo más rápido");
+        }
+        
+        if (text.includes("error") || text.includes("fallo")) {
+            const pattern = "Error de LLM";
+            if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
+            patterns[pattern].frequency++;
+            patterns[pattern].solutions.add("Reintentar con modelo alternativo");
+        }
+        
+        if (text.includes("memoria") || text.includes("contexto")) {
+            const pattern = "Problema de Contexto";
+            if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
+            patterns[pattern].frequency++;
+            patterns[pattern].solutions.add("Recuperar más contexto, usar RAG");
+        }
+    });
+
+    return Object.entries(patterns)
+        .map(([pattern, data]) => ({
+            pattern,
+            frequency: data.frequency,
+            solutions: Array.from(data.solutions),
+        }))
+        .sort((a, b) => b.frequency - a.frequency);
+}
+
+/**
+ * Recupera estrategias exitosas que pueden aplicarse a nuevas misiones.
+ */
+export async function getSuccessfulStrategies(userId: string, missionType: string) {
+    console.log(`--- Recuperando Estrategias Exitosas para ${missionType} ---`);
+
+    const queryVector = await embeddings.embedQuery(`Estrategias exitosas para misiones de tipo ${missionType}`);
+
+    const queryResponse = await index.query({
+        vector: queryVector,
+        topK: 15,
+        includeMetadata: true,
+        filter: {
+            agent_id: { $eq: userId }
+        }
+    });
+
+    const strategies: Record<string, { count: number; description: string }> = {};
+
+    queryResponse.matches.forEach((match: any) => {
+        const text = match.metadata?.text || "";
+        
+        if (text.includes("Recomendación") || text.includes("estrategia")) {
+            const strategyMatch = text.match(/Recomendación[:\s]+([^.]+)/);
+            if (strategyMatch) {
+                const strategy = strategyMatch[1].trim();
+                if (!strategies[strategy]) {
+                    strategies[strategy] = { count: 0, description: text.substring(0, 200) };
+                }
+                strategies[strategy].count++;
+            }
+        }
+    });
+
+    return Object.entries(strategies)
+        .map(([strategy, data]) => ({
+            strategy,
+            successRate: (data.count / queryResponse.matches.length) * 100,
+            description: data.description,
+        }))
+        .sort((a, b) => b.successRate - a.successRate);
+}
+
+/**
+ * Consolida la memoria de largo plazo mediante la agregación de reflexiones relacionadas.
+ */
+export async function consolidateMemory(userId: string): Promise<string> {
+    console.log(`--- Consolidando Memoria de Largo Plazo para Usuario ${userId} ---`);
+
+    const queryVector = await embeddings.embedQuery("Resumen general de todas las lecciones aprendidas");
+
+    const queryResponse = await index.query({
+        vector: queryVector,
+        topK: 50,
+        includeMetadata: true,
+        filter: {
+            agent_id: { $eq: userId }
+        }
+    });
+
+    const consolidatedText = queryResponse.matches
+        .map((match: any) => match.metadata?.text || "")
+        .filter((text: string) => text.length > 0)
+        .join("\n---\n");
+
+    return consolidatedText;
 }
