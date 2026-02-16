@@ -520,7 +520,7 @@ uaiGraph.addNode("reflexion" as any, reflectionNode);
 uaiGraph.setEntryPoint("analizador" as any);
 
 // Updated Edges for Challenger Protocol
-uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, error: END } as any);
+uaiGraph.addConditionalEdges("analizador" as any, (s) => s.next_node, { challenger: "challenger", ejecutor: "ejecutor", waiting_approval: END, FIN: END, error: END } as any);
 uaiGraph.addConditionalEdges("challenger" as any, (s) => s.next_node, { analizador: "analizador", waiting_approval: END } as any);
 uaiGraph.addConditionalEdges("ejecutor" as any, (s) => s.next_node, { validador: "validador", error: END } as any);
 uaiGraph.addConditionalEdges("validador" as any, (s) => s.next_node === "FIN" ? "reflexion" : "analizador");
