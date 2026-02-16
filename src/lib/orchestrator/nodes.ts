@@ -564,7 +564,16 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
     `;
 
     try {
-        await saveReflection(reflectionText, { complexity: analysis.complexity });
+        await saveReflection(
+            reflectionText, 
+            "uai-nucleus-orchestrator", 
+            null, 
+            "MISSION_REFLECTION", 
+            `Reflexión sobre misión: ${analysis?.tasks?.join(", ") || "Ejecución"}`, 
+            { complexity: analysis?.complexity, skills: state.skills_active }, 
+            analysis?.keywords || ["reflexion", "uai"],
+            { complexity: analysis?.complexity }
+        );
         console.log("Aprendizaje guardado en memoria semántica.");
     } catch (e) {
         console.error("Error al guardar reflexión:", e);
