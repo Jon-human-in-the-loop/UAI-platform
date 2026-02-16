@@ -6,10 +6,10 @@ import ChannelManager from '@/components/channels/ChannelManager';
 
 export default function ChannelsPage() {
     const channels = [
-        { id: 'telegram', name: 'Telegram', icon: <Send className="w-6 h-6 text-blue-400" />, status: 'Próximamente' },
-        { id: 'whatsapp', name: 'WhatsApp', icon: <MessageSquare className="w-6 h-6 text-green-500" />, status: 'Próximamente' },
-        { id: 'email', name: 'Email', icon: <Mail className="w-6 h-6 text-red-400" />, status: 'Próximamente' },
-        { id: 'discord', name: 'Discord', icon: <Share2 className="w-6 h-6 text-indigo-400" />, status: 'Próximamente' },
+        { id: 'telegram', name: 'Telegram', icon: <Send className="w-6 h-6 text-blue-400" />, status: 'Activo' },
+        { id: 'whatsapp', name: 'WhatsApp', icon: <MessageSquare className="w-6 h-6 text-green-500" />, status: 'Activo' },
+        { id: 'email', name: 'Email', icon: <Mail className="w-6 h-6 text-red-400" />, status: 'Activo' },
+        { id: 'discord', name: 'Discord', icon: <Share2 className="w-6 h-6 text-indigo-400" />, status: 'Activo' },
     ];
 
     return (
@@ -23,17 +23,17 @@ export default function ChannelsPage() {
                 <div className="lg:col-span-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {channels.map(channel => (
-                            <div key={channel.id} className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-not-allowed">
+                            <div key={channel.id} className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between hover:bg-white/[0.07] transition-all cursor-pointer group">
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-white/5">
+                                    <div className="p-3 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
                                         {channel.icon}
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-white">{channel.name}</h3>
-                                        <p className="text-[10px] text-white/40 uppercase font-mono">{channel.status}</p>
+                                        <p className="text-[10px] text-green-500 uppercase font-mono font-bold">{channel.status}</p>
                                     </div>
                                 </div>
-                                <button disabled className="px-4 py-2 rounded-lg bg-white/5 text-[10px] font-bold text-white/20 uppercase">
+                                <button className="px-4 py-2 rounded-lg bg-red-600/20 text-[10px] font-bold text-red-500 uppercase hover:bg-red-600 hover:text-white transition-all">
                                     Configurar
                                 </button>
                             </div>
