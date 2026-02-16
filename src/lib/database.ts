@@ -83,7 +83,99 @@ export async function initDatabase() {
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;
             `);
 
-            console.log('--- DB Schema Verified (Users + Agents) ---');
+            // 3. Create MISSION CONTROL tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS synergy_notifications (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    type VARCHAR(50) NOT NULL,
+                    score INTEGER NOT NULL,
+                    description TEXT NOT NULL,
+                    agent_ids UUID[] NOT NULL,
+                    read BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS collaborative_missions (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    status VARCHAR(50) DEFAULT 'PENDING',
+                    synergy_score INTEGER DEFAULT 0,
+                    assigned_agents UUID[] NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // 4. Create GAMIFICATION ADVANCED tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS unlocked_perks (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    perk_id VARCHAR(100) NOT NULL,
+                    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, perk_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS user_characters (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    character_id VARCHAR(100) NOT NULL,
+                    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, character_id)
+                );
+            `);
+
+            // 5. Create MULTI-CHANNEL tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS channel_configs (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    channel_type VARCHAR(50) NOT NULL,
+                    enabled BOOLEAN DEFAULT TRUE,
+                    api_key TEXT,
+                    webhook_url TEXT,
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, channel_type)
+                );
+
+                CREATE TABLE IF NOT EXISTS channel_messages (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    channel_type VARCHAR(50) NOT NULL,
+                    sender_id VARCHAR(255),
+                    message_text TEXT,
+                    direction VARCHAR(10) CHECK (direction IN ('IN', 'OUT')),
+                    status VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // 6. Create AUTO-HEALING tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS execution_errors (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    agent_id UUID REFERENCES agents(id) ON DELETE SET NULL,
+                    error_message TEXT NOT NULL,
+                    error_pattern VARCHAR(255),
+                    strategy_applied VARCHAR(50),
+                    resolved BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS healing_stats (
+                    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    total_errors INTEGER DEFAULT 0,
+                    total_healed INTEGER DEFAULT 0,
+                    most_common_error VARCHAR(255),
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            console.log('--- DB Schema Verified (Full Phase 1) ---');
         } finally {
             client.release();
         }

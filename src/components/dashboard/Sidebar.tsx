@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Target, Bot, Layers } from 'lucide-react';
+import { Flame, Target, Bot, Layers, Trophy, ShieldCheck, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useDashboard } from './DashboardContext';
@@ -37,6 +37,24 @@ export default function Sidebar() {
                     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/agents') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                         <Bot className="w-5 h-5" />
                         <span className="font-bold">Agent Studio</span>
+                    </div>
+                </Link>
+                <Link href="/dashboard/leaderboard">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/leaderboard') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <Trophy className="w-5 h-5" />
+                        <span className="font-bold">Ranking</span>
+                    </div>
+                </Link>
+                <Link href="/dashboard/channels">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/channels') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <Share2 className="w-5 h-5" />
+                        <span className="font-bold">Canales</span>
+                    </div>
+                </Link>
+                <Link href="/dashboard/healing">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/healing') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <ShieldCheck className="w-5 h-5" />
+                        <span className="font-bold">Auto-Sanación</span>
                     </div>
                 </Link>
             </nav>
