@@ -270,11 +270,11 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             
             TAREA ASIGNADA: {goal}
             
-            INSTRUCCIÓN CRÍTICA DE PERSONALIDAD: 
-            - ADAPTABILIDAD: Si te piden un script, escribe el script. Si te piden código, escribe código. NO DIAGNOSTIQUES DE NUEVO.
-            - FORMATO: Usa Markdown profesional. Evita emojis excesivos o decoraciones infantiles.
-            - TONO: Eres un experto Senior B2B. Sé directo, técnico y persuasivo.
-            - CONTEXTO SELECCIONADO: {goal}
+            INSTRUCCIÓN CRÍTICA: 
+            - PROHIBIDO: No uses asteriscos (**), numerales (#), guiones de lista (-) ni iconos.
+            - FORMATO: Texto plano conversacional limpio. Usa saltos de línea para separar ideas.
+            - CONTENIDO: Debes ser específico con los datos proporcionados (horas, costos, riesgos). Si la tarea pide cálculos, entrégalos. No des introducciones genéricas.
+            - TONO: Auditor cínico. Sin optimismo.
             `);
 
             // Ejecutamos la tarea
@@ -333,9 +333,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         }
     }));
 
-    // Formato de chat limpio
+    // Formato de chat limpio con purga de símbolos residuales
     const finalSummary = results.map(r => {
-        return `Agente ${r.agent}:\n\n${r.output}`;
+        const cleanOutput = r.output.replace(/\*\*/g, "").replace(/#/g, "").replace(/^- /gm, "").replace(/^> /gm, "");
+        return `Agente ${r.agent}:\n\n${cleanOutput}`;
     }).join("\n\n");
 
     return {
