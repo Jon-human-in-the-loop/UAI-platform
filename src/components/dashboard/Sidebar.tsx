@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Target, Bot, Layers, Trophy, ShieldCheck, Share2 } from 'lucide-react';
+import { Flame, Target, Bot, Layers, Trophy, ShieldCheck, Share2, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useDashboard } from './DashboardContext';
@@ -55,6 +55,12 @@ export default function Sidebar() {
                     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/healing') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                         <ShieldCheck className="w-5 h-5" />
                         <span className="font-bold">Auto-Sanación</span>
+                    </div>
+                </Link>
+                <Link href="/dashboard/analytics">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/analytics') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <BarChart3 className="w-5 h-5" />
+                        <span className="font-bold">Analítica ROI</span>
                     </div>
                 </Link>
             </nav>
