@@ -59,7 +59,8 @@ export default function HabitatAmongUs() {
         const interval = setInterval(() => {
             setAgentPositions(prev => {
                 const newPositions = prev.map(agent => {
-                    if (Math.random() > 0.85) {
+                    // 20% de probabilidad de moverse a una nueva sala
+                    if (Math.random() > 0.8) {
                         const randomRoom = ROOMS[Math.floor(Math.random() * ROOMS.length)];
                         return {
                             ...agent,
@@ -68,6 +69,7 @@ export default function HabitatAmongUs() {
                             y: randomRoom.y + (Math.random() * 15 - 7.5),
                         };
                     }
+                    // Pequeño movimiento dentro de la sala
                     return {
                         ...agent,
                         x: agent.x + (Math.random() * 2 - 1),
@@ -115,24 +117,36 @@ export default function HabitatAmongUs() {
 
     return (
         <div className="relative w-full aspect-video bg-[#050505] rounded-3xl border border-white/10 overflow-hidden shadow-2xl group">
-            {/* Fondo de Estrellas */}
+            {/* Fondo de Estrellas Animado */}
             <div className="absolute inset-0 opacity-20 pointer-events-none">
                 <div className="stars-container animate-pulse">
                     {[...Array(50)].map((_, i) => (
-                        <div key={i} className="absolute bg-white rounded-full" style={{ width: '1px', height: '1px', top: Math.random() * 100 + '%', left: Math.random() * 100 + '%' }} />
+                        <div 
+                            key={i} 
+                            className="absolute bg-white rounded-full"
+                            style={{
+                                width: Math.random() * 2 + 'px',
+                                height: Math.random() * 2 + 'px',
+                                top: Math.random() * 100 + '%',
+                                left: Math.random() * 100 + '%',
+                            }}
+                        />
                     ))}
                 </div>
             </div>
 
-            {/* Salas */}
+            {/* Dibujo de la Base / Salas */}
             <div className="absolute inset-0 p-8 grid grid-cols-3 grid-rows-3 gap-4">
                 {ROOMS.map(room => (
                     <div 
                         key={room.id}
-                        className={`relative rounded-2xl border border-white/5 ${room.color} backdrop-blur-sm flex flex-col items-center justify-center gap-2 transition-all`}
-                        style={{ gridColumn: room.x < 30 ? 1 : room.x < 60 ? 2 : 3, gridRow: room.y < 30 ? 1 : room.y < 60 ? 2 : 3 }}
+                        className={`relative rounded-2xl border border-white/5 ${room.color} backdrop-blur-sm flex flex-col items-center justify-center gap-2 transition-all hover:border-white/20`}
+                        style={{
+                            gridColumn: room.x < 30 ? 1 : room.x < 60 ? 2 : 3,
+                            gridRow: room.y < 30 ? 1 : room.y < 60 ? 2 : 3,
+                        }}
                     >
-                        <room.icon className="w-8 h-8 text-white/10" />
+                        <room.icon className="w-8 h-8 text-white/20" />
                         <span className="text-[8px] uppercase font-black tracking-widest text-white/40">{room.name}</span>
                     </div>
                 ))}
@@ -168,21 +182,42 @@ export default function HabitatAmongUs() {
                 </defs>
             </svg>
 
-            {/* Agentes */}
+            {/* Agentes (Tripulantes) */}
             <AnimatePresence>
                 {agentPositions.map(agent => (
                     <motion.div
                         key={agent.id}
-                        animate={{ left: `${agent.x}%`, top: `${agent.y}%` }}
+                        layoutId={agent.id}
+                        initial={false}
+                        animate={{ 
+                            left: `${agent.x}%`, 
+                            top: `${agent.y}%`,
+                        }}
                         transition={{ type: 'spring', stiffness: 50, damping: 15 }}
                         className="absolute z-20 flex flex-col items-center cursor-pointer group/agent"
                     >
+                        {/* Etiqueta de Nombre */}
+                        <div className="opacity-0 group-hover/agent:opacity-100 transition-opacity absolute -top-8 bg-black/80 border border-white/10 px-2 py-1 rounded text-[8px] font-bold text-white whitespace-nowrap pointer-events-none">
+                            {agent.name}
+                        </div>
+
+                        {/* Cuerpo del Tripulante */}
                         <div className="relative w-10 h-12">
-                            <div className="absolute left-0 top-3 w-3 h-7 rounded-l-lg" style={{ backgroundColor: agent.color, filter: 'brightness(0.7)' }} />
-                            <div className="absolute right-0 w-8 h-12 rounded-t-2xl rounded-b-lg border-2 border-black/40" style={{ backgroundColor: agent.color }}>
-                                <div className="absolute top-2 left-1 w-6 h-4 bg-blue-200/80 rounded-full border border-black/20 overflow-hidden" />
+                            <div 
+                                className="absolute left-0 top-3 w-3 h-7 rounded-l-lg"
+                                style={{ backgroundColor: agent.color, filter: 'brightness(0.7)' }}
+                            />
+                            <div 
+                                className="absolute right-0 w-8 h-12 rounded-t-2xl rounded-b-lg border-2 border-black/40"
+                                style={{ backgroundColor: agent.color }}
+                            >
+                                <div className="absolute top-2 left-1 w-6 h-4 bg-blue-200/80 rounded-full border border-black/20 overflow-hidden">
+                                    <div className="absolute top-0 left-1 w-3 h-1 bg-white/60 rounded-full" />
+                                </div>
                             </div>
-                            {isAdmin && agentPositions[0].id === agent.id && <div className="absolute -top-4 left-1 text-xl animate-bounce">👑</div>}
+                            {isAdmin && agentPositions[0].id === agent.id && (
+                                <div className="absolute -top-4 left-1 text-xl animate-bounce">👑</div>
+                            )}
                         </div>
                         <div className="w-6 h-1 bg-black/40 rounded-full blur-sm mt-1" />
                     </motion.div>
@@ -224,7 +259,7 @@ export default function HabitatAmongUs() {
                 </AnimatePresence>
             </div>
 
-            {/* Overlay de Estado */}
+            {/* Overlay de Interfaz */}
             <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
                 <div className="bg-black/60 backdrop-blur-md border border-red-500/30 px-3 py-1 rounded-full flex items-center gap-2">
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -240,6 +275,15 @@ export default function HabitatAmongUs() {
                         <span className="text-[9px] font-black uppercase text-accent">Sinergia en Proceso...</span>
                     </motion.div>
                 )}
+            </div>
+
+            {/* Botón de Emergencia */}
+            <div className="absolute bottom-4 right-4">
+                <button className="w-12 h-12 bg-red-600 rounded-full border-4 border-red-800 shadow-lg flex items-center justify-center hover:scale-110 transition-transform active:scale-95 group/btn">
+                    <div className="w-8 h-8 bg-red-500 rounded-full border-2 border-red-700 flex items-center justify-center">
+                        <span className="text-[8px] font-black text-white group-hover/btn:animate-ping">!</span>
+                    </div>
+                </button>
             </div>
         </div>
     );
