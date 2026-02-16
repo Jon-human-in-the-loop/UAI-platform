@@ -65,6 +65,40 @@ Este documento detalla el funcionamiento interno de cada "superpoder" (Skill) in
 
 ---
 
+
+---
+
+## 5. Ingeniería Avanzada (Deep Tech Skills) [NUEVO]
+
+### Ingeniería Avanzada (Deep Tech)
+- **`critical` (jbrukh/think-critically):** Auditoría lógica y detección de sesgos.
+- **`nextjs` (wsimmonds/nextjs-skills):** Arquitectura App Router y Server Actions.
+- **`n8n` (czlonkowski/n8n-skills):** Automatización de flujos y orquestación de nodos.
+- **`security` (clerk/skills):** Hardening de autenticación y sesiones.
+- **`antigravity` (vudovn/kit):** Orquestación multi-agente de alto nivel.
+
+### 🧠 Critical Thinking Protocol (jbrukh)
+- **Función:** Auditoría lógica adversaria. Detecta falacias (hombre de paja, costo hundido) y sesgos cognitivos en planes de negocio o código.
+- **Uso:** El "Challenger Node" lo invoca para destruir ideas débiles antes de que lleguen a producción.
+
+### ⚛️ Next.js Expert (wsimmonds)
+- **Función:** Patrones de arquitectura para App Router, Server Actions y Suspense.
+- **Uso:** Garantiza que el código generado siga las *best practices* de Vercel (evitando useEffect en cascada, optimizando LCP).
+
+### 🛡️ Auth & Security Auditor (Clerk/Supabase)
+- **Función:** Hardening de sistemas de autenticación y gestión de sesiones.
+- **Uso:** Revisa implementaciones de Middleware y RLS (Row Level Security) para prevenir fugas de datos.
+
+### ⚙️ n8n Automation Expert (czlonkowski)
+- **Función:** Diseño de flujos de trabajo en n8n, sintaxis de expresiones y configuración de nodos.
+- **Uso:** Automatiza procesos de agencia, desde la captura de leads hasta la entrega de reportes complejos.
+
+### 🌌 Antigravity Kit (vudovn)
+- **Función:** Suite de herramientas de alto rendimiento para sistemas agénticos complejos.
+- **Uso:** Despliega patrones de orquestación multi-agente y memoria compartida avanzada.
+
+---
+
 ## 💡 Cómo los invoca el Agente
 Cada vez que lanzas una **Misión**, el **Analizador (Claude 3.7)** identifica qué skills son necesarios del catálogo. El **Ejecutor** recibe estas herramientas, las "llama" con parámetros reales, y utiliza el resultado para construir su informe final. 
 
