@@ -32,7 +32,11 @@ export const HEALING_STRATEGIES: HealingStrategy[] = [
  */
 export function diagnoseError(errorMessage: string): HealingStrategy {
     for (const strategy of HEALING_STRATEGIES) {
-        if (strategy.errorPattern.test(errorMessage)) {
+        const pattern = typeof strategy.errorPattern === 'string' 
+            ? new RegExp(strategy.errorPattern, 'i') 
+            : strategy.errorPattern;
+            
+        if (pattern.test(errorMessage)) {
             return strategy;
         }
     }
