@@ -10,7 +10,7 @@ const pinecone = new Pinecone({
 
 const embeddings = new OpenAIEmbeddings({
     openAIApiKey: process.env.OPENAI_API_KEY!,
-    modelName: "text-embedding-3-small", // SOTA 2026 Ready
+    modelName: "text-embedding-3-small",
 });
 
 const indexName = process.env.PINECONE_INDEX_NAME || "uai-memory";
@@ -29,24 +29,47 @@ export async function getSemanticMemory() {
 }
 
 /**
- * Almacena un pensamiento o resultado en la conciencia a largo plazo.
+ * Almacena un pensamiento o resultado en la conciencia a largo plazo con metadatos enriquecidos.
  */
 export async function storeInLongTermMemory(text: string, metadata: any = {}) {
     const memory = await getSemanticMemory();
     if (memory) {
-        await memory.addDocuments([{ pageContent: text, metadata }]);
-        console.log("--- PENSAMIENTO ALMACENADO EN MEMORIA SEMÁNTICA ---");
+        const enrichedMetadata = {
+            ...metadata,
+            timestamp: new Date().toISOString(),
+            source: metadata.source || 'orchestrator',
+            importance: metadata.importance || 1
+        };
+        await memory.addDocuments([{ pageContent: text, metadata: enrichedMetadata }]);
+        console.log(`--- PENSAMIENTO ALMACENADO EN MEMORIA SEMÁNTICA (${enrichedMetadata.source}) ---`);
     }
 }
 
 /**
- * Recupera contextos relevantes basados en la semántica.
+ * Recupera contextos relevantes basados en la semántica y filtrado por metadatos.
  */
-export async function recallFromMemory(query: string, k = 3) {
+export async function recallFromMemory(query: string, k = 5, filter: any = null) {
     const memory = await getSemanticMemory();
     if (memory) {
-        const results = await memory.similaritySearch(query, k);
-        return results.map(doc => doc.pageContent).join("\n---\n");
+        // Recuperación avanzada con filtrado (ej. solo memoria de un usuario específico)
+        const results = await memory.similaritySearch(query, k, filter);
+        
+        if (results.length === 0) return "No se encontraron recuerdos relevantes.";
+
+        return results.map(doc => {
+            const date = doc.metadata.timestamp ? new Date(doc.metadata.timestamp).toLocaleDateString() : 'Fecha desconocida';
+            return `[Recuerdo del ${date}]: ${doc.pageContent}`;
+        }).join("\n---\n");
     }
     return "";
+}
+
+/**
+ * Limpia la memoria de corto plazo pero mantiene la semántica (simulado).
+ */
+export async function consolidateMemory(userId: string) {
+    console.log(`[Memory] Consolidando recuerdos para el usuario ${userId}...`);
+    // En una implementación real, aquí se podrían resumir múltiples recuerdos pequeños
+    // en uno solo más denso para optimizar el contexto.
+    return true;
 }
