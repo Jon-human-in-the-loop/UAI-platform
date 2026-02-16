@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Target, Bot, Layers, Trophy, ShieldCheck, Share2, BarChart3 } from 'lucide-react';
+import { Flame, Target, Bot, Layers, Trophy, ShieldCheck, Share2, BarChart3, ShoppingBag, Brain, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useDashboard } from './DashboardContext';
@@ -39,6 +39,18 @@ export default function Sidebar() {
                         <span className="font-bold">Agent Studio</span>
                     </div>
                 </Link>
+                <Link href="/dashboard/marketplace">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/marketplace') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <ShoppingBag className="w-5 h-5" />
+                        <span className="font-bold">Marketplace</span>
+                    </div>
+                </Link>
+                <Link href="/dashboard/memory">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/memory') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <Brain className="w-5 h-5" />
+                        <span className="font-bold">Memoria Colectiva</span>
+                    </div>
+                </Link>
                 <Link href="/dashboard/leaderboard">
                     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/leaderboard') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                         <Trophy className="w-5 h-5" />
@@ -61,6 +73,12 @@ export default function Sidebar() {
                     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/analytics') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                         <BarChart3 className="w-5 h-5" />
                         <span className="font-bold">Analítica ROI</span>
+                    </div>
+                </Link>
+                <Link href="/dashboard/billing">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/dashboard/billing') ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                        <CreditCard className="w-5 h-5" />
+                        <span className="font-bold">Créditos</span>
                     </div>
                 </Link>
             </nav>
