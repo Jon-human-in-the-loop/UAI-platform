@@ -3,6 +3,7 @@ import { BaseMessage } from "@langchain/core/messages";
 
 // Definición del Estado del Agente
 export interface AgentState {
+    userId: string;
     messages: BaseMessage[];
     next_node: string;
     errors: string[];

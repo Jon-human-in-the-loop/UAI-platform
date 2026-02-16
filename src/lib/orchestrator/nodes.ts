@@ -1,5 +1,6 @@
 import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { saveReflection, queryMemory } from "../memory";
+import { updateUserProgress } from "../database";
 import { AgentState, uaiGraph } from "./graph";
 import { END } from "@langchain/langgraph";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
@@ -10,6 +11,7 @@ import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { IDENTITY_PROMPT_TEMPLATE } from "./identity";
+import { analyzeSynergy, calculateTeamSynergy, ROLE_SYNERGY_MATRIX } from "../mission-control";
 
 // --- NODO DE AUTO-SANACIÓN ---
 export async function healingNode(state: AgentState): Promise<Partial<AgentState>> {
@@ -232,6 +234,25 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
 
             const chain = planningPrompt.pipe(getOrchestratorModel()).pipe(new JsonOutputParser());
             const res: any = await chain.invoke({ input: lastMessage });
+
+            // Analizar sinergias entre los agentes propuestos
+            let synergisticAgents = res.agents;
+            if (synergisticAgents && synergisticAgents.length > 1) {
+                const potentialSynergies = [];
+                for (let i = 0; i < synergisticAgents.length; i++) {
+                    for (let j = i + 1; j < synergisticAgents.length; j++) {
+                        const agentA = synergisticAgents[i];
+                        const agentB = synergisticAgents[j];
+                        const synergy = analyzeSynergy(agentA, agentB);
+                        if (synergy.score > 50) { // Considerar sinergias significativas
+                            potentialSynergies.push(`- **${agentA.role}** y **${agentB.role}**: ${synergy.description} (${synergy.potentialOutput})`);
+                        }
+                    }
+                }
+                if (potentialSynergies.length > 0) {
+                    res.audit += `\n\n**Sinergias Potenciales Detectadas:**\n${potentialSynergies.join("\n")}`;
+                }
+            }
 
             const formattedPlan = `
 ${res.audit}
@@ -616,6 +637,15 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
         console.log("Aprendizaje guardado en memoria semántica.");
     } catch (e) {
         console.error("Error al guardar reflexión:", e);
+    }
+
+    // Otorgar XP al usuario
+    try {
+        // Calcular XP basado en la complejidad o simplemente un valor fijo por misión
+        const xpEarned = analysis?.complexity === 'High' ? 100 : 50; 
+        await updateUserProgress(state.userId, xpEarned);
+    } catch (e) {
+        console.error("Error al actualizar el progreso del usuario:", e);
     }
 
     return { next_node: "FIN" };

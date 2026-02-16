@@ -237,10 +237,47 @@ export async function initDatabase() {
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS token_usage_total BIGINT DEFAULT 0;
             `);
 
-            console.log('--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---');;        } finally {
+            console.log("--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---");
+        } finally {
             client.release();
         }
     } catch (err) {
-        console.error('--- DB Connection/Init Error ---', err);
+        console.error("--- DB Connection/Init Error ---", err);
+    }
+}
+
+export async function updateUserProgress(userId: string, xpEarned: number) {
+    const client = await dbPool.connect();
+    try {
+        // Obtener el progreso actual del usuario
+        const res = await client.query(
+            `SELECT xp, level FROM users WHERE id = $1`,
+            [userId]
+        );
+        
+        if (res.rows.length > 0) {
+            let { xp, level } = res.rows[0];
+            xp += xpEarned;
+
+            // Lógica de nivelación simple (ejemplo: cada 1000 XP es un nivel)
+            const newLevel = Math.floor(xp / 1000) + 1;
+            if (newLevel > level) {
+                level = newLevel;
+                console.log(`Usuario ${userId} ha subido al nivel ${level}!`);
+                // Aquí se podría añadir lógica para desbloquear perks o notificaciones
+            }
+
+            await client.query(
+                `UPDATE users SET xp = $1, level = $2, last_active = CURRENT_TIMESTAMP WHERE id = $3`,
+                [xp, level, userId]
+            );
+            console.log(`Progreso del usuario ${userId} actualizado: +${xpEarned} XP. XP total: ${xp}, Nivel: ${level}`);
+        } else {
+            console.warn(`Usuario ${userId} no encontrado para actualizar progreso.`);
+        }
+    } catch (error) {
+        console.error("Error al actualizar el progreso del usuario:", error);
+    } finally {
+        client.release();
     }
 }
