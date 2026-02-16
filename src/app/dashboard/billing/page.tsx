@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Zap, Shield, Rocket, Check, ArrowRight, History, TrendingUp, DollarSign, Activity } from 'lucide-react';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
+import { PAYMENT_PLANS } from '@/lib/payments.config';
 
 export default function BillingPage() {
     const { profile } = useDashboard();
@@ -12,20 +13,20 @@ export default function BillingPage() {
     const plans = [
         {
             id: 'essentials',
-            name: 'Essentials',
-            price: '29',
+            name: 'Básico',
+            price: PAYMENT_PLANS.essentials.price.toString(),
             credits: '1,000',
-            features: ['5 Agentes Activos', 'Memoria Estándar', 'Soporte WhatsApp', 'Analítica Básica'],
+            features: PAYMENT_PLANS.essentials.features,
             color: 'text-blue-500',
             bg: 'bg-blue-500/10',
             border: 'border-blue-500/20'
         },
         {
             id: 'professional',
-            name: 'Professional',
-            price: '99',
+            name: 'Pro',
+            price: PAYMENT_PLANS.professional.price.toString(),
             credits: '5,000',
-            features: ['Agentes Ilimitados', 'Memoria Colectiva Full', 'Voz y Multimedia', 'Prioridad de Cómputo', 'Analítica ROI Avanzada'],
+            features: PAYMENT_PLANS.professional.features,
             color: 'text-red-500',
             bg: 'bg-red-500/10',
             border: 'border-red-500/20',
@@ -36,10 +37,10 @@ export default function BillingPage() {
     const handleSubscribe = async (planId: string) => {
         setLoading(planId);
         try {
-            const res = await fetch('/api/billing/checkout', {
+            const res = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ planId })
+                body: JSON.stringify({ planId, provider: 'stripe' })
             });
             const { url } = await res.json();
             if (url) window.location.href = url;
@@ -51,7 +52,7 @@ export default function BillingPage() {
     };
 
     return (
-        <div className="h-full flex flex-col p-6 overflow-hidden max-w-7xl mx-auto space-y-8">
+        <div className="h-full flex flex-col p-6 overflow-y-auto custom-scrollbar max-w-7xl mx-auto space-y-8">
             {/* Header */}
             <div>
                 <h1 className="text-4xl font-black uppercase tracking-tighter text-white flex items-center gap-3">

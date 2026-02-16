@@ -27,6 +27,25 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1536px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1535px) {
+  html {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1280px) {
+  html {
+    font-size: 12px;
+  }
 }
 
 @layer utilities {

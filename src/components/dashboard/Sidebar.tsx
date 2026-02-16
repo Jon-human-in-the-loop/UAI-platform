@@ -23,7 +23,7 @@ export default function Sidebar() {
         <motion.aside
             initial={{ x: -250 }}
             animate={{ x: 0 }}
-            className="w-72 border-r border-white/10 bg-black/40 backdrop-blur-md hidden xl:flex flex-col p-5 gap-5 shadow-2xl overflow-y-auto custom-scrollbar h-full"
+            className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-md hidden xl:flex flex-col p-4 gap-4 shadow-2xl overflow-y-auto custom-scrollbar h-full"
         >
             {/* Navigation */}
             <nav className="space-y-2">

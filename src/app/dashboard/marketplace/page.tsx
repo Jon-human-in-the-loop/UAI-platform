@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Bot, Zap, Code, BarChart3, Briefcase, Plus, Check, Star, Info, Rocket, Activity } from 'lucide-react';
+import { ShoppingBag, Bot, Zap, Code, BarChart3, Briefcase, Plus, Check, Star, Rocket, Activity, AlertCircle } from 'lucide-react';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 
 interface Template {
@@ -18,24 +18,44 @@ interface Template {
 }
 
 export default function MarketplacePage() {
-    const { profile } = useDashboard();
+    const { profile, refreshProfile } = useDashboard();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
     const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchTemplates();
+        loadData();
     }, []);
 
-    const fetchTemplates = async () => {
+    const loadData = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const res = await fetch('/api/marketplace');
-            const data = await res.json();
-            setTemplates(data);
-        } catch (error) {
-            console.error('Error fetching templates:', error);
+            const [tRes, pRes] = await Promise.all([
+                fetch('/api/marketplace?action=templates'),
+                fetch('/api/marketplace?action=purchased')
+            ]);
+
+            const tData = await tRes.json();
+            const pData = await pRes.json();
+
+            if (tData.success) {
+                setTemplates(tData.templates || []);
+            } else if (Array.isArray(tData)) {
+                setTemplates(tData);
+            } else {
+                setError('No se pudieron cargar los templates');
+            }
+
+            if (Array.isArray(pData)) {
+                setPurchasedIds(pData.map(p => p.id));
+            }
+        } catch (err) {
+            console.error('Error loading marketplace:', err);
+            setError('Error de conexión con el servidor');
         } finally {
             setLoading(false);
         }
@@ -52,15 +72,16 @@ export default function MarketplacePage() {
                 body: JSON.stringify({ templateId: template.id })
             });
             
-            if (res.ok) {
+            const data = await res.json();
+            if (res.ok && data.success) {
                 setPurchasedIds(prev => [...prev, template.id]);
-                // En un caso real, aquí dispararíamos una notificación de éxito
+                refreshProfile();
             } else {
-                const err = await res.json();
-                alert(err.error || 'Error al adquirir la plantilla');
+                alert(data.error || 'Error al adquirir la plantilla');
             }
         } catch (error) {
             console.error('Purchase error:', error);
+            alert('Error de conexión');
         } finally {
             setPurchasingId(null);
         }
@@ -102,6 +123,12 @@ export default function MarketplacePage() {
                     </button>
                 </div>
             </div>
+
+            {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-sm">
+                    <AlertCircle className="w-5 h-5" /> {error}
+                </div>
+            )}
 
             {/* Categories */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
