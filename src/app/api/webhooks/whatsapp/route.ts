@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
             }
         }, { configurable: { thread_id: `wa_${from}` } });
 
-        const aiResponse = result.messages[result.messages.length - 1].content.toString();
+        const messages = result.messages as any[];
+        const aiResponse = messages[messages.length - 1].content.toString();
 
         // 3. Respuesta Multimodal (Texto o Voz)
         // Por ahora respondemos con texto, pero podríamos generar audio con TTS
