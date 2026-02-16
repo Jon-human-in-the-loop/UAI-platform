@@ -15,11 +15,11 @@ const embeddings = new OpenAIEmbeddings({
 /**
  * Guarda una "reflexión" o aprendizaje en la memoria a largo plazo.
  */
-export async function saveReflection(text: string, metadata: any = {}) {
+export async function saveReflection(text: string, agent_id: string, mission_id: string | null, learning_type: string, summary: string, details: any | null, keywords: string[], metadata: any = {}) {
     console.log("--- Guardando Reflexión en Memoria Semántica ---");
 
     const doc = new Document({
-        pageContent: text,
+        pageContent: summary,
         metadata: {
             ...metadata,
             timestamp: new Date().toISOString(),
@@ -33,7 +33,12 @@ export async function saveReflection(text: string, metadata: any = {}) {
             id: `ref_${Date.now()}`,
             values: vector[0],
             metadata: {
-                text: doc.pageContent,
+                text: summary,
+                agent_id,
+                mission_id,
+                learning_type,
+                details,
+                keywords,
                 ...doc.metadata
             }
         }]
@@ -43,7 +48,7 @@ export async function saveReflection(text: string, metadata: any = {}) {
 /**
  * Busca contextos relevantes del pasado.
  */
-export async function queryMemory(query: string, limit: number = 3) {
+export async function queryMemory(query: string, limit: number = 3, learning_type: string | null = null, agent_id: string | null = null) {
     console.log(`--- Buscando en Memoria: "${query}" ---`);
 
     const queryVector = await embeddings.embedQuery(query);
@@ -54,5 +59,15 @@ export async function queryMemory(query: string, limit: number = 3) {
         includeMetadata: true,
     });
 
-    return queryResponse.matches.map(match => match.metadata?.text).filter(Boolean);
+    let filteredMatches = queryResponse.matches;
+
+    if (learning_type) {
+        filteredMatches = filteredMatches.filter(match => match.metadata?.learning_type === learning_type);
+    }
+
+    if (agent_id) {
+        filteredMatches = filteredMatches.filter(match => match.metadata?.agent_id === agent_id);
+    }
+
+    return filteredMatches.map(match => match.metadata).filter(Boolean);
 }

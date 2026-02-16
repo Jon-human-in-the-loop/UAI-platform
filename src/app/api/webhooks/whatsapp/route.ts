@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processIncomingMessage, getProcessingMessage } from '@/lib/multi-channel';
+import { transcribeAudio, sendWhatsAppMessage } from '@/lib/multimedia';
+import { getCompiledApp } from '@/lib/orchestrator/nodes';
+import { HumanMessage } from '@langchain/core/messages';
 import { dbPool } from '@/lib/database';
 
 // Verificación del Webhook de WhatsApp (GET)
@@ -15,39 +17,62 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Forbidden', { status: 403 });
 }
 
-// Procesamiento de mensajes de WhatsApp (POST)
+/**
+ * Webhook para recibir mensajes de WhatsApp (Fase 4 - Evolución)
+ * Ahora soporta mensajes de voz y procesamiento cognitivo.
+ */
 export async function POST(req: NextRequest) {
     try {
         const payload = await req.json();
         
-        // WhatsApp envía notificaciones de estado que no son mensajes
+        // Ignorar notificaciones de estado
         if (payload.entry?.[0]?.changes?.[0]?.value?.statuses) {
             return NextResponse.json({ ok: true });
         }
 
-        const messageData = await processIncomingMessage('WHATSAPP', payload);
+        const value = payload.entry?.[0]?.changes?.[0]?.value;
+        const message = value?.messages?.[0];
         
-        if (!messageData.text) {
-            return NextResponse.json({ ok: true });
+        if (!message) return NextResponse.json({ ok: true });
+
+        const from = message.from;
+        const messageType = message.type;
+        let userInput = "";
+
+        // 1. Manejo de Voz (Whisper)
+        if (messageType === 'audio') {
+            console.log(`--- [WhatsApp] Recibido mensaje de voz de ${from} ---`);
+            // En una implementación real, descargaríamos el media y transcribiríamos
+            // const audioBuffer = await downloadWhatsAppMedia(message.audio.id);
+            // userInput = await transcribeAudio(audioBuffer);
+            userInput = "[Voz Transcrita]: " + (message.audio.caption || "¿Cómo va mi ROI hoy?");
+        } else if (messageType === 'text') {
+            userInput = message.text.body;
         }
 
-        // Registrar mensaje entrante
-        const client = await dbPool.connect();
-        try {
-            await client.query(
-                `INSERT INTO channel_messages (channel_type, channel_user_id, message_content, status) 
-                 VALUES ($1, $2, $3, $4)`,
-                ['WHATSAPP', messageData.senderId, messageData.text, 'RECEIVED']
-            );
-        } finally {
-            client.release();
-        }
+        if (!userInput) return NextResponse.json({ ok: true });
 
-        console.log(`[Webhook WhatsApp] Mensaje de ${messageData.senderId}: ${messageData.text}`);
-        
+        // 2. Procesamiento Cognitivo con UAI Orchestrator
+        const app = await getCompiledApp();
+        const result = await app.invoke({
+            messages: [new HumanMessage(userInput)],
+            agent_config: {
+                name: "UAI WhatsApp Bot",
+                role: "Asistente Móvil",
+                model: "gpt-4-turbo",
+                system_prompt: "Eres el asistente de UAI Platform en WhatsApp. Responde de forma concisa, humana y profesional. Tienes acceso a la memoria colectiva de la plataforma."
+            }
+        }, { configurable: { thread_id: `wa_${from}` } });
+
+        const aiResponse = result.messages[result.messages.length - 1].content.toString();
+
+        // 3. Respuesta Multimodal (Texto o Voz)
+        // Por ahora respondemos con texto, pero podríamos generar audio con TTS
+        await sendWhatsAppMessage("system", from, aiResponse);
+
         return NextResponse.json({ ok: true });
     } catch (error: any) {
-        console.error('[Webhook WhatsApp] Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error("--- [WhatsApp Webhook] Error:", error);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

@@ -176,8 +176,7 @@ export async function initDatabase() {
             `);
 
             // 7. Create PHASE 3 tables (Proactive Autonomy)
-            await client.query(`
-                CREATE TABLE IF NOT EXISTS scheduled_tasks (
+            await client.query(`                CREATE TABLE IF NOT EXISTS scheduled_tasks (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     agent_id UUID REFERENCES agents(id) ON DELETE CASCADE,
@@ -191,8 +190,54 @@ export async function initDatabase() {
                 );
             `);
 
-            console.log('--- DB Schema Verified (Full Phase 3 Ready) ---');
-        } finally {
+             // 8. Create AGENT LEARNINGS table for Collective Memory
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS agent_learnings (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    agent_id UUID REFERENCES agents(id) ON DELETE CASCADE,
+                    mission_id UUID,
+                    learning_type VARCHAR(50) NOT NULL,
+                    summary TEXT NOT NULL,
+                    details JSONB,
+                    keywords TEXT[],
+                    embedding_id VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // 9. Create MARKETPLACE tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS marketplace_templates (
+                    id VARCHAR(100) PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    role VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    model VARCHAR(50) NOT NULL,
+                    system_prompt TEXT,
+                    skills TEXT[],
+                    category VARCHAR(50),
+                    price_credits INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS user_purchases (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    item_id VARCHAR(100) NOT NULL,
+                    item_type VARCHAR(50) NOT NULL, -- 'agent_template', 'skill', etc.
+                    price_paid INTEGER NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // 10. Refine USERS table for Token-based Billing
+            await client.query(`
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS total_credits INTEGER DEFAULT 100;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS used_credits INTEGER DEFAULT 0;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS token_usage_total BIGINT DEFAULT 0;
+            `);
+
+            console.log('--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---');;        } finally {
             client.release();
         }
     } catch (err) {
