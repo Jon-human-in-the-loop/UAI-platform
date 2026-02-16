@@ -1,4 +1,5 @@
-import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage, BaseMessage, MessageContent } from "@langchain/core/messages";
+import { createMultimodalHumanMessage, containsMultimodalContent } from "../multimodal";
 import { saveReflection, queryMemory } from "../memory";
 import { updateUserProgress } from "../database";
 import { AgentState, uaiGraph } from "./graph";
@@ -106,16 +107,22 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
     }
 
     const lastMessageObj = state.messages[state.messages.length - 1];
-    const lastMessage = typeof lastMessageObj.content === "string"
-        ? lastMessageObj.content
-        : JSON.stringify(lastMessageObj.content);
+    let lastMessage: string | HumanMessage;
+
+    if (containsMultimodalContent(lastMessageObj)) {
+        lastMessage = lastMessageObj as HumanMessage;
+    } else {
+        lastMessage = typeof lastMessageObj.content === "string"
+            ? lastMessageObj.content
+            : JSON.stringify(lastMessageObj.content);
+    }
 
     // Recuperar memorias relacionadas del pasado
     let pastContext = "";
     try {
         let pastReflections = "";
         try {
-            const memories = await queryMemory(lastMessage);
+            const memories = await queryMemory(typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage));
             if (memories.length > 0) {
                 pastReflections = memories.join("\n---\n");
             }
@@ -156,7 +163,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         let category = "TECHNICAL_INFO";
         try {
             const routerChain = routerPrompt.pipe(getGpt5()).pipe(new JsonOutputParser());
-            const routeResult: any = await routerChain.invoke({ input: lastMessage });
+            const routeResult: any = await routerChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
             category = routeResult.category;
 
             // HIGIENE COGNITIVA: Si el tema cambia drásticamente, reseteamos el contexto anterior
@@ -168,7 +175,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             Responde SOLO "SAME" o "CHANGE".
             `);
             const changeChain = changeDetectorPrompt.pipe(getGpt5());
-            const changeDecision = await changeChain.invoke({ prev: previousContext, next: lastMessage });
+            const changeDecision = await changeChain.invoke({ prev: previousContext, next: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
 
             if (changeDecision.content.toString().includes("CHANGE")) {
                 console.log("[HIGIENE] Cambio de tema detectado. Limpiando memoria de corto plazo.");
@@ -196,7 +203,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             Solicitud: {input}
             `);
             const questionChain = questionPrompt.pipe(getOrchestratorModel());
-            const response: any = await questionChain.invoke({ input: lastMessage });
+            const response: any = await questionChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
             return {
                 next_node: "FIN",
                 messages: [new AIMessage(response.content.replace(/\*\*/g, "").replace(/#/g, ""))]
@@ -233,7 +240,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             `);
 
             const chain = planningPrompt.pipe(getOrchestratorModel()).pipe(new JsonOutputParser());
-            const res: any = await chain.invoke({ input: lastMessage });
+            const res: any = await chain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
 
             // Analizar sinergias entre los agentes propuestos
             let synergisticAgents = res.agents;
@@ -282,8 +289,8 @@ Recomendación: ${res.recommendation}
         - Sé profundo y técnico.
         `);
 
-        const techChain = technicalPrompt.pipe(getOrchestratorModel());
-        const techResponse: any = await techChain.invoke({ input: lastMessage });
+            const techChain = technicalPrompt.pipe(getOrchestratorModel());
+            const techResponse: any = await techChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
         const cleanContent = techResponse.content.replace(/\*\*/g, "").replace(/#/g, "");
 
         return {
@@ -355,6 +362,10 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             const modelWithTools = agentTools.length > 0 ? (agent.model as any).bindTools(agentTools) : agent.model;
 
             const prompt = PromptTemplate.fromTemplate(`
+            // Si el mensaje es multimodal, el input será un objeto, no un string.
+            // El modelo debe ser capaz de manejarlo.
+            // {input} se reemplazará con el contenido del mensaje, que puede ser un string o un array de objetos.
+            
             ${IDENTITY_PROMPT_TEMPLATE}
             
             ROL: {role}
@@ -370,15 +381,12 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
             - Responde como una terminal de datos pura.
             `);
 
-            // Ejecutamos la tarea
-            const chain = prompt.pipe(modelWithTools);
+            // Ejecutamos la ta            const chain = prompt.pipe(modelWithTools);
             const response: any = await chain.invoke({
+                input: lastMessageObj.content,
                 role: agent.role,
-                backstory: agent.backstory,
-                goal: agent.goal
-            });
-
-            let outputText = "";
+                goal: agent.goal,
+            });t = "";
 
             // Manejo de Tool Calling (Simpificado para esta arquitectura)
             if (response.tool_calls && response.tool_calls.length > 0) {
@@ -611,9 +619,15 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
     console.log("--- NODO: REFLEXIÓN (Guardando en Pinecone) ---");
 
     const lastMessageObj = state.messages[state.messages.length - 1];
-    const lastMessage = typeof lastMessageObj.content === "string"
-        ? lastMessageObj.content
-        : JSON.stringify(lastMessageObj.content);
+    let lastMessage: string | HumanMessage;
+
+    if (containsMultimodalContent(lastMessageObj)) {
+        lastMessage = lastMessageObj as HumanMessage;
+    } else {
+        lastMessage = typeof lastMessageObj.content === "string"
+            ? lastMessageObj.content
+            : JSON.stringify(lastMessageObj.content);
+    }
 
     const analysis = state.context_memory.analysis;
 

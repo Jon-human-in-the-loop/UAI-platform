@@ -4,7 +4,7 @@ import { BaseMessage } from "@langchain/core/messages";
 // Definición del Estado del Agente
 export interface AgentState {
     userId: string;
-    messages: BaseMessage[];
+    messages: (BaseMessage | HumanMessage)[]; // Permite mensajes multimodales
     next_node: string;
     errors: string[];
     skills_active: string[];
