@@ -175,7 +175,23 @@ export async function initDatabase() {
                 );
             `);
 
-            console.log('--- DB Schema Verified (Full Phase 1) ---');
+            // 7. Create PHASE 3 tables (Proactive Autonomy)
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    agent_id UUID REFERENCES agents(id) ON DELETE CASCADE,
+                    mission_template TEXT NOT NULL,
+                    cron_expression VARCHAR(100) NOT NULL,
+                    last_run TIMESTAMP,
+                    next_run TIMESTAMP,
+                    status VARCHAR(50) DEFAULT 'ENABLED',
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            console.log('--- DB Schema Verified (Full Phase 3 Ready) ---');
         } finally {
             client.release();
         }
