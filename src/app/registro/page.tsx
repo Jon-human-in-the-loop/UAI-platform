@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
-type PlanId = 'free' | 'essentials' | 'professional';
+type PlanId = 'free' | 'essentials' | 'advanced' | 'professional';
 
 const plans: { id: PlanId; name: string; price: string; period: string; badge?: string; features: string[]; highlight: boolean; cta: string }[] = [
     {
@@ -16,14 +16,19 @@ const plans: { id: PlanId; name: string; price: string; period: string; badge?: 
         highlight: false, cta: 'Comenzar Gratis'
     },
     {
-        id: 'essentials', name: 'Essentials', price: '$9', period: '/mes',
+        id: 'essentials', name: 'Básico', price: '$9', period: '/mes',
         badge: 'RECOMENDADO',
         features: ['Orquestación de 2 Agentes', 'Memoria Cognitiva Persistente', 'Prioridad en Razonamiento', 'Tokens a Coste Directo (0% Margen)', 'Capacidad: 50 consultas/hora'],
         highlight: true, cta: 'Activar Essentials'
     },
     {
-        id: 'professional', name: 'Professional', price: '$79', period: '/mes',
-        features: ['Hasta 5 Agentes Coordinados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'],
+        id: 'advanced', name: 'Advanced', price: '$29', period: '/mes',
+        features: ['Hasta 5 Agentes Coordinados', 'Soporte Multi-Canal Full', 'Analítica ROI Avanzada', 'Prioridad de Cómputo Alta'],
+        highlight: false, cta: 'Activar Advanced'
+    },
+    {
+        id: 'professional', name: 'Pro', price: '$79', period: '/mes',
+        features: ['Agentes Ilimitados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'],
         highlight: false, cta: 'Activar Professional'
     }
 ];
@@ -71,13 +76,11 @@ function RegistroPage() {
                 const data = await res.json();
                 setSuccess(true);
 
-                // Conditional redirect based on plan
                 if (data.requiresPayment) {
                     setTimeout(() => {
                         window.location.href = data.checkoutUrl;
                     }, 2000);
                 } else {
-                    // Plan Free: auto-login
                     try {
                         const loginRes = await signIn('credentials', {
                             email,
@@ -87,7 +90,6 @@ function RegistroPage() {
 
                         if (loginRes?.error) {
                             console.error('Auto-login error:', loginRes.error);
-                            // Fallback to manual login page if auto-login fails
                             setTimeout(() => {
                                 window.location.href = '/login';
                             }, 2000);
@@ -119,11 +121,9 @@ function RegistroPage() {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-accent font-sans relative overflow-hidden">
-            {/* Background Effects */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(139,0,0,0.1)_0,transparent_60%)] pointer-events-none" />
             <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
 
-            {/* Header */}
             <header className="w-full h-20 z-50 border-b border-white/5 bg-black/50 backdrop-blur-xl flex items-center justify-between px-6 lg:px-20">
                 <Link href="/" className="flex items-center gap-3 group">
                     <ChevronLeft className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
@@ -137,9 +137,8 @@ function RegistroPage() {
                 </div>
             </header>
 
-            <main className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+            <main className="relative z-10 max-w-7xl mx-auto px-6 py-20">
                 <AnimatePresence mode="wait">
-                    {/* STEP 1: Plan Selection */}
                     {step === 'plan' && (
                         <motion.div
                             key="plan"
@@ -161,7 +160,7 @@ function RegistroPage() {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {plans.map((plan) => (
                                     <motion.div
                                         key={plan.id}
@@ -181,12 +180,12 @@ function RegistroPage() {
                                             <h3 className="text-xl font-black uppercase tracking-tight">{plan.name}</h3>
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className={`font-black font-mono ${plan.highlight ? 'text-6xl' : 'text-5xl'}`}>{plan.price}</span>
+                                            <span className={`font-black font-mono ${plan.highlight ? 'text-5xl' : 'text-4xl'}`}>{plan.price}</span>
                                             <span className="text-white/30 text-sm font-bold">{plan.period}</span>
                                         </div>
                                         <ul className="flex-1 space-y-3">
                                             {plan.features.map(f => (
-                                                <li key={f} className={`flex items-center gap-3 text-sm ${plan.highlight ? 'text-white/80' : 'text-white/40'}`}>
+                                                <li key={f} className={`flex items-center gap-3 text-[11px] ${plan.highlight ? 'text-white/80' : 'text-white/40'}`}>
                                                     {plan.highlight
                                                         ? <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />
                                                         : <div className="w-1.5 h-1.5 rounded-full bg-white/20 flex-shrink-0" />
@@ -215,7 +214,6 @@ function RegistroPage() {
                         </motion.div>
                     )}
 
-                    {/* STEP 2: Account Creation */}
                     {step === 'account' && (
                         <motion.div
                             key="account"
@@ -275,72 +273,68 @@ function RegistroPage() {
                                     </AnimatePresence>
                                     <div className="glass-card p-8 space-y-6 border-white/10">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-white/30 font-bold ml-1">Nombre Completo</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-white/40 ml-1">Nombre Completo</label>
                                             <div className="relative">
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                                                 <input
-                                                    type="text"
-                                                    value={name}
-                                                    onChange={(e) => setName(e.target.value)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-white/15 focus:outline-none focus:border-accent/50 transition-colors"
-                                                    placeholder="Tu nombre"
                                                     required
+                                                    type="text"
+                                                    placeholder="John Doe"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-accent/50 transition-all text-sm"
+                                                    value={name}
+                                                    onChange={e => setName(e.target.value)}
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-white/30 font-bold ml-1">Email</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-white/40 ml-1">Email Corporativo</label>
                                             <div className="relative">
                                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                                                 <input
-                                                    type="email"
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-white/15 focus:outline-none focus:border-accent/50 transition-colors"
-                                                    placeholder="tu@email.com"
                                                     required
+                                                    type="email"
+                                                    placeholder="john@uai.com"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-accent/50 transition-all text-sm"
+                                                    value={email}
+                                                    onChange={e => setEmail(e.target.value)}
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-white/30 font-bold ml-1">Contraseña</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-white/40 ml-1">Contraseña Maestra</label>
                                             <div className="relative">
                                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                                                 <input
-                                                    type="password"
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-white/15 focus:outline-none focus:border-accent/50 transition-colors"
-                                                    placeholder="Mínimo 8 caracteres"
-                                                    minLength={8}
                                                     required
+                                                    type="password"
+                                                    placeholder="••••••••"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-accent/50 transition-all text-sm"
+                                                    value={password}
+                                                    onChange={e => setPassword(e.target.value)}
                                                 />
                                             </div>
                                         </div>
+
+                                        <button
+                                            disabled={loading}
+                                            className="w-full group relative overflow-hidden py-5 rounded-xl bg-primary text-white font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_40px_rgba(139,0,0,0.3)] disabled:opacity-50"
+                                        >
+                                            <div className="relative z-10 flex items-center justify-center gap-3">
+                                                {loading ? (
+                                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        Crear Mi Cuenta <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </button>
                                     </div>
 
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="w-full py-5 rounded-2xl bg-primary text-white font-black shadow-[0_0_30px_rgba(139,0,0,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 text-lg tracking-widest uppercase flex items-center justify-center gap-3"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                                Creando cuenta...
-                                            </>
-                                        ) : (
-                                            <>
-                                                CREAR CUENTA Y ACCEDER
-                                                <Rocket className="w-5 h-5" />
-                                            </>
-                                        )}
-                                    </button>
-
-                                    <p className="text-center text-[10px] text-white/20 uppercase tracking-widest">
-                                        Al registrarte aceptas los Términos de Servicio y la Política de Privacidad
+                                    <p className="text-[10px] text-center text-white/20 uppercase tracking-widest leading-relaxed">
+                                        Al registrarte, aceptas nuestros <span className="text-white/40">Términos de Servicio</span> y <span className="text-white/40">Política de Privacidad</span>.
                                     </p>
                                 </form>
                             )}
