@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Send, Zap, Activity, Terminal, BarChart3, Copy, LayoutDashboard, Rocket } from 'lucide-react';
+import { Bot, Send, Zap, Activity, Terminal, BarChart3, Copy, LayoutDashboard, Rocket, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 import FlowEditor from '@/components/flow-editor/FlowEditor';
 import MissionControlDashboard from '@/components/mission-control/MissionControlDashboard';
+import HabitatAmongUs from '@/components/dashboard/HabitatAmongUs';
 
 export default function Dashboard() {
     const { awardXp, activeAgent } = useDashboard();
-    const [mainView, setMainView] = useState<'dashboard' | 'execution'>('dashboard');
+    const [mainView, setMainView] = useState<'dashboard' | 'execution' | 'habitat'>('habitat');
     const [executionSubView, setExecutionSubView] = useState<'graph' | 'output'>('output');
     const [isRunning, setIsRunning] = useState(false);
     const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
@@ -124,10 +125,16 @@ export default function Dashboard() {
                     
                     <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
                         <button 
+                            onClick={() => setMainView('habitat')}
+                            className={`flex items-center gap-2 px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${mainView === 'habitat' ? 'bg-red-500/20 text-red-500 border border-red-500/20' : 'text-white/30 hover:text-white'}`}
+                        >
+                            <Home className="w-3 h-3" /> Habitat
+                        </button>
+                        <button 
                             onClick={() => setMainView('dashboard')}
                             className={`flex items-center gap-2 px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${mainView === 'dashboard' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white'}`}
                         >
-                            <LayoutDashboard className="w-3 h-3" /> Mission Control
+                            <LayoutDashboard className="w-3 h-3" /> Stats
                         </button>
                         <button 
                             onClick={() => setMainView('execution')}
@@ -159,7 +166,17 @@ export default function Dashboard() {
 
             <div className="flex-1 overflow-hidden">
                 <AnimatePresence mode="wait">
-                    {mainView === 'dashboard' ? (
+                    {mainView === 'habitat' ? (
+                        <motion.div 
+                            key="habitat-view"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="h-full"
+                        >
+                            <HabitatAmongUs />
+                        </motion.div>
+                    ) : mainView === 'dashboard' ? (
                         <motion.div 
                             key="dashboard-view"
                             initial={{ opacity: 0, y: 20 }}
@@ -207,18 +224,23 @@ export default function Dashboard() {
                                             </motion.div>
                                         ) : (
                                             <motion.div key="output-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-                                                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-6 relative group">
-                                                    <div className="flex items-center gap-2 mb-4">
-                                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                                        <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Output Generado por UAI</span>
+                                                {result ? (
+                                                    <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-6 relative group">
+                                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => { navigator.clipboard.writeText(result); }} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                                                                <Copy className="w-4 h-4 text-white/40" />
+                                                            </button>
+                                                        </div>
+                                                        <div className="prose prose-invert prose-sm max-w-none">
+                                                            {result}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-sm text-white/70 leading-relaxed font-mono whitespace-pre-wrap">
-                                                        {result || "Esperando ejecución..."}
+                                                ) : (
+                                                    <div className="h-full flex flex-col items-center justify-center text-white/20 space-y-4 py-20">
+                                                        <Terminal className="w-12 h-12 opacity-20" />
+                                                        <p className="text-xs font-bold uppercase tracking-widest">Esperando ejecución...</p>
                                                     </div>
-                                                    <button className="absolute bottom-4 right-4 flex items-center gap-2 text-[9px] font-bold text-white/20 hover:text-white uppercase tracking-widest transition-all">
-                                                        <Copy className="w-3 h-3" /> [Copiar Texto]
-                                                    </button>
-                                                </div>
+                                                )}
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -226,20 +248,52 @@ export default function Dashboard() {
                             </div>
 
                             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                                <div className="flex-1 bg-[#0a0a0a] border border-white/5 rounded-xl flex flex-col overflow-hidden">
-                                    <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
-                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                                            <Terminal className="w-3 h-3" />
-                                            System Logs
-                                        </div>
-                                        <span className="text-[8px] font-mono text-white/20">v2.4.0-stable</span>
+                                <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 flex flex-col h-1/2">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-4">
+                                        <Activity className="w-3 h-3 text-red-500" />
+                                        Métricas de Cómputo
                                     </div>
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-[10px] custom-scrollbar">
-                                        {logs.map((log) => (
-                                            <div key={log.id} className="flex gap-3 group">
-                                                <span className="text-white/20 shrink-0">[{log.time}]</span>
-                                                <span className={`${log.type === 'success' ? 'text-green-500' : log.type === 'error' ? 'text-red-500' : 'text-white/50'} leading-relaxed`}>
-                                                    {log.type === 'success' && '✅ '}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between text-[10px] mb-1">
+                                                <span className="text-white/40">Latencia</span>
+                                                <span className="text-white font-mono">{metrics.latency}ms</span>
+                                            </div>
+                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div animate={{ width: `${Math.min(metrics.latency / 5, 100)}%` }} className="h-full bg-blue-500" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-[10px] mb-1">
+                                                <span className="text-white/40">Tokens</span>
+                                                <span className="text-white font-mono">{metrics.tokens}</span>
+                                            </div>
+                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div animate={{ width: `${Math.min(metrics.tokens / 10, 100)}%` }} className="h-full bg-green-500" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-[10px] mb-1">
+                                                <span className="text-white/40">Carga Neural</span>
+                                                <span className="text-white font-mono">{metrics.load}%</span>
+                                            </div>
+                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div animate={{ width: `${metrics.load}%` }} className="h-full bg-red-500" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 flex flex-col flex-1 overflow-hidden">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-4">
+                                        <Terminal className="w-3 h-3 text-accent" />
+                                        Logs de Orquestación
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 font-mono text-[10px]">
+                                        {logs.map(log => (
+                                            <div key={log.id} className="flex gap-2">
+                                                <span className="text-white/20">[{log.time}]</span>
+                                                <span className={log.type === 'error' ? 'text-red-500' : log.type === 'success' ? 'text-green-500' : 'text-white/60'}>
                                                     {log.text}
                                                 </span>
                                             </div>
@@ -247,42 +301,10 @@ export default function Dashboard() {
                                         <div ref={logsEndRef} />
                                     </div>
                                 </div>
-
-                                <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 space-y-4">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">
-                                        <BarChart3 className="w-3 h-3" />
-                                        Métricas de Sesión
-                                    </div>
-                                    
-                                    <div className="space-y-3">
-                                        <MetricBar label="Latencia Neural" value={metrics.latency} max={500} unit="ms" color="bg-green-500" />
-                                        <MetricBar label="Tokens Procesados" value={metrics.tokens} max={5000} unit=" t" color="bg-blue-500" />
-                                        <MetricBar label="Carga Cognitiva" value={metrics.load} max={100} unit="%" color="bg-red-500" />
-                                    </div>
-                                </div>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-        </div>
-    );
-}
-
-function MetricBar({ label, value, max, unit, color }: any) {
-    const percentage = Math.min((value / max) * 100, 100);
-    return (
-        <div className="space-y-1">
-            <div className="flex justify-between text-[8px] font-bold uppercase tracking-tighter">
-                <span className="text-white/40">{label}</span>
-                <span className="text-white/80">{value}{unit}</span>
-            </div>
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    className={`h-full ${color} shadow-[0_0_10px_rgba(0,0,0,0.5)]`}
-                />
             </div>
         </div>
     );
