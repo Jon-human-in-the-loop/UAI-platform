@@ -116,6 +116,12 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             const routerChain = routerPrompt.pipe(getGpt5()).pipe(new JsonOutputParser());
             const routeResult: any = await routerChain.invoke({ input: lastMessage });
             category = routeResult.category;
+
+            // Mejora: Si es EXECUTE pero el mensaje es largo, probablemente hay instrucciones nuevas -> PLANNING
+            if (category === "EXECUTE" && lastMessage.length > 100) {
+                category = "PLANNING";
+            }
+
             console.log(`[ROUTER] Categoría: ${category}`);
         } catch (e) {
             console.warn("[ROUTER] Fallo clasificación.");
@@ -141,10 +147,11 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             - Divide en secciones narrativas simples si es necesario.
             
             Responde JSON:
-            {{
-                "audit": "Análisis crítico sin símbolos.",
+                {{
+                "audit": "Análisis crítico real del problema.",
+                "tasks": ["Lista de hitos técnicos concretos"],
                 "routes": [{{ "name": "Nombre", "strategy": "Descripción" }}],
-                "recommendation": "Recomendación final.",
+                "recommendation": "Cuál elegir y por qué.",
                 "agents": [...]
             }}
             `);
@@ -508,9 +515,9 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
     const analysis = state.context_memory.analysis;
 
     const reflectionText = `
-    Tarea: ${analysis.tasks.join(", ")}
+    Tarea: ${analysis?.tasks?.join(", ") || "Tarea general de ejecución"}
     Resultado: ${lastMessage}
-    Habilidades Usadas: ${state.skills_active.join(", ")}
+    Habilidades Usadas: ${state.skills_active?.join(", ") || "Ninguna"}
     `;
 
     try {
