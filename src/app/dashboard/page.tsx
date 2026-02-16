@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Play, Send, Target, Zap, Users, Activity, Rocket, ShieldCheck, Terminal, BarChart3, Copy, Maximize2 } from 'lucide-react';
+import { Bot, Send, Zap, Activity, Terminal, BarChart3, Copy, LayoutDashboard, Rocket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 import FlowEditor from '@/components/flow-editor/FlowEditor';
+import MissionControlDashboard from '@/components/mission-control/MissionControlDashboard';
 
 export default function Dashboard() {
     const { awardXp, activeAgent } = useDashboard();
-    const [viewMode, setViewMode] = useState<'graph' | 'output'>('output');
+    const [mainView, setMainView] = useState<'dashboard' | 'execution'>('dashboard');
+    const [executionSubView, setExecutionSubView] = useState<'graph' | 'output'>('output');
     const [isRunning, setIsRunning] = useState(false);
     const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
     const [currentThreadId, setCurrentThreadId] = useState<string | undefined>();
@@ -18,14 +20,13 @@ export default function Dashboard() {
     const logsEndRef = useRef<HTMLDivElement>(null);
     
     const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([
-        { id: 1, type: 'info', text: 'Aprobado con reservas (límite de reintentos alcanzado).', time: '01:59:36' },
-        { id: 2, type: 'success', text: 'Misión completada con éxito.', time: '01:59:40' },
+        { id: 1, type: 'info', text: 'Sincronización de Centro de Comando completada.', time: new Date().toLocaleTimeString() },
     ]);
 
     const [metrics, setMetrics] = useState({
-        latency: 240,
-        tokens: 1200,
-        load: 12
+        latency: 0,
+        tokens: 0,
+        load: 0
     });
 
     useEffect(() => {
@@ -36,12 +37,15 @@ export default function Dashboard() {
         if (isRunning || !userInput.trim()) return;
         setIsRunning(true);
         setResult(null);
-        setViewMode('graph');
+        setMainView('execution');
+        setExecutionSubView('graph');
         const instruction = userInput.trim();
         setUserInput('');
         
         const timestamp = new Date().toLocaleTimeString();
-        setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: `Misión: "${instruction.substring(0, 50)}..."`, time: timestamp }]);
+        setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: `Iniciando Misión: "${instruction.substring(0, 50)}..."`, time: timestamp }]);
+
+        setMetrics({ latency: 120, tokens: 0, load: 5 });
 
         try {
             const response = await fetch('/api/agent/run', {
@@ -78,14 +82,21 @@ export default function Dashboard() {
                                 if (state?.messages) {
                                     const lastMsg = state.messages[state.messages.length - 1];
                                     const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;
-                                    if (text && text.length > 10) {
-                                        setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: text.substring(0, 100), time: new Date().toLocaleTimeString() }]);
-                                        if (text.length > 200) setResult(text);
+                                    if (text && text.length > 5) {
+                                        setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: text.substring(0, 80) + (text.length > 80 ? '...' : ''), time: new Date().toLocaleTimeString() }]);
+                                        if (text.length > 150) setResult(text);
+                                        
+                                        setMetrics(prev => ({
+                                            latency: Math.floor(Math.random() * 100) + 150,
+                                            tokens: prev.tokens + Math.floor(text.length / 4),
+                                            load: Math.min(prev.load + 15, 95)
+                                        }));
                                     }
                                 }
                             } else if (event.type === 'complete') {
                                 setLogs(prev => [...prev, { id: Date.now(), type: 'success', text: 'Misión completada con éxito.', time: new Date().toLocaleTimeString() }]);
-                                setViewMode('output');
+                                setExecutionSubView('output');
+                                setMetrics(prev => ({ ...prev, load: 0 }));
                             }
                         } catch (e) {}
                     }
@@ -100,14 +111,30 @@ export default function Dashboard() {
 
     return (
         <div className="h-full flex flex-col bg-[#050505] text-white p-4 gap-4 overflow-hidden">
-            {/* TOP SECTION: AGENT INPUT */}
             <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 space-y-3 shadow-2xl">
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-bold text-white/20 tracking-widest">Agente Activo:</span>
-                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] text-white/60">
-                        <span className="text-sm">{activeAgent?.avatar || '🤖'}</span>
-                        <span className="font-bold">{activeAgent?.name || 'Lead de Estrategia Digital'}</span>
-                        <span className="text-accent/50 font-mono">Lvl {activeAgent?.level || 7}</span>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold text-white/20 tracking-widest">Agente Activo:</span>
+                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] text-white/60">
+                            <span className="text-sm">{activeAgent?.avatar || '🤖'}</span>
+                            <span className="font-bold">{activeAgent?.name || 'Lead de Estrategia Digital'}</span>
+                            <span className="text-accent/50 font-mono">Lvl {activeAgent?.level || 7}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                        <button 
+                            onClick={() => setMainView('dashboard')}
+                            className={`flex items-center gap-2 px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${mainView === 'dashboard' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white'}`}
+                        >
+                            <LayoutDashboard className="w-3 h-3" /> Mission Control
+                        </button>
+                        <button 
+                            onClick={() => setMainView('execution')}
+                            className={`flex items-center gap-2 px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${mainView === 'execution' ? 'bg-red-500/20 text-red-500 border border-red-500/20' : 'text-white/30 hover:text-white'}`}
+                        >
+                            <Rocket className="w-3 h-3" /> Ejecución
+                        </button>
                     </div>
                 </div>
 
@@ -118,7 +145,7 @@ export default function Dashboard() {
                         onChange={(e) => setUserInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startAgent(); } }}
                         placeholder="Escribe tu misión..."
-                        className="w-full bg-black/40 border border-white/10 rounded-xl p-4 pr-14 text-sm text-white/80 placeholder-white/20 focus:border-accent/50 focus:ring-0 resize-none min-h-[120px] transition-all"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-4 pr-14 text-sm text-white/80 placeholder-white/20 focus:border-accent/50 focus:ring-0 resize-none min-h-[80px] transition-all"
                     />
                     <button
                         onClick={startAgent}
@@ -130,96 +157,113 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* BOTTOM SECTION: 2 COLUMNS */}
-            <div className="flex-1 flex gap-4 overflow-hidden">
-                {/* LEFT COLUMN: RESULT / GRAPH */}
-                <div className="flex-[2] flex flex-col bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden relative">
-                    <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                            <Zap className="w-3 h-3 text-accent" />
-                            Resultado de Misión
-                        </div>
-                        <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
-                            <button 
-                                onClick={() => setViewMode('graph')}
-                                className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${viewMode === 'graph' ? 'bg-accent text-white' : 'text-white/30 hover:text-white'}`}
-                            >
-                                Grafo
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('output')}
-                                className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${viewMode === 'output' ? 'bg-accent text-white' : 'text-white/30 hover:text-white'}`}
-                            >
-                                Output
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                        <AnimatePresence mode="wait">
-                            {viewMode === 'graph' ? (
-                                <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                                    <FlowEditor activeNodeId={activeNodeId} />
-                                </motion.div>
-                            ) : (
-                                <motion.div key="output" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-                                    <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-6 relative group">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                            <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Output Generado por UAI</span>
-                                        </div>
-                                        <div className="text-sm text-white/70 leading-relaxed font-mono whitespace-pre-wrap">
-                                            {result || "Esperando ejecución..."}
-                                        </div>
-                                        <button className="absolute bottom-4 right-4 flex items-center gap-2 text-[9px] font-bold text-white/20 hover:text-white uppercase tracking-widest transition-all">
-                                            <Copy className="w-3 h-3" /> [Copiar Texto]
+            <div className="flex-1 overflow-hidden">
+                <AnimatePresence mode="wait">
+                    {mainView === 'dashboard' ? (
+                        <motion.div 
+                            key="dashboard-view"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="h-full overflow-y-auto custom-scrollbar"
+                        >
+                            <MissionControlDashboard />
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="execution-view"
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="h-full flex gap-4 overflow-hidden"
+                        >
+                            <div className="flex-[2] flex flex-col bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden relative">
+                                <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                                        <Zap className="w-3 h-3 text-accent" />
+                                        Resultado de Misión
+                                    </div>
+                                    <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                                        <button 
+                                            onClick={() => setExecutionSubView('graph')}
+                                            className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${executionSubView === 'graph' ? 'bg-accent text-white' : 'text-white/30 hover:text-white'}`}
+                                        >
+                                            Grafo
+                                        </button>
+                                        <button 
+                                            onClick={() => setExecutionSubView('output')}
+                                            className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${executionSubView === 'output' ? 'bg-accent text-white' : 'text-white/30 hover:text-white'}`}
+                                        >
+                                            Output
                                         </button>
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-
-                {/* RIGHT COLUMN: LOGS & METRICS */}
-                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                    {/* SYSTEM LOGS */}
-                    <div className="flex-1 bg-[#0a0a0a] border border-white/5 rounded-xl flex flex-col overflow-hidden">
-                        <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
-                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                                <Terminal className="w-3 h-3" />
-                                System Logs
-                            </div>
-                            <span className="text-[8px] font-mono text-white/20">v2.4.0-stable</span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-[10px] custom-scrollbar">
-                            {logs.map((log) => (
-                                <div key={log.id} className="flex gap-3 group">
-                                    <span className="text-white/20 shrink-0">[{log.time}]</span>
-                                    <span className={`${log.type === 'success' ? 'text-green-500' : log.type === 'error' ? 'text-red-500' : 'text-white/50'} leading-relaxed`}>
-                                        {log.type === 'success' && '✅ '}
-                                        {log.text}
-                                    </span>
                                 </div>
-                            ))}
-                            <div ref={logsEndRef} />
-                        </div>
-                    </div>
 
-                    {/* METRICS */}
-                    <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 space-y-4">
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">
-                            <BarChart3 className="w-3 h-3" />
-                            Métricas de Sesión
-                        </div>
-                        
-                        <div className="space-y-3">
-                            <MetricBar label="Latencia Neural" value={metrics.latency} max={500} unit="ms" color="bg-green-500" />
-                            <MetricBar label="Tokens Procesados" value={metrics.tokens} max={2000} unit="k" color="bg-blue-500" />
-                            <MetricBar label="Carga Cognitiva" value={metrics.load} max={100} unit="%" color="bg-red-500" />
-                        </div>
-                    </div>
-                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                                    <AnimatePresence mode="wait">
+                                        {executionSubView === 'graph' ? (
+                                            <motion.div key="graph-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                                                <FlowEditor activeNodeId={activeNodeId} />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div key="output-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+                                                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-6 relative group">
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                                        <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Output Generado por UAI</span>
+                                                    </div>
+                                                    <div className="text-sm text-white/70 leading-relaxed font-mono whitespace-pre-wrap">
+                                                        {result || "Esperando ejecución..."}
+                                                    </div>
+                                                    <button className="absolute bottom-4 right-4 flex items-center gap-2 text-[9px] font-bold text-white/20 hover:text-white uppercase tracking-widest transition-all">
+                                                        <Copy className="w-3 h-3" /> [Copiar Texto]
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                                <div className="flex-1 bg-[#0a0a0a] border border-white/5 rounded-xl flex flex-col overflow-hidden">
+                                    <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                                            <Terminal className="w-3 h-3" />
+                                            System Logs
+                                        </div>
+                                        <span className="text-[8px] font-mono text-white/20">v2.4.0-stable</span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-[10px] custom-scrollbar">
+                                        {logs.map((log) => (
+                                            <div key={log.id} className="flex gap-3 group">
+                                                <span className="text-white/20 shrink-0">[{log.time}]</span>
+                                                <span className={`${log.type === 'success' ? 'text-green-500' : log.type === 'error' ? 'text-red-500' : 'text-white/50'} leading-relaxed`}>
+                                                    {log.type === 'success' && '✅ '}
+                                                    {log.text}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        <div ref={logsEndRef} />
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 space-y-4">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">
+                                        <BarChart3 className="w-3 h-3" />
+                                        Métricas de Sesión
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        <MetricBar label="Latencia Neural" value={metrics.latency} max={500} unit="ms" color="bg-green-500" />
+                                        <MetricBar label="Tokens Procesados" value={metrics.tokens} max={5000} unit=" t" color="bg-blue-500" />
+                                        <MetricBar label="Carga Cognitiva" value={metrics.load} max={100} unit="%" color="bg-red-500" />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
