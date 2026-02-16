@@ -101,6 +101,7 @@ export default function Sidebar() {
                     <>
                         {/* ── Rango & Nivel ── */}
                         <div className="relative p-4 rounded-xl border border-red-500/20 bg-red-500/5 space-y-3 group overflow-hidden">
+                            {/* Ocultar botón de mejora para admin de forma estricta */}
                             {!isAdmin && (
                                 <div className="absolute top-2 right-2 z-10">
                                     <button
