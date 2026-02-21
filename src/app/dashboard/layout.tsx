@@ -31,7 +31,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
             <div className="flex-1 flex overflow-hidden relative z-10">
                 <Sidebar />
-                <main className="flex-1 overflow-hidden relative bg-black/20">
+                {/* Habilitar scroll vertical en el contenedor principal */}
+                <main className="flex-1 overflow-y-auto custom-scrollbar relative bg-black/20">
                     {children}
                 </main>
             </div>
@@ -45,7 +46,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         initial={{ opacity: 0, x: 100 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 100 }}
-                        className="fixed bottom-8 right-8 z-[200] pointer-events-none flex items-center justify-center pointer-events-none"
+                        className="fixed bottom-8 right-8 z-[200] pointer-events-none flex items-center justify-center"
                     >
                         <motion.div
                             initial={{ scale: 0.5, opacity: 0 }}

@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompiledApp } from '@/lib/orchestrator/nodes';
-import { HumanMessage } from '@langchain/core/messages';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { retrieveCollectiveKnowledge, abstractLearning } from '@/lib/collective-memory';
+import { trackTokenUsage } from '@/lib/billing';
 import { v4 as uuidv4 } from 'uuid';
+import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session || !session.user?.id) {
+            return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+        }
+        const userId = session.user.id;
+
         const { input, threadId, agent } = await req.json();
 
         if (!input) {
@@ -40,21 +49,33 @@ export async function POST(req: NextRequest) {
             configurable: { thread_id: currentThreadId }
         };
 
+        // RECUPERACIÓN DE MEMORIA COLECTIVA
+        const collectiveKnowledge = await retrieveCollectiveKnowledge(input);
+        const memoryContext = collectiveKnowledge.length > 0 
+            ? "\n\n[MEMORIA COLECTIVA - APRENDIZAJES PASADOS]:\n" + collectiveKnowledge.join("\n")
+            : "";
+
         // Si hay threadId, enviamos solo el nuevo mensaje (LangGraph se encarga de la historia)
         // Si no hay, enviamos el estado inicial completo
         const payload = threadId
             ? { messages: [new HumanMessage(input)] }
             : {
+                userId: userId,
                 messages: [new HumanMessage(input)],
                 next_node: 'analizador',
                 errors: [],
                 skills_active: [],
                 context_memory: {},
-                agent_config: agent || {
+                budget_status: { current: 0, limit: 100, plan: "free" },
+                is_blocked: false,
+                agent_config: agent ? {
+                    ...agent,
+                    system_prompt: (agent.system_prompt || "") + memoryContext
+                } : {
                     name: "UAI Core",
                     role: "Orquestador Default",
                     model: "claude-3-opus",
-                    system_prompt: "Eres el núcleo de la plataforma."
+                    system_prompt: "Eres el núcleo de la plataforma." + memoryContext
                 }
             };
 
@@ -64,7 +85,7 @@ export async function POST(req: NextRequest) {
                 await sendEvent('session_info', { threadId: currentThreadId });
 
                 // StreamMode "values" nos da el estado completo de AgentState en cada paso
-                const graphStream = await app.stream(payload, {
+                const graphStream = await app.stream(payload as any, {
                     ...config,
                     streamMode: "values"
                 });
@@ -86,6 +107,30 @@ export async function POST(req: NextRequest) {
 
                     console.log(`[Stream] Enviando actualización de nodo: ${chunk.next_node || 'FIN'}`);
                     await sendEvent('node_update', { chunk: cleanChunk });
+                }
+
+                // ABSTRACCIÓN DE APRENDIZAJE AL FINALIZAR (Simplificado para el demo)
+                // En producción, esto se dispararía basado en el éxito de la misión o errores resueltos.
+                if (agent && agent.id) {
+                    await abstractLearning({
+                        agent_id: agent.id,
+                        mission_id: currentThreadId,
+                        learning_type: 'insight',
+                        summary: `Interacción sobre: ${input.substring(0, 50)}...`,
+                        details: { input, timestamp: new Date().toISOString() },
+                        keywords: [agent.role, 'interacción']
+                    });
+                }
+
+                // SEGUIMIENTO DE TOKENS (Simulado con valores fijos para el demo)
+                // En producción, LangGraph devolvería el uso real en el AgentState
+                if (agent && agent.id) {
+                    await trackTokenUsage({
+                        userId: agent.user_id || 'system',
+                        model: agent.model || 'gpt-4-turbo',
+                        promptTokens: 500,
+                        completionTokens: 200
+                    });
                 }
 
                 await sendEvent('complete', { success: true });

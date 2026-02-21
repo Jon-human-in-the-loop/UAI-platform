@@ -292,3 +292,59 @@ Premisa: "${claim.substring(0, 100)}..."
    - Se requiere prueba de concepto (PoC) antes de escalado masivo.`;
     }
 }
+
+// --- FASE 2: EXPANSIÓN DE CAPACIDADES ---
+
+const CodeArchitectSchema = z.object({
+    project: z.string().describe("Descripción del proyecto de software."),
+});
+
+export class CodeArchitectTool extends StructuredTool {
+    name = "code_architect";
+    description = "Diseña la arquitectura de software, patrones de diseño y stack tecnológico óptimo.";
+    schema = CodeArchitectSchema;
+
+    async _call({ project }: z.infer<typeof CodeArchitectSchema>) {
+        return `Arquitectura de Software para: ${project}
+- Patrón: Microservicios con comunicación vía gRPC para baja latencia.
+- Frontend: Next.js 15 con Server Components y Partial Prerendering.
+- Backend: Node.js con NestJS para una estructura modular y escalable.
+- Infraestructura: Kubernetes para orquestación de contenedores y auto-escalado.`;
+    }
+}
+
+const GrowthHackingSchema = z.object({
+    product: z.string().describe("Producto para aplicar estrategias de crecimiento."),
+});
+
+export class GrowthHackingTool extends StructuredTool {
+    name = "growth_hacking";
+    description = "Aplica tácticas de crecimiento acelerado basadas en datos y viralidad.";
+    schema = GrowthHackingSchema;
+
+    async _call({ product }: z.infer<typeof GrowthHackingSchema>) {
+        return `Estrategias de Growth para: ${product}
+- Viralidad: Implementar un sistema de referidos con recompensas de doble cara.
+- Retención: Gamificación profunda con niveles y logros (ya integrados en UAI).
+- Adquisición: SEO programático para capturar búsquedas de cola larga.
+- Experimento: A/B testing agresivo en el flujo de onboarding.`;
+    }
+}
+
+const DataScientistSchema = z.object({
+    dataset: z.string().describe("Descripción de los datos a analizar."),
+});
+
+export class DataScientistTool extends StructuredTool {
+    name = "data_scientist";
+    description = "Realiza análisis estadístico, modelado predictivo y visualización de datos complejos.";
+    schema = DataScientistSchema;
+
+    async _call({ dataset }: z.infer<typeof DataScientistSchema>) {
+        return `Análisis de Datos: ${dataset}
+- Limpieza: Detección de outliers y manejo de valores nulos mediante imputación.
+- Modelado: Regresión logística para predecir la probabilidad de churn.
+- Visualización: Dashboards interactivos con métricas clave de rendimiento (KPIs).
+- Insight: Se detecta una correlación fuerte entre el uso de la herramienta 'Auto-Healing' y la retención de usuarios.`;
+    }
+}

@@ -9,29 +9,29 @@ export const PAYMENT_PLANS = {
     essentials: {
         id: 'essentials',
         name: 'Básico',
-        price: 9, // USD
+        price: 9, // Sincronizado con Landing Oficial
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_ESSENTIALS || 'price_1T0t1QFCIL2k9dafVkXIUzmw',
         mpPlanId: 'cf46ed5e87694454bd36d1b59e222fb1',
-        features: ['Orquestación de 2 Agentes', 'Memoria Cognitiva Persistente', 'Prioridad en Razonamiento', 'Tokens a Coste Directo (0% Margen)', 'Capacidad: 50 consultas/hora'],
+        features: ['Orquestación de 2 Agentes', 'Memoria Cognitiva Persistente', 'Prioridad en Razonamiento', 'Tokens a coste directo'],
     },
     advanced: {
         id: 'advanced',
         name: 'Advanced',
-        price: 29, // USD
+        price: 29, // Sincronizado con Landing Oficial
         currency: 'USD',
-        stripePriceId: process.env.STRIPE_PRICE_ID_ADVANCED || 'price_advanced_placeholder',
-        mpPlanId: 'advanced_mp_placeholder',
+        stripePriceId: process.env.STRIPE_PRICE_ID_ADVANCED || 'price_1T0t1QFCIL2k9dafAdvanced',
+        mpPlanId: 'advanced_mp_plan_id',
         features: ['Hasta 5 Agentes Coordinados', 'Soporte Multi-Canal Full', 'Analítica ROI Avanzada', 'Prioridad de Cómputo Alta'],
     },
     professional: {
         id: 'professional',
         name: 'Pro',
-        price: 79, // USD
+        price: 79, // Sincronizado con Landing Oficial (79 según la landing para el plan más alto)
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_PROFESSIONAL || 'price_1T0t1QFCIL2k9dafZf008rAa',
         mpPlanId: 'dd7f8a178d544993bb835425a530a4d4',
-        features: ['Agentes Ilimitados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'],
+        features: ['Agentes Ilimitados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7'],
     },
 };
 

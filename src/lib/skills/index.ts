@@ -72,7 +72,10 @@ import {
     MCPBuilderTool,
     CopywritingMasterTool,
     LeadGenExpertTool,
-    ThinkCriticallyTool
+    ThinkCriticallyTool,
+    CodeArchitectTool,
+    GrowthHackingTool,
+    DataScientistTool
 } from "./library";
 
 export const webSearchSkill = new WebSearchTool();
@@ -93,6 +96,9 @@ export const mcpBuilderSkill = new MCPBuilderTool();
 export const copywritingMasterSkill = new CopywritingMasterTool();
 export const leadGenExpertSkill = new LeadGenExpertTool();
 export const thinkCriticallySkill = new ThinkCriticallyTool();
+export const codeArchitectSkill = new CodeArchitectTool();
+export const growthHackingSkill = new GrowthHackingTool();
+export const dataScientistSkill = new DataScientistTool();
 
 export const availableSkills = {
     search: webSearchSkill,
@@ -113,4 +119,7 @@ export const availableSkills = {
     copy: copywritingMasterSkill,
     leadgen: leadGenExpertSkill,
     critical: thinkCriticallySkill,
+    architect: codeArchitectSkill,
+    growth: growthHackingSkill,
+    data: dataScientistSkill,
 };
