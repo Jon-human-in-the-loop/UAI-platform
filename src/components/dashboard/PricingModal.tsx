@@ -94,7 +94,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                     {/* Plans Grid */}
                     <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar">
                         {plans.map((plan) => (
-                            <div 
+                            <div
                                 key={plan.id}
                                 className={`glass-card p-6 ${plan.border} ${plan.recommended ? 'bg-accent/5 scale-105' : 'bg-white/[0.02]'} rounded-2xl space-y-6 flex flex-col relative overflow-hidden group hover:border-white/30 transition-all`}
                             >
@@ -107,7 +107,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                                     <h3 className={`text-xl font-bold ${plan.recommended ? 'text-white' : 'text-white/80'}`}>{plan.config.name}</h3>
                                     <div className="flex items-baseline gap-1">
                                         <span className="text-4xl font-black font-mono text-white">
-                                            {region === 'GLOBAL' ? `$${plan.config.price}` : `$${plan.config.price * 1000}`}
+                                            {region === 'GLOBAL' ? `$${plan.config.price}` : `$${Math.round(plan.config.price * 1376).toLocaleString()}`}
                                         </span>
                                         <span className="text-white/40 text-[10px] font-bold">/mes</span>
                                     </div>
@@ -122,11 +122,10 @@ export default function PricingModal({ isOpen, onClose, currentPlan }: PricingMo
                                 <button
                                     onClick={() => handleUpgrade(plan.id)}
                                     disabled={loadingPlan !== null || currentPlan === plan.id}
-                                    className={`w-full py-3 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs uppercase tracking-widest ${
-                                        plan.recommended 
-                                        ? 'bg-accent text-white hover:bg-accent/80 shadow-lg shadow-accent/20' 
-                                        : 'bg-white/10 text-white hover:bg-white/20'
-                                    }`}
+                                    className={`w-full py-3 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs uppercase tracking-widest ${plan.recommended
+                                            ? 'bg-accent text-white hover:bg-accent/80 shadow-lg shadow-accent/20'
+                                            : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
                                 >
                                     {loadingPlan === plan.id ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <plan.icon className="w-4 h-4" />}
                                     {currentPlan === plan.id ? 'Plan Actual' : `Activar ${plan.config.name}`}

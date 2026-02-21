@@ -175,10 +175,10 @@ export default function LandingPage() {
                             <Link href="/registro?plan=free" className="w-full py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold transition-all text-center uppercase tracking-widest">EMPEZAR GRATIS</Link>
                         </div>
 
-                        {/* Plan Essentials */}
+                        {/* Plan Básico */}
                         <div className="glass-card p-8 space-y-6 border-white/10 bg-white/[0.03] flex flex-col hover:border-accent/20 transition-all">
                             <div className="space-y-1">
-                                <h4 className="text-xl font-bold uppercase tracking-tighter">Essentials</h4>
+                                <h4 className="text-xl font-bold uppercase tracking-tighter">Básico</h4>
                                 <p className="text-[8px] text-white/30 uppercase tracking-[0.3em] font-bold">Liderazgo de mercado</p>
                             </div>
                             <div className="flex items-baseline gap-1">
@@ -199,7 +199,7 @@ export default function LandingPage() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link href="/registro?plan=essentials" className="w-full py-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold transition-all text-center uppercase tracking-widest">ACTIVAR AHORA</Link>
+                            <Link href="/registro?plan=essentials" className="w-full py-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold transition-all text-center uppercase tracking-widest">ACTIVAR BÁSICO</Link>
                         </div>
 
                         {/* Plan Advanced - THE NEW STAR */}
@@ -232,10 +232,10 @@ export default function LandingPage() {
                             <Link href="/registro?plan=advanced" className="w-full py-5 rounded-xl bg-primary text-white font-black shadow-2xl hover:scale-105 active:scale-95 transition-all text-center text-xs tracking-widest uppercase">DOMINAR AHORA</Link>
                         </div>
 
-                        {/* Plan Professional */}
+                        {/* Plan Pro */}
                         <div className="glass-card p-8 space-y-6 border-white/5 bg-white/[0.02] flex flex-col hover:border-white/10 transition-all">
                             <div className="space-y-1">
-                                <h4 className="text-xl font-bold uppercase tracking-tighter">Professional</h4>
+                                <h4 className="text-xl font-bold uppercase tracking-tighter">Pro</h4>
                                 <p className="text-[8px] text-white/30 uppercase tracking-[0.3em] font-bold">Competitivo agresivo</p>
                             </div>
                             <div className="flex items-baseline gap-1">
@@ -256,7 +256,7 @@ export default function LandingPage() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link href="/registro?plan=professional" className="w-full py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold transition-all text-center uppercase tracking-widest">CONTACTAR VENTAS</Link>
+                            <Link href="/registro?plan=professional" className="w-full py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold transition-all text-center uppercase tracking-widest">ACTIVAR PRO</Link>
                         </div>
                     </div>
                 </section>

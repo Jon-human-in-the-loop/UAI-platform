@@ -22,7 +22,7 @@ export const PAYMENT_PLANS = {
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_ADVANCED || 'price_1T0t1QFCIL2k9dafAdvanced',
         mpPlanId: 'advanced_mp_plan_id',
-        features: ['Hasta 5 Agentes Coordinados', 'Soporte Multi-Canal Full', 'Analítica ROI Avanzada', 'Prioridad de Cómputo Alta'],
+        features: ['Hasta 5 Agentes Coordinados', 'Soporte Multi-Canal Full', 'Analítica ROI Avanzada', 'Prioridad de Cómputo Alta', 'Acceso a Marketplace Pro'],
     },
     professional: {
         id: 'professional',

@@ -94,7 +94,7 @@ export async function POST(req: Request) {
                     reason: `Suscripción ${plan.name} - UAI Platform`,
                     auto_recurring: {
                         currency_id: 'ARS',
-                        transaction_amount: plan.id === 'essentials' ? 15000 : 131000, // Fallback visual, el plan define el cobro real
+                        transaction_amount: Math.round(plan.price * 1376), // Tasa de cambio actualizada: 1 USD = 1376 ARS
                         frequency: 1,
                         frequency_type: 'months',
                     },
