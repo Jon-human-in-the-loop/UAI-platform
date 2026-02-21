@@ -9,11 +9,17 @@
 | **Fase 1** | ✅ Completada | Motor en tiempo real, streaming, habilidades funcionales |
 | **Fase 2** | ✅ Completada | Persistencia PostgreSQL, NextAuth, hilos de ejecución |
 | **Fase 3** | ✅ Completada | Landing page, comunidad gamificada, registro con planes |
-| **Fase 4** | ✅ Completada | Monetización e Integración de **UAI Skills Hub** (17+ Skills) |
+| **Fase 4** | ✅ Completada | Monetización e Inyección de **Deep Tech Skills** (10+ Repos) |
 
 ---
 
 ## Fase 4: Monetización y Producción
+
+### 4.0 Inyección de Inteligencia (Skills Hub) [COMPLETADO]
+- [x] Instalación de `jbrukh/skills` (Critical Thinking)
+- [x] Instalación de `wsimmonds/claude-nextjs-skills` (Arquitectura Next.js)
+- [x] Instalación de `clerk/skills` (Seguridad Auth)
+- [x] Despliegue de **Challenger Node** (Auditoría Adversaria)
 
 ### 4.1 Integración de Pagos (Stripe + Mercado Pago)
 - [x] Configurar Stripe con productos y precios para cada plan
@@ -67,6 +73,6 @@
 | Métrica | Objetivo (Q2 2026) |
 |:---|:---|
 | Usuarios registrados | 1,000+ |
-| Conversión Free → Essentials | 15% |
+| Conversión Free → Paid | 15% |
 | Tiempo medio por sesión | > 8 min |
 | Churn Mensual | < 5% |

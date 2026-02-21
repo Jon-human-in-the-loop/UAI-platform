@@ -19,7 +19,7 @@
 ## Fase 3: Landing Page y Conversión ✅
 - [x] Hero section con propuesta de valor irresistible
 - [x] Copywriting persuasivo de ventas
-- [x] Sección de planes y precios (Free, Essentials, Professional)
+- [x] Sección de planes y precios (Free, Básico, Advanced, Pro)
 - [x] Sección UAI Hub (comunidad gamificada)
 - [x] Sistema de premios e incentivos (Level up)
 - [x] Sistema de progresión gamificada (niveles y personajes RPG)

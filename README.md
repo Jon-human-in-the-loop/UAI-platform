@@ -64,8 +64,9 @@ uai-platform/
 | Plan | Precio | Características |
 |:---|:---|:---|
 | **UAI Free** | $0/siempre | 1 agente, 5 consultas/hora, modelos ultra-rápidos |
-| **Essentials** | $9/mes | 2 agentes, memoria persistente, 50 consultas/hora, tokens a coste directo |
-| **Professional** | $79/mes | 5 agentes coordinados, auto-sanación, memoria infinita, soporte 24/7 |
+| **Básico (Essentials)** | $9/mes | 2 agentes, memoria persistente, 50 consultas/hora, tokens a coste directo |
+| **Advanced** | $29/mes | Hasta 5 agentes coordinados, soporte multi-canal, analítica ROI |
+| **Pro (Professional)** | $79/mes | Agentes ilimitados, auto-sanación, memoria infinita, soporte 24/7 |
 
 ## Sistema de Gamificación (UAI Hub)
 

@@ -435,7 +435,7 @@ export default function LandingPage() {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-7xl mx-auto relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 max-w-7xl mx-auto relative z-10">
                         {/* Plan Free */}
                         <div className="glass-card p-10 space-y-8 border-white/5 bg-white/[0.02] flex flex-col">
                             <div className="space-y-2">
@@ -457,13 +457,13 @@ export default function LandingPage() {
                             <Link href="/registro?plan=free" className="w-full py-5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all text-center">EMPEZAR GRATIS</Link>
                         </div>
 
-                        {/* Plan Essentials - THE STAR */}
-                        <div className="relative glass-card p-10 space-y-8 border-accent bg-accent/5 scale-110 shadow-[0_0_80px_rgba(139,0,0,0.25)] flex flex-col z-20">
+                        {/* Plan Básico - THE STAR */}
+                        <div className="relative glass-card p-10 space-y-8 border-accent bg-accent/5 scale-105 shadow-[0_0_80px_rgba(139,0,0,0.25)] flex flex-col z-20">
                             <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-accent text-white px-6 py-2 rounded-full text-[12px] font-black uppercase tracking-[0.2em] shadow-xl">
-                                RECOMENDADO: EARLY ADOPTER
+                                RECOMENDADO
                             </div>
                             <div className="space-y-2">
-                                <h4 className="text-2xl font-bold uppercase tracking-tighter">Essentials</h4>
+                                <h4 className="text-2xl font-bold uppercase tracking-tighter">Básico</h4>
                                 <p className="text-[10px] text-accent uppercase tracking-[0.3em] font-bold">Liderazgo de mercado</p>
                             </div>
                             <div className="flex items-baseline gap-1">
@@ -484,28 +484,60 @@ export default function LandingPage() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link href="/registro?plan=essentials" className="w-full py-6 rounded-2xl bg-primary text-white font-black shadow-2xl hover:scale-105 active:scale-95 transition-all text-center text-lg tracking-widest">ACTIVAR AHORA</Link>
+                            <Link href="/registro?plan=essentials" className="w-full py-6 rounded-2xl bg-primary text-white font-black shadow-2xl hover:scale-105 active:scale-95 transition-all text-center text-lg tracking-widest">ACTIVAR ESSENTIALS</Link>
                         </div>
 
-                        {/* Plan Professional */}
+                        {/* Plan Advanced */}
                         <div className="glass-card p-10 space-y-8 border-white/5 bg-white/[0.02] flex flex-col">
                             <div className="space-y-2">
-                                <h4 className="text-2xl font-bold uppercase tracking-tighter">Professional</h4>
-                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Competitivo agresivo</p>
+                                <h4 className="text-2xl font-bold uppercase tracking-tighter">Advanced</h4>
+                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Control total</p>
                             </div>
                             <div className="flex items-baseline gap-1">
-                                <span className="text-6xl font-black font-mono">$79</span>
+                                <span className="text-6xl font-black font-mono">$29</span>
                                 <span className="text-white/20 text-sm font-bold">/mes</span>
                             </div>
                             <ul className="flex-1 space-y-5">
-                                {['Hasta 5 agentes coordinados', 'Auto-sanación neural', 'Memoria cognitiva infinita', 'Soporte prioritario 24/7', 'Margen plataforma: solo 5%'].map(item => (
+                                {[
+                                    'Hasta 5 agentes coordinados',
+                                    'Soporte multi-canal full',
+                                    'Analítica ROI avanzada',
+                                    'Prioridad de cómputo alta'
+                                ].map(item => (
                                     <li key={item} className="flex items-center gap-3 text-sm text-white/40">
                                         <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                                         {item}
                                     </li>
                                 ))}
                             </ul>
-                            <Link href="/registro?plan=professional" className="w-full py-5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all text-center">CONTACTAR VENTAS</Link>
+                            <Link href="/registro?plan=advanced" className="w-full py-5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all text-center">ACTIVAR ADVANCED</Link>
+                        </div>
+
+                        {/* Plan Pro */}
+                        <div className="glass-card p-10 space-y-8 border-white/5 bg-white/[0.02] flex flex-col">
+                            <div className="space-y-2">
+                                <h4 className="text-2xl font-bold uppercase tracking-tighter">Pro</h4>
+                                <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">Dominio absoluto</p>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-6xl font-black font-mono">$79</span>
+                                <span className="text-white/20 text-sm font-bold">/mes</span>
+                            </div>
+                            <ul className="flex-1 space-y-5">
+                                {[
+                                    'Agentes ilimitados',
+                                    'Auto-sanación neural',
+                                    'Memoria cognitiva infinita',
+                                    'Soporte prioritario 24/7',
+                                    'Margen plataforma: solo 5%'
+                                ].map(item => (
+                                    <li key={item} className="flex items-center gap-3 text-sm text-white/40">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                            <Link href="/registro?plan=professional" className="w-full py-5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all text-center">ACTIVAR PROFESSIONAL</Link>
                         </div>
                     </div>
                 </section>

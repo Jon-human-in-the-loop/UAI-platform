@@ -77,15 +77,16 @@ UAI es el primer **Sistema Operativo Cognitivo** de adopción masiva. No constru
 | Plan | Precio | Target | Propuesta |
 |:---|:---|:---|:---|
 | **Free** | $0 / siempre | Estudiantes, curiosos | 1 agente, 5 consultas/hora. Motor de viralización |
-| **Essentials** | $9 / mes | Emprendedores, freelancers | 2 agentes, memoria persistente, tokens a coste directo |
-| **Professional** | $79 / mes | PyMEs, agencias | 5 agentes, auto-sanación, memoria infinita, soporte 24/7 |
-| **Enterprise** | Desde $299 / mes | Corporaciones | Agentes ilimitados, tarifas de volumen negociadas |
+| **Básico** | $9 / mes | Emprendedores, freelancers | 2 agentes, memoria persistente, coste de token al costo |
+| **Advanced** | $29 / mes | Startups, agencias chicas | 5 agentes, soporte multi-canal, analítica ROI |
+| **Pro** | $79 / mes | PyMEs, agencias grandes | Agentes ilimitados, auto-sanación, memoria infinita |
 
 ### Estrategia de Monetización
 
 - **Plan Free**: Inversión de marketing. Costo: ~$0.025/usuario/mes en tokens (Gemini Flash)
-- **Essentials**: Margen 0% en tokens → toda la suscripción es **ingreso bruto puro**
-- **Professional**: Margen 5% en tokens + suscripción premium
+- **Básico/Essentials**: Margen 0% en tokens → toda la suscripción es **ingreso bruto puro**
+- **Advanced**: Margen estratégico con retención de datos premium
+- **Pro**: Margen 5% en tokens + suscripción premium
 - **Token Pass-Through**: Cobramos el costo exacto del proveedor — sin markup abusivo
 - **Pagos Regionales**: Stripe (global) + **Mercado Pago** (LATAM) para máxima cobertura
 
@@ -93,14 +94,14 @@ UAI es el primer **Sistema Operativo Cognitivo** de adopción masiva. No constru
 
 ## 📊 Proyecciones Financieras
 
-> Distribución conservadora: 80% Free / 20% Essentials (sin contar Professional/Enterprise)
+> Distribución conservadora: 80% Free / 20% Paid (distribuidos entre Básico, Advanced y Pro)
 
-| Escenario | Usuarios | Free | Essentials | Ingreso Mensual | Costos Op. | **Margen Neto** |
+| Escenario | Usuarios | Free | Paid | Ingreso Mensual | Costos Op. | **Margen Neto** |
 |:---|:---|:---|:---|:---|:---|:---|
-| **Génesis** | 1,000 | 800 | 200 | $1,800 | $50 | **+$1,750** |
-| **Tracción** | 10,000 | 8,000 | 2,000 | $18,000 | $350 | **+$17,650** |
-| **Viral** | 50,000 | 40,000 | 10,000 | $90,000 | $2,500 | **+$87,500** |
-| **Dominio** | 500,000 | 400,000 | 100,000 | $900,000 | $25,000 | **+$875,000** |
+| **Génesis** | 1,000 | 800 | 200 | $3,500 | $100 | **+$3,400** |
+| **Tracción** | 10,000 | 8,000 | 2,000 | $35,000 | $500 | **+$34,500** |
+| **Viral** | 50,000 | 40,000 | 10,000 | $175,000 | $3,000 | **+$172,000** |
+| **Dominio** | 500,000 | 400,000 | 100,000 | $1,750,000 | $30,000 | **+$1,720,000** |
 
 > **Solo con un 2% de conversión Free → Essentials**, la plataforma es rentable y cubre el 100% de los costos de toda la base de usuarios.
 

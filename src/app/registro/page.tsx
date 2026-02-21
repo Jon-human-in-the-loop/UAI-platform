@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
-type PlanId = 'free' | 'essentials' | 'professional';
+type PlanId = 'free' | 'essentials' | 'advanced' | 'professional';
 
 const plans: { id: PlanId; name: string; price: string; period: string; badge?: string; features: string[]; highlight: boolean; cta: string }[] = [
     {
@@ -16,14 +16,19 @@ const plans: { id: PlanId; name: string; price: string; period: string; badge?: 
         highlight: false, cta: 'Comenzar Gratis'
     },
     {
-        id: 'essentials', name: 'Essentials', price: '$9', period: '/mes',
+        id: 'essentials', name: 'Básico', price: '$9', period: '/mes',
         badge: 'RECOMENDADO',
         features: ['Orquestación de 2 Agentes', 'Memoria Cognitiva Persistente', 'Prioridad en Razonamiento', 'Tokens a Coste Directo (0% Margen)', 'Capacidad: 50 consultas/hora'],
         highlight: true, cta: 'Activar Essentials'
     },
     {
-        id: 'professional', name: 'Professional', price: '$79', period: '/mes',
-        features: ['Hasta 5 Agentes Coordinados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'],
+        id: 'advanced', name: 'Advanced', price: '$29', period: '/mes',
+        features: ['Hasta 5 Agentes Coordinados', 'Soporte Multi-Canal Full', 'Analítica ROI Avanzada', 'Prioridad de Cómputo Alta'],
+        highlight: false, cta: 'Activar Advanced'
+    },
+    {
+        id: 'professional', name: 'Pro', price: '$79', period: '/mes',
+        features: ['Agentes Ilimitados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'],
         highlight: false, cta: 'Activar Professional'
     }
 ];
@@ -161,7 +166,7 @@ function RegistroPage() {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                 {plans.map((plan) => (
                                     <motion.div
                                         key={plan.id}

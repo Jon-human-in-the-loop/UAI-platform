@@ -9,7 +9,8 @@ import { useDashboard } from './DashboardContext';
 
 const planLabel: Record<string, string> = {
     'free': 'Gratis',
-    'essentials': 'Essentials',
+    'essentials': 'Básico',
+    'advanced': 'Advanced',
     'professional': 'Pro'
 };
 

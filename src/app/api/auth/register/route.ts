@@ -52,7 +52,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const validPlans = ['free', 'essentials', 'professional'];
+        const validPlans = ['free', 'essentials', 'advanced', 'professional'];
         if (!validPlans.includes(plan)) {
             return NextResponse.json(
                 { error: 'Plan no válido' },

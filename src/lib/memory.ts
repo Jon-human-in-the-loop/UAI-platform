@@ -18,26 +18,29 @@ const embeddings = new OpenAIEmbeddings({
 export async function saveReflection(text: string, metadata: any = {}) {
     console.log("--- Guardando Reflexión en Memoria Semántica ---");
 
-    const doc = new Document({
-        pageContent: text,
-        metadata: {
-            ...metadata,
-            timestamp: new Date().toISOString(),
-        },
-    });
+    try {
+        const doc = new Document({
+            pageContent: text,
+            metadata: {
+                ...metadata,
+                timestamp: new Date().toISOString(),
+            },
+        });
 
-    const vector = await embeddings.embedDocuments([doc.pageContent]);
+        const vector = await embeddings.embedDocuments([doc.pageContent]);
 
-    await index.upsert({
-        records: [{
+        await index.upsert([{
             id: `ref_${Date.now()}`,
             values: vector[0],
             metadata: {
                 text: doc.pageContent,
                 ...doc.metadata
             }
-        }]
-    });
+        }]);
+        console.log("✅ Reflexión guardada con éxito.");
+    } catch (error) {
+        console.warn("⚠️ Advertencia: No se pudo guardar en Pinecone (Memoria). Continuando...", error);
+    }
 }
 
 /**
@@ -46,13 +49,22 @@ export async function saveReflection(text: string, metadata: any = {}) {
 export async function queryMemory(query: string, limit: number = 3) {
     console.log(`--- Buscando en Memoria: "${query}" ---`);
 
-    const queryVector = await embeddings.embedQuery(query);
+    try {
+        const queryVector = await embeddings.embedQuery(query);
 
-    const queryResponse = await index.query({
-        vector: queryVector,
-        topK: limit,
-        includeMetadata: true,
-    });
+        const queryResponse = await index.query({
+            vector: queryVector,
+            topK: limit,
+            includeMetadata: true,
+        });
 
-    return queryResponse.matches.map(match => match.metadata?.text).filter(Boolean);
+        if (!queryResponse.matches || queryResponse.matches.length === 0) return [];
+
+        return queryResponse.matches
+            .map(match => match.metadata?.text)
+            .filter((text): text is string => typeof text === 'string');
+    } catch (error) {
+        console.warn("⚠️ Advertencia: Error o índice no encontrado en Pinecone. Se omitirá la memoria a largo plazo.", error);
+        return [];
+    }
 }

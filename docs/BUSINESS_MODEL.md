@@ -26,37 +26,49 @@ Nuestro modelo es **Híbrido: Suscripción + Consumo Inteligente (Tokens)**.
 
 ## 3. Tiers de Precios (Pricing Strategy)
 
-### 🌱 Free (Motor de Viralidad)
-*   **Precio:** $0 / mes
+### 🌱 UAI Free (Motor de Viralidad)
+*   **Precio:** $0 / siempre
 *   **Target:** Estudiantes, Entusiastas, Evaluadores.
-*   **Límites:** 1 Agente activo, 5 ejecuciones/hora, Sin memoria a largo plazo.
-*   **Objetivo:** Adquisición masiva (PLG - Product Led Growth).
-*   **Costo para nosotros:** <$0.05/mes (Modelos Flash/Haiku).
+*   **Features:**
+    *   1 Agente activo.
+    *   Límite: 5 consultas/hora.
+    *   Modelos Ultra-Rápidos.
+*   **Costo:** ~$0.025/usuario/mes.
 
-### 🚀 Essentials (Validación)
+### 🚀 Básico (Essentials)
 *   **Precio:** $9 / mes
 *   **Target:** Freelancers, Solopreneurs.
 *   **Features:**
-    *   3 Agentes activos.
-    *   Memoria persistente (Recuerda sesiones anteriores).
-    *   Acceso a modelos estándar (GPT-3.5 optimized, Haiku).
-    *   **Margen:** >90% (El costo de cómputo es marginal).
+    *   2 Agentes activos.
+    *   Memoria cognitiva persistente.
+    *   Prioridad en Razonamiento.
+    *   Tokens a Coste Directo (0% Margen).
+*   **Margen:** ~100% Neto (Suscripción pura).
 
-### 💎 Professional (Cash Cow)
+### ⚡ Advanced
+*   **Precio:** $29 / mes
+*   **Target:** Startups, Pequeñas Agencias.
+*   **Features:**
+    *   Hasta 5 Agentes Coordinados.
+    *   Soporte Multi-Canal Full.
+    *   Analítica ROI Avanzada.
+    *   Prioridad de Cómputo Alta.
+
+### 💎 Pro (Professional)
 *   **Precio:** $79 / mes
 *   **Target:** PyMEs, Agencias de Marketing/Dev.
 *   **Features:**
     *   Agentes Ilimitados.
-    *   **Auto-Healing** (Claude 3.7 verifica y corrige errores).
-    *   Acceso a Modelos SOTA (GPT-4o, Claude 3.5 Sonnet).
-    *   API Access para integraciones externas.
-*   **Margen:** ~70% (Mayor consumo de tokens, pero alto ticket).
+    *   **Auto-Healing** (Auto-sanación neural).
+    *   Memoria Cognitiva Infinita.
+    *   Soporte Prioritario 24/7.
+*   **Margen:** ~95% (Suscripción + 5% platform margin).
 
 ---
 
 ## 4. Unit Economics (Proyección)
 
-Para un usuario **Professional ($79/mes)**:
+Para un usuario **Pro ($79/mes)**:
 
 1.  **ARPU (Ingreso Promedio):** $79
 2.  **COGS (Costos Directos):**

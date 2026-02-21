@@ -21,7 +21,7 @@ export interface Rank {
 export const RANKS: Rank[] = [
     { name: 'Aprendiz Arcano', minLevel: 1, maxLevel: 10, emoji: '🌑', color: 'text-white/60', gradient: 'from-gray-500 to-gray-400', perk: 'Plan Free' },
     { name: 'Forjador de Nexos', minLevel: 11, maxLevel: 30, emoji: '🔗', color: 'text-blue-400', gradient: 'from-blue-500 to-cyan-400', perk: '50% descuento' },
-    { name: 'Oráculo Estelar', minLevel: 31, maxLevel: 70, emoji: '🔮', color: 'text-orange-400', gradient: 'from-orange-500 to-yellow-400', perk: 'Essentials gratis' },
+    { name: 'Oráculo Estelar', minLevel: 31, maxLevel: 70, emoji: '🔮', color: 'text-orange-400', gradient: 'from-orange-500 to-yellow-400', perk: 'Básico gratis' },
     { name: 'Arquitecto Celestial', minLevel: 71, maxLevel: 99, emoji: '🏛️', color: 'text-red-400', gradient: 'from-red-500 to-pink-400', perk: 'Pro de por vida' },
     { name: 'Dragón Primordial', minLevel: 100, maxLevel: Infinity, emoji: '🐉', color: 'text-yellow-400', gradient: 'from-yellow-500 to-red-500', perk: 'Acceso vitalicio total' },
 ];
