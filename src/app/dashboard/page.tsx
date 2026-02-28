@@ -8,6 +8,14 @@ import FlowEditor from '@/components/flow-editor/FlowEditor';
 import MissionControlDashboard from '@/components/mission-control/MissionControlDashboard';
 import HabitatAmongUs from '@/components/dashboard/HabitatAmongUs';
 
+
+interface RunSummaryResponse {
+    created_at: string;
+    updated_at: string;
+    total_tokens: number;
+    total_cost_credits: number;
+}
+
 export default function Dashboard() {
     const { awardXp, activeAgent } = useDashboard();
     const [mainView, setMainView] = useState<'dashboard' | 'execution' | 'habitat'>('habitat');
@@ -19,6 +27,7 @@ export default function Dashboard() {
     const [result, setResult] = useState<string | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const logsEndRef = useRef<HTMLDivElement>(null);
+    const missionStartRef = useRef<number | null>(null);
     
     const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([
         { id: 1, type: 'info', text: 'Sincronización de Centro de Comando completada.', time: new Date().toLocaleTimeString() },
@@ -35,6 +44,33 @@ export default function Dashboard() {
         logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [logs]);
 
+
+    const syncMetricsFromRunSummary = async (threadId?: string) => {
+        if (!threadId) return;
+
+        try {
+            const res = await fetch(`/api/agent/run/${threadId}/summary`, { cache: 'no-store' });
+            if (!res.ok) return;
+
+            const summary = (await res.json()) as RunSummaryResponse;
+            const createdAt = new Date(summary.created_at).getTime();
+            const updatedAt = new Date(summary.updated_at).getTime();
+            const latency = Number.isFinite(createdAt) && Number.isFinite(updatedAt)
+                ? Math.max(0, Math.round((updatedAt - createdAt) / 1000))
+                : 0;
+
+            setMetrics(prev => ({
+                ...prev,
+                latency,
+                tokens: Number(summary.total_tokens || 0),
+                cost: Number(summary.total_cost_credits || 0),
+                load: 0,
+            }));
+        } catch {
+            // noop: mantenemos métricas en streaming si falla la lectura de summary.
+        }
+    };
+
     const startAgent = async () => {
         if (isRunning || !userInput.trim()) return;
         setIsRunning(true);
@@ -47,7 +83,8 @@ export default function Dashboard() {
         const timestamp = new Date().toLocaleTimeString();
         setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: `Iniciando Misión: "${instruction.substring(0, 50)}..."`, time: timestamp }]);
 
-        setMetrics({ latency: 120, tokens: 0, load: 5, cost: 0 });
+        missionStartRef.current = Date.now();
+        setMetrics({ latency: 0, tokens: 0, load: 5, cost: 0 });
 
         try {
             const response = await fetch('/api/agent/run', {
@@ -64,6 +101,7 @@ export default function Dashboard() {
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let missionThreadId = currentThreadId;
 
             if (reader) {
                 while (true) {
@@ -78,6 +116,7 @@ export default function Dashboard() {
                         try {
                             const event = JSON.parse(line);
                             if (event.type === 'session_info') {
+                                missionThreadId = event.threadId;
                                 setCurrentThreadId(event.threadId);
                             } else if (event.type === 'node_update') {
                                 const state = event.chunk;
@@ -89,10 +128,9 @@ export default function Dashboard() {
                                         if (text.length > 150) setResult(text);
                                         
                                         setMetrics(prev => ({
-                                            latency: Math.floor(Math.random() * 100) + 150,
-                                            tokens: prev.tokens + Math.floor(text.length / 4),
-                                            load: Math.min(prev.load + 15, 95),
-                                            cost: prev.cost + Math.max(1, Math.floor(text.length / 100))
+                                            ...prev,
+                                            latency: missionStartRef.current ? Math.max(0, Math.round((Date.now() - missionStartRef.current) / 1000)) : prev.latency,
+                                            load: Math.min(prev.load + 15, 95)
                                         }));
                                     }
                                 }
@@ -105,14 +143,19 @@ export default function Dashboard() {
                                     tokens: event.metrics?.tokens ?? prev.tokens,
                                     cost: event.metrics?.costCredits ?? prev.cost
                                 }));
+                                await syncMetricsFromRunSummary(missionThreadId);
+                                missionStartRef.current = null;
                             }
-                        } catch (e) {}
+                        } catch {
+                            // Ignoramos líneas de stream no parseables.
+                        }
                     }
                 }
             }
         } catch (error: any) {
             setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `Error: ${error.message}`, time: new Date().toLocaleTimeString() }]);
         } finally {
+            missionStartRef.current = null;
             setIsRunning(false);
         }
     };

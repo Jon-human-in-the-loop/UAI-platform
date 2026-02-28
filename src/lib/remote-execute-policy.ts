@@ -45,3 +45,15 @@ export function isTimestampFresh(timestamp: string, nowMs = Date.now()) {
 export function getRemoteSignatureWindowSeconds() {
     return MAX_SKEW_SECONDS;
 }
+
+export function isValidRemoteWorkerToken(token: string | null) {
+    const expected = process.env.REMOTE_EXECUTE_WORKER_TOKEN;
+    return Boolean(expected && token && token === expected);
+}
+
+
+export function getRemoteMaxAttempts() {
+    const raw = Number(process.env.REMOTE_EXECUTE_MAX_ATTEMPTS || '3');
+    if (!Number.isFinite(raw) || raw <= 0) return 3;
+    return Math.floor(raw);
+}
