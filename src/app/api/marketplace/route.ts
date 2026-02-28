@@ -1,14 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorize } from '@/lib/authz';
-import {
-    getMarketplaceTemplates,
-    getTemplateById,
-    recordPurchase,
-    hasUserPurchased,
-    getUserCredits,
-    getUserPurchasedTemplates,
-} from '@/lib/marketplace';
+import { recordPurchase, hasUserPurchased, getUserCredits, getUserPurchasedTemplates } from '@/lib/marketplace';
 import { dbPool } from '@/lib/database';
+
+async function listTemplates(includeUnpublished = false) {
+    const client = await dbPool.connect();
+    try {
+        const res = await client.query(
+            `SELECT * FROM marketplace_templates
+             ${includeUnpublished ? '' : 'WHERE published = TRUE'}
+             ORDER BY updated_at DESC NULLS LAST, created_at DESC`,
+        );
+        return res.rows;
+    } finally {
+        client.release();
+    }
+}
+
+async function getTemplateFromDb(id: string, includeUnpublished = false) {
+    const client = await dbPool.connect();
+    try {
+        const res = await client.query(
+            `SELECT * FROM marketplace_templates WHERE id = $1 ${includeUnpublished ? '' : 'AND published = TRUE'} LIMIT 1`,
+            [id],
+        );
+        return res.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,8 +36,7 @@ export async function GET(req: NextRequest) {
         const action = searchParams.get('action');
 
         if (action === 'templates') {
-            const templates = getMarketplaceTemplates();
-            return NextResponse.json({ success: true, templates });
+            return NextResponse.json({ success: true, templates: await listTemplates(false) });
         }
 
         if (action === 'template') {
@@ -25,7 +44,7 @@ export async function GET(req: NextRequest) {
             if (!templateId) {
                 return NextResponse.json({ error: 'Se requiere id' }, { status: 400 });
             }
-            const template = getTemplateById(templateId);
+            const template = await getTemplateFromDb(templateId, false);
             return NextResponse.json(template || { error: 'Template no encontrado' });
         }
 
@@ -43,8 +62,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ credits });
         }
 
-        const templates = getMarketplaceTemplates();
-        return NextResponse.json({ success: true, templates });
+        return NextResponse.json({ success: true, templates: await listTemplates(false) });
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
@@ -70,7 +88,7 @@ export async function POST(req: NextRequest) {
                     (id, name, role, description, model, system_prompt, skills, category, price_credits, owner_user_id, published, updated_at)
                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,false,CURRENT_TIMESTAMP)
                     RETURNING *`,
-                    [id, name, role, description || '', model, system_prompt || '', skills || [], category || 'business', price_credits || 0, access.user.id]
+                    [id, name, role, description || '', model, system_prompt || '', skills || [], category || 'business', price_credits || 0, access.user.id],
                 );
                 return NextResponse.json({ success: true, template: res.rows[0] }, { status: 201 });
             } finally {
@@ -78,7 +96,6 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // default: purchase
         const { templateId } = body;
         if (!templateId) {
             return NextResponse.json({ error: 'Se requiere templateId' }, { status: 400 });
@@ -89,9 +106,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Ya has adquirido este template' }, { status: 400 });
         }
 
-        const template = getTemplateById(templateId);
+        const template = await getTemplateFromDb(templateId, false);
         if (!template) {
-            return NextResponse.json({ error: 'Template no encontrado' }, { status: 404 });
+            return NextResponse.json({ error: 'Template no encontrado o no publicado' }, { status: 404 });
         }
 
         const availableCredits = await getUserCredits(access.user.id);
@@ -117,6 +134,9 @@ export async function PATCH(req: NextRequest) {
 
         const client = await dbPool.connect();
         try {
+            const ownerClause = access.role === 'admin' ? '' : 'AND owner_user_id = $6';
+            const baseParams = [id, typeof published === 'boolean' ? published : null, name || null, description || null, price_credits ?? null];
+            const params = access.role === 'admin' ? baseParams : [...baseParams, access.user.id];
             const res = await client.query(
                 `UPDATE marketplace_templates
                  SET published = COALESCE($2, published),
@@ -124,11 +144,11 @@ export async function PATCH(req: NextRequest) {
                      description = COALESCE($4, description),
                      price_credits = COALESCE($5, price_credits),
                      updated_at = CURRENT_TIMESTAMP
-                 WHERE id = $1
+                 WHERE id = $1 ${ownerClause}
                  RETURNING *`,
-                [id, typeof published === 'boolean' ? published : null, name || null, description || null, price_credits ?? null]
+                params,
             );
-            if (!res.rows[0]) return NextResponse.json({ error: 'Template no encontrado' }, { status: 404 });
+            if (!res.rows[0]) return NextResponse.json({ error: 'Template no encontrado o sin permisos' }, { status: 403 });
             return NextResponse.json({ success: true, template: res.rows[0] });
         } finally {
             client.release();
@@ -148,7 +168,10 @@ export async function DELETE(req: NextRequest) {
 
     const client = await dbPool.connect();
     try {
-        await client.query(`DELETE FROM marketplace_templates WHERE id = $1`, [id]);
+        const ownerClause = access.role === 'admin' ? '' : 'AND owner_user_id = $2';
+        const params = access.role === 'admin' ? [id] : [id, access.user.id];
+        const res = await client.query(`DELETE FROM marketplace_templates WHERE id = $1 ${ownerClause} RETURNING id`, params);
+        if (!res.rows[0]) return NextResponse.json({ error: 'Template no encontrado o sin permisos' }, { status: 403 });
         return NextResponse.json({ success: true });
     } finally {
         client.release();

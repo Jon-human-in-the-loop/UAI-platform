@@ -295,6 +295,24 @@ export async function initDatabase() {
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
+                CREATE TABLE IF NOT EXISTS remote_request_nonces (
+                    nonce VARCHAR(255) PRIMARY KEY,
+                    request_timestamp TIMESTAMP NOT NULL,
+                    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS downloads INTEGER DEFAULT 0;
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) DEFAULT 0;
+
+                CREATE INDEX IF NOT EXISTS idx_remote_jobs_lookup ON remote_jobs(id, user_id, status);
+                CREATE INDEX IF NOT EXISTS idx_run_summaries_mission ON run_summaries(mission_id);
+                CREATE INDEX IF NOT EXISTS idx_billing_ledger_user_created ON billing_ledger(user_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_webhook_events_provider_status ON webhook_events(provider, status);
+                CREATE INDEX IF NOT EXISTS idx_marketplace_owner_published_updated
+                    ON marketplace_templates(owner_user_id, published, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_remote_request_nonces_created ON remote_request_nonces(created_at DESC);
+
             `);
             console.log("--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---");
         } finally {
