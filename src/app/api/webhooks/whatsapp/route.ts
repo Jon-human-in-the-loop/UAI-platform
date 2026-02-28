@@ -3,6 +3,7 @@ import { processWhatsAppMessage, sendWhatsAppMessage, getWhatsAppConfig, getTwil
 import { dbPool } from '@/lib/database';
 import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage } from '@langchain/core/messages';
+import { transcribeAudio } from '@/lib/multimedia';
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,8 +22,18 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const { phoneNumber, text } = result;
+        let { phoneNumber, text } = result as any;
         const userId = phoneNumber;
+
+        if (!text && payload.NumMedia && Number(payload.NumMedia) > 0 && payload.MediaUrl0) {
+            try {
+                const mediaRes = await fetch(String(payload.MediaUrl0));
+                const audioBuffer = Buffer.from(await mediaRes.arrayBuffer());
+                text = await transcribeAudio(audioBuffer);
+            } catch (e) {
+                console.error('[Webhook WhatsApp] Error transcribiendo audio:', e);
+            }
+        }
 
         // 2. Obtener configuración de WhatsApp del usuario
         const config = await getWhatsAppConfig(userId);

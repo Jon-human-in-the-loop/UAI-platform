@@ -27,7 +27,8 @@ export default function Dashboard() {
     const [metrics, setMetrics] = useState({
         latency: 0,
         tokens: 0,
-        load: 0
+        load: 0,
+        cost: 0
     });
 
     useEffect(() => {
@@ -46,7 +47,7 @@ export default function Dashboard() {
         const timestamp = new Date().toLocaleTimeString();
         setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: `Iniciando Misión: "${instruction.substring(0, 50)}..."`, time: timestamp }]);
 
-        setMetrics({ latency: 120, tokens: 0, load: 5 });
+        setMetrics({ latency: 120, tokens: 0, load: 5, cost: 0 });
 
         try {
             const response = await fetch('/api/agent/run', {
@@ -90,14 +91,20 @@ export default function Dashboard() {
                                         setMetrics(prev => ({
                                             latency: Math.floor(Math.random() * 100) + 150,
                                             tokens: prev.tokens + Math.floor(text.length / 4),
-                                            load: Math.min(prev.load + 15, 95)
+                                            load: Math.min(prev.load + 15, 95),
+                                            cost: prev.cost + Math.max(1, Math.floor(text.length / 100))
                                         }));
                                     }
                                 }
                             } else if (event.type === 'complete') {
                                 setLogs(prev => [...prev, { id: Date.now(), type: 'success', text: 'Misión completada con éxito.', time: new Date().toLocaleTimeString() }]);
                                 setExecutionSubView('output');
-                                setMetrics(prev => ({ ...prev, load: 0 }));
+                                setMetrics(prev => ({
+                                    ...prev,
+                                    load: 0,
+                                    tokens: event.metrics?.tokens ?? prev.tokens,
+                                    cost: event.metrics?.costCredits ?? prev.cost
+                                }));
                             }
                         } catch (e) {}
                     }
@@ -270,6 +277,15 @@ export default function Dashboard() {
                                             </div>
                                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                                                 <motion.div animate={{ width: `${Math.min(metrics.tokens / 10, 100)}%` }} className="h-full bg-green-500" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-[10px] mb-1">
+                                                <span className="text-white/40">Costo</span>
+                                                <span className="text-white font-mono">{metrics.cost} CR</span>
+                                            </div>
+                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div animate={{ width: `${Math.min(metrics.cost * 2, 100)}%` }} className="h-full bg-yellow-500" />
                                             </div>
                                         </div>
                                         <div>

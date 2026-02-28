@@ -1,7 +1,13 @@
 import OpenAI from "openai";
 import { HumanMessage, MessageContent, BaseMessage } from "@langchain/core/messages";
 
-const openai = new OpenAI();
+let openaiInstance: OpenAI | null = null;
+function getOpenAI() {
+    if (!openaiInstance) {
+        openaiInstance = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "dummy-key-for-build" });
+    }
+    return openaiInstance;
+}
 
 /**
  * Transcribe audio a texto usando OpenAI Whisper.
@@ -11,7 +17,7 @@ const openai = new OpenAI();
  */
 export async function transcribeAudio(audioBuffer: Buffer, format: string): Promise<string> {
     try {
-        const response = await openai.audio.transcriptions.create({
+        const response = await getOpenAI().audio.transcriptions.create({
             file: new File([audioBuffer as any], `audio.${format}`),
             model: "whisper-1",
         });

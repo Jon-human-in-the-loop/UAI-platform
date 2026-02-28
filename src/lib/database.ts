@@ -220,6 +220,10 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS published BOOLEAN DEFAULT FALSE;
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
                 CREATE TABLE IF NOT EXISTS user_purchases (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -264,6 +268,33 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(provider, event_id)
                 );
+
+                CREATE TABLE IF NOT EXISTS run_summaries (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    mission_id VARCHAR(255) UNIQUE NOT NULL,
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    status VARCHAR(20) DEFAULT 'running',
+                    total_tokens INTEGER DEFAULT 0,
+                    total_cost_credits INTEGER DEFAULT 0,
+                    node_metrics JSONB DEFAULT '[]'::jsonb,
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS remote_jobs (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                    mission_id VARCHAR(255),
+                    status VARCHAR(20) DEFAULT 'queued',
+                    provider VARCHAR(100),
+                    request_payload JSONB,
+                    response_payload JSONB,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
             `);
             console.log("--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---");
         } finally {
