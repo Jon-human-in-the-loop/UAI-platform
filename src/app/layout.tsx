@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "UAI - Unified Agentic Intelligence",
@@ -41,7 +38,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="es" className="dark">
-            <body className={`${inter.className} bg-background text-foreground antialiased`}>
+            <body className="bg-background text-foreground antialiased">
                 <Providers>
                     <div className="min-h-screen relative overflow-hidden">
                         {/* Fondo Decorativo Premium */}
