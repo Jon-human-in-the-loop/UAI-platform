@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { authorize } from '@/lib/authz';
 import { 
     getMarketplaceTemplates,
     getTemplateById,
@@ -29,20 +29,16 @@ export async function GET(req: NextRequest) {
         }
 
         if (action === 'purchased') {
-            const session = await auth();
-            if (!session || !session.user?.id) {
-                return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-            }
-            const purchased = await getUserPurchasedTemplates(session.user.id);
+            const access = await authorize();
+            if (!access.ok) return access.response;
+            const purchased = await getUserPurchasedTemplates(access.user.id);
             return NextResponse.json(purchased);
         }
 
         if (action === 'credits') {
-            const session = await auth();
-            if (!session || !session.user?.id) {
-                return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-            }
-            const credits = await getUserCredits(session.user.id);
+            const access = await authorize();
+            if (!access.ok) return access.response;
+            const credits = await getUserCredits(access.user.id);
             return NextResponse.json({ credits });
         }
 
@@ -54,10 +50,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session || !session.user?.id) {
-        return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
+    const access = await authorize({ permission: 'marketplace:write' });
+    if (!access.ok) return access.response;
 
     try {
         const { templateId } = await req.json();
@@ -67,7 +61,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Verificar si el usuario ya ha comprado este template
-        const alreadyPurchased = await hasUserPurchased(session.user.id, templateId);
+        const alreadyPurchased = await hasUserPurchased(access.user.id, templateId);
         if (alreadyPurchased) {
             return NextResponse.json(
                 { error: 'Ya has adquirido este template' },
@@ -82,7 +76,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Verificar créditos
-        const availableCredits = await getUserCredits(session.user.id);
+        const availableCredits = await getUserCredits(access.user.id);
         if (availableCredits < template.price_credits) {
             return NextResponse.json(
                 { error: 'Créditos insuficientes' },
@@ -91,7 +85,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Registrar la compra
-        await recordPurchase(session.user.id, templateId, 'agent_template', template.price_credits);
+        await recordPurchase(access.user.id, templateId, 'agent_template', template.price_credits);
 
         return NextResponse.json({
             success: true,
