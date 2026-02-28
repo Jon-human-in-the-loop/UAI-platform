@@ -46,7 +46,6 @@ export function getRemoteSignatureWindowSeconds() {
     return MAX_SKEW_SECONDS;
 }
 
-
 export function isValidRemoteWorkerToken(token: string | null) {
     const expected = process.env.REMOTE_EXECUTE_WORKER_TOKEN;
     return Boolean(expected && token && token === expected);

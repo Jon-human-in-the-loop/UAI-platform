@@ -1,6 +1,8 @@
 import { dbPool } from './database';
 import { getRemoteMaxAttempts } from './remote-execute-policy';
 
+// Single source of truth for retry policy lives in remote-execute-policy.
+
 export async function createRemoteJob(params: { userId?: string; missionId?: string; provider?: string; payload: any }) {
     const client = await dbPool.connect();
     try {

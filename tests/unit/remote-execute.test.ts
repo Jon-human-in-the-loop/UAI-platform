@@ -67,6 +67,9 @@ test('getRemoteMaxAttempts usa default y sanitiza valores inválidos', () => {
     process.env.REMOTE_EXECUTE_MAX_ATTEMPTS = '0';
     assert.equal(getRemoteMaxAttempts(), 3);
 
+    process.env.REMOTE_EXECUTE_MAX_ATTEMPTS = '-2';
+    assert.equal(getRemoteMaxAttempts(), 3);
+
     process.env.REMOTE_EXECUTE_MAX_ATTEMPTS = '5.8';
     assert.equal(getRemoteMaxAttempts(), 5);
 

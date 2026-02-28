@@ -311,7 +311,7 @@ export async function initDatabase() {
                 ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) DEFAULT 0;
 
                 CREATE INDEX IF NOT EXISTS idx_remote_jobs_lookup ON remote_jobs(id, user_id, status);
-                CREATE INDEX IF NOT EXISTS idx_remote_jobs_queue ON remote_jobs(status, attempts, next_attempt_at, created_at);
+                CREATE INDEX IF NOT EXISTS idx_remote_jobs_queue ON remote_jobs(status, attempts, next_attempt_at, created_at, updated_at);
                 CREATE INDEX IF NOT EXISTS idx_run_summaries_mission ON run_summaries(mission_id);
                 CREATE INDEX IF NOT EXISTS idx_billing_ledger_user_created ON billing_ledger(user_id, created_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_webhook_events_provider_status ON webhook_events(provider, status);

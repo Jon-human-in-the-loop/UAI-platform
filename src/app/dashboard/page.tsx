@@ -146,7 +146,9 @@ export default function Dashboard() {
                                 await syncMetricsFromRunSummary(missionThreadId);
                                 missionStartRef.current = null;
                             }
-                        } catch (e) {}
+                        } catch {
+                            // Ignoramos líneas de stream no parseables.
+                        }
                     }
                 }
             }
