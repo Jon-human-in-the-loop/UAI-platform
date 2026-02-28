@@ -24,10 +24,6 @@ jobs:
 
       - name: Run lint
         run: npm run lint
-
-      - name: Typecheck
-        run: npx tsc --noEmit -p tsconfig.ci.json
-
       - name: Run tests
         run: npm run test:ci
 

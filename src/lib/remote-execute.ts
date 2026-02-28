@@ -1,6 +1,5 @@
 import { dbPool } from './database';
-
-const DEFAULT_MAX_ATTEMPTS = 3;
+import { getRemoteMaxAttempts } from './remote-execute-policy';
 
 export async function createRemoteJob(params: { userId?: string; missionId?: string; provider?: string; payload: any }) {
     const client = await dbPool.connect();
@@ -37,7 +36,7 @@ export async function updateRemoteJob(jobId: string, status: 'queued' | 'running
     }
 }
 
-export async function claimNextQueuedRemoteJob(maxAttempts = DEFAULT_MAX_ATTEMPTS) {
+export async function claimNextQueuedRemoteJob(maxAttempts = getRemoteMaxAttempts()) {
     const client = await dbPool.connect();
     try {
         await client.query('BEGIN');
@@ -79,7 +78,7 @@ export async function claimNextQueuedRemoteJob(maxAttempts = DEFAULT_MAX_ATTEMPT
     }
 }
 
-export async function requeueOrFailRemoteJob(jobId: string, attempts: number, errorMessage: string, maxAttempts = DEFAULT_MAX_ATTEMPTS) {
+export async function requeueOrFailRemoteJob(jobId: string, attempts: number, errorMessage: string, maxAttempts = getRemoteMaxAttempts()) {
     if (attempts >= maxAttempts) {
         return updateRemoteJob(jobId, 'failed', null, errorMessage);
     }
