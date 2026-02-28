@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
 
-import { buildCanonicalRequest, isTimestampFresh, isValidRemoteWorkerToken, verifyRemoteSignature } from '../../src/lib/remote-execute-policy.ts';
+import { buildCanonicalRequest, getRemoteMaxAttempts, isTimestampFresh, isValidRemoteWorkerToken, verifyRemoteSignature } from '../../src/lib/remote-execute-policy.ts';
 
 function buildSignedInput() {
     const input = {
@@ -55,4 +55,20 @@ test('isValidRemoteWorkerToken valida token de worker', () => {
     assert.equal(isValidRemoteWorkerToken('invalid'), false);
 
     process.env.REMOTE_EXECUTE_WORKER_TOKEN = prev;
+});
+
+
+test('getRemoteMaxAttempts usa default y sanitiza valores inválidos', () => {
+    const prev = process.env.REMOTE_EXECUTE_MAX_ATTEMPTS;
+
+    delete process.env.REMOTE_EXECUTE_MAX_ATTEMPTS;
+    assert.equal(getRemoteMaxAttempts(), 3);
+
+    process.env.REMOTE_EXECUTE_MAX_ATTEMPTS = '0';
+    assert.equal(getRemoteMaxAttempts(), 3);
+
+    process.env.REMOTE_EXECUTE_MAX_ATTEMPTS = '5.8';
+    assert.equal(getRemoteMaxAttempts(), 5);
+
+    process.env.REMOTE_EXECUTE_MAX_ATTEMPTS = prev;
 });

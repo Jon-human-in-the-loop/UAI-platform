@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { claimNextQueuedRemoteJob, requeueOrFailRemoteJob, updateRemoteJob } from '@/lib/remote-execute';
-import { isValidRemoteWorkerToken } from '@/lib/remote-execute-policy';
+import { getRemoteMaxAttempts, isValidRemoteWorkerToken } from '@/lib/remote-execute-policy';
 
 export const runtime = 'nodejs';
 
@@ -10,10 +10,11 @@ function getWorkerToken(req: NextRequest) {
     return req.headers.get('x-uai-worker-token');
 }
 
-function getMaxAttempts() {
-    const raw = Number(process.env.REMOTE_EXECUTE_MAX_ATTEMPTS || '3');
-    if (!Number.isFinite(raw) || raw <= 0) return 3;
-    return Math.floor(raw);
+function getBatchLimit(req: NextRequest) {
+    const url = new URL(req.url);
+    const raw = Number(url.searchParams.get('limit') || '1');
+    if (!Number.isFinite(raw) || raw <= 0) return 1;
+    return Math.min(Math.floor(raw), 10);
 }
 
 async function executeRemoteJobPayload(payload: any) {
@@ -32,23 +33,40 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid worker token' }, { status: 401 });
     }
 
-    const maxAttempts = getMaxAttempts();
-    const runningJob = await claimNextQueuedRemoteJob(maxAttempts);
-    if (!runningJob) {
-        return NextResponse.json({ ok: true, message: 'No queued jobs' });
+    const maxAttempts = getRemoteMaxAttempts();
+    const batchLimit = getBatchLimit(req);
+
+    let processed = 0;
+    let succeeded = 0;
+    let failed = 0;
+    const jobs: any[] = [];
+
+    for (let i = 0; i < batchLimit; i++) {
+        const runningJob = await claimNextQueuedRemoteJob(maxAttempts);
+        if (!runningJob) break;
+
+        processed += 1;
+
+        try {
+            const result = await executeRemoteJobPayload(runningJob.request_payload || {});
+            const updated = await updateRemoteJob(runningJob.id, 'success', result);
+            succeeded += 1;
+            jobs.push(updated);
+        } catch (error: any) {
+            const updated = await requeueOrFailRemoteJob(
+                runningJob.id,
+                Number(runningJob.attempts || 1),
+                error?.message || 'Remote execution failed',
+                maxAttempts,
+            );
+            failed += 1;
+            jobs.push(updated);
+        }
     }
 
-    try {
-        const result = await executeRemoteJobPayload(runningJob.request_payload || {});
-        const updated = await updateRemoteJob(runningJob.id, 'success', result);
-        return NextResponse.json({ ok: true, processed: true, job: updated });
-    } catch (error: any) {
-        const updated = await requeueOrFailRemoteJob(
-            runningJob.id,
-            Number(runningJob.attempts || 1),
-            error?.message || 'Remote execution failed',
-            maxAttempts,
-        );
-        return NextResponse.json({ ok: false, processed: true, job: updated }, { status: 500 });
+    if (processed === 0) {
+        return NextResponse.json({ ok: true, message: 'No queued jobs', processed, succeeded, failed, jobs: [] });
     }
+
+    return NextResponse.json({ ok: failed === 0, processed, succeeded, failed, jobs });
 }
