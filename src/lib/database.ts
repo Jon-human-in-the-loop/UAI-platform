@@ -237,6 +237,34 @@ export async function initDatabase() {
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS token_usage_total BIGINT DEFAULT 0;
             `);
 
+
+            // 11. Create BILLING ledger and webhook idempotency tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS billing_ledger (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    mission_id VARCHAR(255),
+                    entry_type VARCHAR(20) NOT NULL CHECK (entry_type IN ('DEBIT', 'CREDIT')),
+                    amount_credits INTEGER NOT NULL,
+                    token_count INTEGER DEFAULT 0,
+                    model VARCHAR(100),
+                    provider VARCHAR(50) DEFAULT 'internal',
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, mission_id, entry_type)
+                );
+
+                CREATE TABLE IF NOT EXISTS webhook_events (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    provider VARCHAR(50) NOT NULL,
+                    event_id VARCHAR(255) NOT NULL,
+                    payload JSONB,
+                    status VARCHAR(20) DEFAULT 'RECEIVED',
+                    processed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(provider, event_id)
+                );
+            `);
             console.log("--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---");
         } finally {
             client.release();

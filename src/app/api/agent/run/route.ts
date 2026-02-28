@@ -124,14 +124,13 @@ export async function POST(req: NextRequest) {
 
                 // SEGUIMIENTO DE TOKENS (Simulado con valores fijos para el demo)
                 // En producción, LangGraph devolvería el uso real en el AgentState
-                if (agent && agent.id) {
-                    await trackTokenUsage({
-                        userId: agent.user_id || 'system',
-                        model: agent.model || 'gpt-4-turbo',
-                        promptTokens: 500,
-                        completionTokens: 200
-                    });
-                }
+                await trackTokenUsage({
+                    userId: userId,
+                    missionId: currentThreadId,
+                    model: agent?.model || 'gpt-4-turbo',
+                    promptTokens: 500,
+                    completionTokens: 200
+                });
 
                 await sendEvent('complete', { success: true });
             } catch (err: any) {
