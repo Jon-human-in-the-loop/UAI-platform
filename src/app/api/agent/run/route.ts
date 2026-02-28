@@ -4,6 +4,7 @@ import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { retrieveCollectiveKnowledge, abstractLearning } from '@/lib/collective-memory';
 import { trackTokenUsage } from '@/lib/billing';
 import { v4 as uuidv4 } from 'uuid';
+import { startRunSummary, appendNodeMetric, finishRunSummary } from '@/lib/run-tracing';
 import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
@@ -29,11 +30,11 @@ export async function POST(req: NextRequest) {
         console.log(`--- Ejecución ${threadId ? 'Continua' : 'Nueva'} (Thread: ${currentThreadId}) ---`);
         if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
 
-        // DIAGNÓSTICO DE KEYS (Solo mostramos si existen, no el valor)
+        // DIAGNÓSTICO DE KEYS (sin exponer fragmentos de secretos en logs)
         console.log("--- DIAGNÓSTICO DE KEYS ---");
-        console.log("ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Presente (" + process.env.ANTHROPIC_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
-        console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Presente (" + process.env.OPENAI_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
-        console.log("GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? "✅ Presente (" + process.env.GOOGLE_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
+        console.log("ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Presente" : "❌ AUSENTE");
+        console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Presente" : "❌ AUSENTE");
+        console.log("GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? "✅ Presente" : "❌ AUSENTE");
         console.log("---------------------------");
 
         const encoder = new TextEncoder();
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
         const config = {
             configurable: { thread_id: currentThreadId }
         };
+
+        await startRunSummary(currentThreadId, userId, { source: 'api/agent/run' });
 
         // RECUPERACIÓN DE MEMORIA COLECTIVA
         const collectiveKnowledge = await retrieveCollectiveKnowledge(input);
@@ -80,6 +83,9 @@ export async function POST(req: NextRequest) {
             };
 
         // Cambiamos a STREAM directamente en el cuerpo de la función para mayor estabilidad en Next.js
+        let cumulativeTokens = 0;
+        let cumulativeCost = 0;
+
         const runStream = async () => {
             try {
                 await sendEvent('session_info', { threadId: currentThreadId });
@@ -107,6 +113,12 @@ export async function POST(req: NextRequest) {
 
                     console.log(`[Stream] Enviando actualización de nodo: ${chunk.next_node || 'FIN'}`);
                     await sendEvent('node_update', { chunk: cleanChunk });
+
+                    const estimatedTokens = Math.max(1, Math.floor((JSON.stringify(cleanChunk).length || 1) / 6));
+                    const estimatedCost = Math.ceil(estimatedTokens / 100);
+                    cumulativeTokens += estimatedTokens;
+                    cumulativeCost += estimatedCost;
+                    await appendNodeMetric(currentThreadId, chunk.next_node || 'FIN', estimatedTokens, estimatedCost);
                 }
 
                 // ABSTRACCIÓN DE APRENDIZAJE AL FINALIZAR (Simplificado para el demo)
@@ -124,18 +136,19 @@ export async function POST(req: NextRequest) {
 
                 // SEGUIMIENTO DE TOKENS (Simulado con valores fijos para el demo)
                 // En producción, LangGraph devolvería el uso real en el AgentState
-                if (agent && agent.id) {
-                    await trackTokenUsage({
-                        userId: agent.user_id || 'system',
-                        model: agent.model || 'gpt-4-turbo',
-                        promptTokens: 500,
-                        completionTokens: 200
-                    });
-                }
+                await trackTokenUsage({
+                    userId: userId,
+                    missionId: currentThreadId,
+                    model: agent?.model || 'gpt-4-turbo',
+                    promptTokens: Math.max(200, Math.floor(cumulativeTokens * 0.6)),
+                    completionTokens: Math.max(100, Math.floor(cumulativeTokens * 0.4))
+                });
 
-                await sendEvent('complete', { success: true });
+                await finishRunSummary(currentThreadId, 'success');
+                await sendEvent('complete', { success: true, metrics: { tokens: cumulativeTokens, costCredits: cumulativeCost } });
             } catch (err: any) {
                 console.error('Error en orquestación:', err);
+                await finishRunSummary(currentThreadId, 'error');
                 await sendEvent('error', { message: err.message });
             } finally {
                 await writer.close();

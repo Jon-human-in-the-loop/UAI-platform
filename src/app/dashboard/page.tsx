@@ -8,6 +8,14 @@ import FlowEditor from '@/components/flow-editor/FlowEditor';
 import MissionControlDashboard from '@/components/mission-control/MissionControlDashboard';
 import HabitatAmongUs from '@/components/dashboard/HabitatAmongUs';
 
+
+interface RunSummaryResponse {
+    created_at: string;
+    updated_at: string;
+    total_tokens: number;
+    total_cost_credits: number;
+}
+
 export default function Dashboard() {
     const { awardXp, activeAgent } = useDashboard();
     const [mainView, setMainView] = useState<'dashboard' | 'execution' | 'habitat'>('habitat');
@@ -27,12 +35,40 @@ export default function Dashboard() {
     const [metrics, setMetrics] = useState({
         latency: 0,
         tokens: 0,
-        load: 0
+        load: 0,
+        cost: 0
     });
 
     useEffect(() => {
         logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [logs]);
+
+
+    const syncMetricsFromRunSummary = async (threadId?: string) => {
+        if (!threadId) return;
+
+        try {
+            const res = await fetch(`/api/agent/run/${threadId}/summary`, { cache: 'no-store' });
+            if (!res.ok) return;
+
+            const summary = (await res.json()) as RunSummaryResponse;
+            const createdAt = new Date(summary.created_at).getTime();
+            const updatedAt = new Date(summary.updated_at).getTime();
+            const latency = Number.isFinite(createdAt) && Number.isFinite(updatedAt)
+                ? Math.max(0, Math.round((updatedAt - createdAt) / 1000))
+                : 0;
+
+            setMetrics(prev => ({
+                ...prev,
+                latency,
+                tokens: Number(summary.total_tokens || 0),
+                cost: Number(summary.total_cost_credits || 0),
+                load: 0,
+            }));
+        } catch {
+            // noop: mantenemos métricas en streaming si falla la lectura de summary.
+        }
+    };
 
     const startAgent = async () => {
         if (isRunning || !userInput.trim()) return;
@@ -46,7 +82,7 @@ export default function Dashboard() {
         const timestamp = new Date().toLocaleTimeString();
         setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: `Iniciando Misión: "${instruction.substring(0, 50)}..."`, time: timestamp }]);
 
-        setMetrics({ latency: 120, tokens: 0, load: 5 });
+        setMetrics({ latency: 120, tokens: 0, load: 5, cost: 0 });
 
         try {
             const response = await fetch('/api/agent/run', {
@@ -63,6 +99,7 @@ export default function Dashboard() {
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let missionThreadId = currentThreadId;
 
             if (reader) {
                 while (true) {
@@ -77,6 +114,7 @@ export default function Dashboard() {
                         try {
                             const event = JSON.parse(line);
                             if (event.type === 'session_info') {
+                                missionThreadId = event.threadId;
                                 setCurrentThreadId(event.threadId);
                             } else if (event.type === 'node_update') {
                                 const state = event.chunk;
@@ -90,14 +128,21 @@ export default function Dashboard() {
                                         setMetrics(prev => ({
                                             latency: Math.floor(Math.random() * 100) + 150,
                                             tokens: prev.tokens + Math.floor(text.length / 4),
-                                            load: Math.min(prev.load + 15, 95)
+                                            load: Math.min(prev.load + 15, 95),
+                                            cost: prev.cost + Math.max(1, Math.floor(text.length / 100))
                                         }));
                                     }
                                 }
                             } else if (event.type === 'complete') {
                                 setLogs(prev => [...prev, { id: Date.now(), type: 'success', text: 'Misión completada con éxito.', time: new Date().toLocaleTimeString() }]);
                                 setExecutionSubView('output');
-                                setMetrics(prev => ({ ...prev, load: 0 }));
+                                setMetrics(prev => ({
+                                    ...prev,
+                                    load: 0,
+                                    tokens: event.metrics?.tokens ?? prev.tokens,
+                                    cost: event.metrics?.costCredits ?? prev.cost
+                                }));
+                                await syncMetricsFromRunSummary(missionThreadId);
                             }
                         } catch (e) {}
                     }
@@ -270,6 +315,15 @@ export default function Dashboard() {
                                             </div>
                                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                                                 <motion.div animate={{ width: `${Math.min(metrics.tokens / 10, 100)}%` }} className="h-full bg-green-500" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-[10px] mb-1">
+                                                <span className="text-white/40">Costo</span>
+                                                <span className="text-white font-mono">{metrics.cost} CR</span>
+                                            </div>
+                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div animate={{ width: `${Math.min(metrics.cost * 2, 100)}%` }} className="h-full bg-yellow-500" />
                                             </div>
                                         </div>
                                         <div>
