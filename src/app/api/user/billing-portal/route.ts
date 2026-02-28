@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { authorize } from '@/lib/authz';
 import { stripe } from '@/lib/stripe';
 import { headers } from 'next/headers';
 
 export async function POST(req: Request) {
     try {
+        const access = await authorize({ permission: 'billing:portal' });
+        if (!access.ok) return access.response;
+
         const session = await auth();
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'No autenticado' }, { status: 401 });

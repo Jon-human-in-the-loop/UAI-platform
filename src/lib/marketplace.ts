@@ -92,24 +92,37 @@ export async function recordPurchase(
 ): Promise<void> {
     const client = await dbPool.connect();
     try {
-        // Registrar la compra
+        await client.query('BEGIN');
+
+        const existingPurchase = await client.query(
+            `SELECT id FROM user_purchases WHERE user_id = $1 AND item_id = $2 AND item_type = $3 LIMIT 1 FOR UPDATE`,
+            [userId, itemId, itemType],
+        );
+        if (existingPurchase.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return;
+        }
+
         await client.query(
             `INSERT INTO user_purchases (user_id, item_id, item_type, price_paid, created_at)
              VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
-            [userId, itemId, itemType, pricePaid]
+            [userId, itemId, itemType, pricePaid],
         );
 
-        // Actualizar el contador de descargas del template
         await client.query(
             `UPDATE marketplace_templates SET downloads = COALESCE(downloads, 0) + 1 WHERE id = $1`,
-            [itemId]
+            [itemId],
         );
 
-        // Restar créditos del usuario
         await client.query(
             `UPDATE users SET used_credits = COALESCE(used_credits, 0) + $1 WHERE id = $2`,
-            [pricePaid, userId]
+            [pricePaid, userId],
         );
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
     } finally {
         client.release();
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { authorize } from '@/lib/authz';
 import { stripe } from '@/lib/stripe';
 import { preference, mpClient } from '@/lib/mercadopago';
 import { PAYMENT_PLANS, PAYMENT_PROVIDERS } from '@/lib/payments.config';
@@ -8,6 +9,14 @@ export async function POST(req: Request) {
     try {
         const session = await auth();
         const { planId, provider, userId: bodyUserId } = await req.json();
+
+        // Compatibilidad: permitimos checkout durante registro sin sesión.
+        // Si existe sesión, aplicamos RBAC explícito.
+        if (session?.user?.id) {
+            const access = await authorize({ permission: 'billing:checkout' });
+            if (!access.ok) return access.response;
+        }
+
 
         // Use session ID or provided userId from body (for registration flow)
         const userId = session?.user?.id || bodyUserId;

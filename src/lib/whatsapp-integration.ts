@@ -58,13 +58,14 @@ export async function processWhatsAppMessage(payload: any) {
         const from = payload.From;
         const to = payload.To;
         const text = payload.Body;
+        const numMedia = Number(payload.NumMedia || 0);
         const messageSid = payload.MessageSid;
 
-        if (!text) {
-            return { success: false, reason: 'No message text' };
+        if (!text && numMedia === 0) {
+            return { success: false, reason: 'No message text or media' };
         }
 
-        console.log(`[WhatsApp] Mensaje de ${from}: ${text}`);
+        console.log(`[WhatsApp] Mensaje de ${from}: ${text || '[media]'}`);
 
         // Extraer el número de teléfono (remover prefijo whatsapp:)
         const phoneNumber = from.replace('whatsapp:', '');
@@ -85,7 +86,7 @@ export async function processWhatsAppMessage(payload: any) {
         return {
             success: true,
             phoneNumber,
-            text,
+            text: text || '',
             messageSid
         };
     } catch (error: any) {

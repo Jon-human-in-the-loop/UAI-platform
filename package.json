@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "npx tsc --noEmit -p tsconfig.ci.json",
+    "test": "node --test --experimental-strip-types tests/**/*.test.ts",
+    "test:ci": "node --test --experimental-strip-types tests/**/*.test.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "latest",

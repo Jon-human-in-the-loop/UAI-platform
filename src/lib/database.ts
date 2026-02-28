@@ -220,6 +220,10 @@ export async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS published BOOLEAN DEFAULT FALSE;
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
                 CREATE TABLE IF NOT EXISTS user_purchases (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -237,6 +241,79 @@ export async function initDatabase() {
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS token_usage_total BIGINT DEFAULT 0;
             `);
 
+
+            // 11. Create BILLING ledger and webhook idempotency tables
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS billing_ledger (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    mission_id VARCHAR(255),
+                    entry_type VARCHAR(20) NOT NULL CHECK (entry_type IN ('DEBIT', 'CREDIT')),
+                    amount_credits INTEGER NOT NULL,
+                    token_count INTEGER DEFAULT 0,
+                    model VARCHAR(100),
+                    provider VARCHAR(50) DEFAULT 'internal',
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, mission_id, entry_type)
+                );
+
+                CREATE TABLE IF NOT EXISTS webhook_events (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    provider VARCHAR(50) NOT NULL,
+                    event_id VARCHAR(255) NOT NULL,
+                    payload JSONB,
+                    status VARCHAR(20) DEFAULT 'RECEIVED',
+                    processed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(provider, event_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS run_summaries (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    mission_id VARCHAR(255) UNIQUE NOT NULL,
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    status VARCHAR(20) DEFAULT 'running',
+                    total_tokens INTEGER DEFAULT 0,
+                    total_cost_credits INTEGER DEFAULT 0,
+                    node_metrics JSONB DEFAULT '[]'::jsonb,
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS remote_jobs (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                    mission_id VARCHAR(255),
+                    status VARCHAR(20) DEFAULT 'queued',
+                    provider VARCHAR(100),
+                    request_payload JSONB,
+                    response_payload JSONB,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS remote_request_nonces (
+                    nonce VARCHAR(255) PRIMARY KEY,
+                    request_timestamp TIMESTAMP NOT NULL,
+                    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS downloads INTEGER DEFAULT 0;
+                ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) DEFAULT 0;
+
+                CREATE INDEX IF NOT EXISTS idx_remote_jobs_lookup ON remote_jobs(id, user_id, status);
+                CREATE INDEX IF NOT EXISTS idx_run_summaries_mission ON run_summaries(mission_id);
+                CREATE INDEX IF NOT EXISTS idx_billing_ledger_user_created ON billing_ledger(user_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_webhook_events_provider_status ON webhook_events(provider, status);
+                CREATE INDEX IF NOT EXISTS idx_marketplace_owner_published_updated
+                    ON marketplace_templates(owner_user_id, published, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_remote_request_nonces_created ON remote_request_nonces(created_at DESC);
+
+            `);
             console.log("--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---");
         } finally {
             client.release();
