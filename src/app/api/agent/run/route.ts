@@ -30,11 +30,11 @@ export async function POST(req: NextRequest) {
         console.log(`--- Ejecución ${threadId ? 'Continua' : 'Nueva'} (Thread: ${currentThreadId}) ---`);
         if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
 
-        // DIAGNÓSTICO DE KEYS (Solo mostramos si existen, no el valor)
+        // DIAGNÓSTICO DE KEYS (sin exponer fragmentos de secretos en logs)
         console.log("--- DIAGNÓSTICO DE KEYS ---");
-        console.log("ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Presente (" + process.env.ANTHROPIC_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
-        console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Presente (" + process.env.OPENAI_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
-        console.log("GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? "✅ Presente (" + process.env.GOOGLE_API_KEY.substring(0, 5) + "...)" : "❌ AUSENTE");
+        console.log("ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Presente" : "❌ AUSENTE");
+        console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Presente" : "❌ AUSENTE");
+        console.log("GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? "✅ Presente" : "❌ AUSENTE");
         console.log("---------------------------");
 
         const encoder = new TextEncoder();
