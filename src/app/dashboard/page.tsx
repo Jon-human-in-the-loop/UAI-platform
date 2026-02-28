@@ -27,6 +27,7 @@ export default function Dashboard() {
     const [result, setResult] = useState<string | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const logsEndRef = useRef<HTMLDivElement>(null);
+    const missionStartRef = useRef<number | null>(null);
     
     const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([
         { id: 1, type: 'info', text: 'Sincronización de Centro de Comando completada.', time: new Date().toLocaleTimeString() },
@@ -82,7 +83,8 @@ export default function Dashboard() {
         const timestamp = new Date().toLocaleTimeString();
         setLogs(prev => [...prev, { id: Date.now(), type: 'process', text: `Iniciando Misión: "${instruction.substring(0, 50)}..."`, time: timestamp }]);
 
-        setMetrics({ latency: 120, tokens: 0, load: 5, cost: 0 });
+        missionStartRef.current = Date.now();
+        setMetrics({ latency: 0, tokens: 0, load: 5, cost: 0 });
 
         try {
             const response = await fetch('/api/agent/run', {
@@ -126,10 +128,9 @@ export default function Dashboard() {
                                         if (text.length > 150) setResult(text);
                                         
                                         setMetrics(prev => ({
-                                            latency: Math.floor(Math.random() * 100) + 150,
-                                            tokens: prev.tokens + Math.floor(text.length / 4),
-                                            load: Math.min(prev.load + 15, 95),
-                                            cost: prev.cost + Math.max(1, Math.floor(text.length / 100))
+                                            ...prev,
+                                            latency: missionStartRef.current ? Math.max(0, Math.round((Date.now() - missionStartRef.current) / 1000)) : prev.latency,
+                                            load: Math.min(prev.load + 15, 95)
                                         }));
                                     }
                                 }
@@ -143,6 +144,7 @@ export default function Dashboard() {
                                     cost: event.metrics?.costCredits ?? prev.cost
                                 }));
                                 await syncMetricsFromRunSummary(missionThreadId);
+                                missionStartRef.current = null;
                             }
                         } catch (e) {}
                     }
@@ -151,6 +153,7 @@ export default function Dashboard() {
         } catch (error: any) {
             setLogs(prev => [...prev, { id: Date.now(), type: 'error', text: `Error: ${error.message}`, time: new Date().toLocaleTimeString() }]);
         } finally {
+            missionStartRef.current = null;
             setIsRunning(false);
         }
     };
