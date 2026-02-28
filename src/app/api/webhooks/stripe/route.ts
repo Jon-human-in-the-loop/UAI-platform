@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { dbAdapter } from '@/lib/db-adapter';
+import { registerWebhookEvent, markWebhookProcessed } from '@/lib/webhook-events';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +24,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
 
+    const eventId = (event as any).id as string;
+    const reg = await registerWebhookEvent('stripe', eventId, event);
+    if (!reg.isNew) {
+        return NextResponse.json({ received: true, duplicate: true });
+    }
+
     // Handle the event
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object as any;
@@ -38,10 +45,12 @@ export async function POST(req: NextRequest) {
 
             } catch (err) {
                 console.error(`Error updating user plan:`, err);
+                await markWebhookProcessed('stripe', eventId, 'FAILED');
                 return NextResponse.json({ error: 'Error actualizando el plan en la base de datos' }, { status: 500 });
             }
         }
     }
 
+    await markWebhookProcessed('stripe', eventId, 'PROCESSED');
     return NextResponse.json({ received: true });
 }

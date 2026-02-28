@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authorize } from '@/lib/authz';
 
 export async function GET(req: NextRequest) {
     const secret = req.nextUrl.searchParams.get('secret');
 
-    // Validación de seguridad básica
+    // Validación dual: secret + rol admin autenticado
     if (secret !== process.env.SETUP_SECRET) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const access = await authorize({ roles: ['admin'], permission: 'admin:debug' });
+    if (!access.ok) return access.response;
 
     const hostHeader = req.headers.get('host');
     const forwardedHost = req.headers.get('x-forwarded-host');
