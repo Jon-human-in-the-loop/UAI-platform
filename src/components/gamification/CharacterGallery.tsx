@@ -4,8 +4,20 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Unlock, Star } from 'lucide-react';
 
+interface Character {
+    id: string | number;
+    name: string;
+    role: string;
+    emoji?: string;
+    rarity: string;
+    bonusType: string;
+    bonusValue: number;
+    unlockedAtLevel: number;
+    unlocked: boolean;
+}
+
 export default function CharacterGallery() {
-    const [characters, setCharacters] = useState([]);
+    const [characters, setCharacters] = useState<Character[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
