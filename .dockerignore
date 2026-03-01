@@ -1,0 +1,46 @@
+# Dependencias
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build de Next.js
+.next
+out
+
+# Variables de entorno (nunca incluir en la imagen)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Control de versiones
+.git
+.gitignore
+
+# Archivos de desarrollo y testing
+tests
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Documentación
+docs
+README.md
+*.md
+
+# Herramientas de CI/CD
+.github
+.husky
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Scripts de desarrollo
+scripts
+
+# Archivos de análisis
+ANALISIS_DE_PROYECTO_UAI_PLATFORM.md

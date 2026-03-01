@@ -4,8 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Star } from 'lucide-react';
 
+interface Leader {
+    id: string | number;
+    name: string;
+    rank?: string;
+    rank_emoji?: string;
+    xp: number;
+    level: number;
+}
+
 export default function LeaderboardPanel() {
-    const [leaders, setLeaders] = useState([]);
+    const [leaders, setLeaders] = useState<Leader[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -35,7 +44,7 @@ export default function LeaderboardPanel() {
                     <div className="py-10 text-center text-white/20 animate-pulse">Calculando posiciones...</div>
                 ) : leaders.length > 0 ? (
                     <div className="space-y-2">
-                        {leaders.map((user: any, index: number) => (
+                        {leaders.map((user, index) => (
                             <motion.div 
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}

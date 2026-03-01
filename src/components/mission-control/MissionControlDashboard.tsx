@@ -4,9 +4,25 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Users, Target, Activity, Rocket, ShieldCheck } from 'lucide-react';
 
+interface Synergy {
+    id: string | number;
+    description: string;
+    type: string;
+    score: number;
+}
+
+interface Mission {
+    id: string | number;
+    name: string;
+    description: string;
+    status: string;
+    assignedAgents: string[];
+    synergyScore: number;
+}
+
 export default function MissionControlDashboard() {
-    const [synergies, setSynergies] = useState([]);
-    const [missions, setMissions] = useState([]);
+    const [synergies, setSynergies] = useState<Synergy[]>([]);
+    const [missions, setMissions] = useState<Mission[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
