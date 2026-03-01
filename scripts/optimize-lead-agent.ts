@@ -26,7 +26,7 @@ Tienes acceso a la Memoria Colectiva de UAI. Utiliza aprendizajes pasados para v
             [optimizedPrompt]
         );
         
-        if (res.rowCount > 0) {
+        if ((res.rowCount ?? 0) > 0) {
             console.log("✅ Agente optimizado con éxito.");
         } else {
             console.log("⚠️ No se encontró el agente para optimizar.");
