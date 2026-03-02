@@ -11,7 +11,9 @@ WORKDIR /app
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
 
 # Instalar dependencias de producción con npm ci para reproducibilidad exacta
-RUN npm ci --ignore-scripts
+# --legacy-peer-deps es necesario por el conflicto de peer deps entre
+# @langchain/community y @browserbasehq/stagehand (que requiere openai@4.x)
+RUN npm ci --ignore-scripts --legacy-peer-deps
 
 # --- Etapa 2: Build de la aplicación ---
 FROM node:20-alpine AS builder
