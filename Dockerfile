@@ -51,10 +51,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-# Railway inyecta la variable PORT automáticamente
+# Railway inyecta $PORT dinámicamente — NO hardcodear 3000
+# El servidor standalone de Next.js respeta la variable PORT del entorno
 EXPOSE 3000
-ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Comando de inicio usando el servidor standalone de Next.js
-CMD ["node", "server.js"]
+# Comando de inicio: usa $PORT si está disponible (Railway), sino 3000 como fallback
+CMD ["sh", "-c", "PORT=${PORT:-3000} node server.js"]
