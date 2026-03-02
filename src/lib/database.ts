@@ -141,6 +141,9 @@ export async function initDatabase() {
                     UNIQUE(user_id, channel_type)
                 );
 
+                -- Migración: agregar agent_id a channel_configs si no existe
+                ALTER TABLE channel_configs ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id) ON DELETE SET NULL;
+
                 CREATE TABLE IF NOT EXISTS channel_messages (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id UUID REFERENCES users(id) ON DELETE CASCADE,

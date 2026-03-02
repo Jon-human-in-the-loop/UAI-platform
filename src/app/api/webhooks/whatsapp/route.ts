@@ -5,6 +5,32 @@ import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage } from '@langchain/core/messages';
 import { transcribeAudio } from '@/lib/multimedia';
 
+/**
+ * Obtiene el agente asignado al canal de WhatsApp del usuario.
+ * Si no hay agente asignado, devuelve el agente más reciente del usuario como fallback.
+ */
+async function getAgentForChannel(userId: string, channelType: string) {
+    const client = await dbPool.connect();
+    try {
+        const channelRes = await client.query(
+            `SELECT cc.agent_id, a.name, a.role, a.model, a.system_prompt
+             FROM channel_configs cc
+             LEFT JOIN agents a ON a.id = cc.agent_id
+             WHERE cc.user_id = $1 AND cc.channel_type = $2 AND cc.enabled = true`,
+            [userId, channelType]
+        );
+        if (channelRes.rows[0]?.agent_id) return channelRes.rows[0];
+        const agentRes = await client.query(
+            `SELECT id as agent_id, name, role, model, system_prompt
+             FROM agents WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+            [userId]
+        );
+        return agentRes.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const MEDIA_TIMEOUT_MS = 10_000;
 
@@ -135,12 +161,10 @@ async function triggerOrchestrationAsync(
                         plan: 'professional',
                     },
                     is_blocked: false,
-                    agent_config: {
-                        name: 'UAI WhatsApp Agent',
-                        role: 'Asistente de WhatsApp',
-                        model: 'gpt-4o',
-                        system_prompt: 'Eres un asistente de IA para WhatsApp. Responde de forma concisa y util.',
-                    },
+                    agent_config: await getAgentForChannel(userId, 'WHATSAPP').then(a => a
+                        ? { name: a.name, role: a.role, model: a.model || 'gpt-4o', system_prompt: a.system_prompt || 'Eres un asistente de IA. Responde de forma concisa y útil.' }
+                        : { name: 'UAI WhatsApp Agent', role: 'Asistente de WhatsApp', model: 'gpt-4o', system_prompt: 'Eres un asistente de IA para WhatsApp. Responde de forma concisa y útil.' }
+                    ),
                 };
 
                 let finalResponse = '';
