@@ -1,549 +1,763 @@
 'use client';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Activity, Zap, Shield, Radio,
-    Rocket, Brain, Terminal, Settings,
-    TrendingUp, Cpu, RefreshCw, X, Plus
-} from 'lucide-react';
-import { useDashboard, Agent } from '@/components/dashboard/DashboardContext';
+import { Send, Activity, Zap, Terminal, X, ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Room {
+interface Agent {
     id: string;
     name: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    color: string;
-    borderColor: string;
-    icon: React.ElementType;
-    description: string;
-}
-
-interface AgentNode {
-    id: string;
-    name: string;
+    role: string;
+    model: string;
     avatar: string;
-    color: string;
-    x: number;
-    y: number;
-    targetX: number;
-    targetY: number;
-    roomId: string;
-    status: 'idle' | 'working' | 'communicating' | 'moving';
-    level: number;
+    level?: number;
+    xp?: number;
 }
 
-interface ChatBubble {
+interface Synergy {
     id: string;
-    agentId: string;
-    agentName: string;
-    agentColor: string;
-    message: string;
-    x: number;
-    y: number;
-    createdAt: number;
-}
-
-interface LogEntry {
-    id: number;
-    type: 'info' | 'success' | 'warning' | 'synergy' | 'mission';
-    text: string;
-    time: string;
-    icon: string;
+    type: string;
+    score: number;
+    description: string;
+    agent_ids: string[];
+    created_at: string;
 }
 
 interface Mission {
     id: string;
     name: string;
     description: string;
-    status: string;
     assigned_agents: string[];
     synergy_score: number;
+    status?: string;
+    created_at: string;
 }
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
+interface MetricsTotals {
+    total_runs: number;
+    total_tokens: number;
+    total_cost: number;
+    avg_latency_ms: number;
+    successful_runs: number;
+    failed_runs: number;
+    running_now: number;
+}
 
-const ROOMS: Room[] = [
-    { id: 'bridge',    name: 'Puente de Mando',    x: 30,  y: 5,  w: 40, h: 25, color: 'rgba(59,130,246,0.08)',  borderColor: 'rgba(59,130,246,0.5)',  icon: Rocket,   description: 'Coordinación estratégica' },
-    { id: 'reactor',   name: 'Reactor de Créditos', x: 2,   y: 38, w: 28, h: 25, color: 'rgba(234,179,8,0.08)',   borderColor: 'rgba(234,179,8,0.5)',   icon: Zap,      description: 'Gestión de tokens' },
-    { id: 'engine',    name: 'Motor de Agentes',    x: 70,  y: 38, w: 28, h: 25, color: 'rgba(139,92,246,0.08)', borderColor: 'rgba(139,92,246,0.5)', icon: Settings, description: 'Ejecución y procesamiento' },
-    { id: 'comms',     name: 'Comunicaciones',      x: 2,   y: 70, w: 28, h: 25, color: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.5)', icon: Radio,    description: 'Canales y webhooks' },
-    { id: 'security',  name: 'Auto-Sanación',       x: 70,  y: 70, w: 28, h: 25, color: 'rgba(239,68,68,0.08)',  borderColor: 'rgba(239,68,68,0.5)',  icon: Shield,   description: 'Monitoreo y recuperación' },
-    { id: 'cafeteria', name: 'Cafetería',           x: 30,  y: 38, w: 40, h: 25, color: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.5)', icon: Brain,    description: 'Zona de sincronización' },
-    { id: 'memory',    name: 'Memoria Colectiva',   x: 30,  y: 70, w: 40, h: 25, color: 'rgba(236,72,153,0.08)', borderColor: 'rgba(236,72,153,0.5)', icon: Brain,    description: 'Almacenamiento vectorial' },
-];
+interface RunRecord {
+    mission_id: string;
+    status: string;
+    total_tokens: number;
+    total_cost_credits: number;
+    latency_ms: number;
+    created_at: string;
+}
 
-const AGENT_COLORS = ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+// ─── Canvas Node ─────────────────────────────────────────────────────────────
 
-const SYNERGY_MESSAGES: Record<string, string[]> = {
-    bridge:    ['Analizando KPIs del trimestre...', 'Coordinando estrategia LATAM', 'Optimizando pipeline de conversión', 'Revisando métricas de retención'],
-    reactor:   ['Calculando costo por token...', 'Optimizando uso de créditos', 'Detectando patrones de consumo', 'Balanceando carga de modelos'],
-    engine:    ['Ejecutando tarea paralela...', 'Compilando respuesta multimodal', 'Sincronizando orquestador', 'Procesando cola de misiones'],
-    comms:     ['Enviando webhook a n8n...', 'Sincronizando Telegram', 'Procesando mensaje entrante', 'Actualizando estado de canal'],
-    security:  ['Detectando anomalía...', 'Iniciando protocolo de recuperación', 'Validando integridad', 'Escaneando errores recientes'],
-    cafeteria: ['Intercambiando contexto...', 'Compartiendo memoria episódica', 'Negociando prioridad', 'Generando sinergia colaborativa'],
-    memory:    ['Indexando embedding...', 'Recuperando memoria a largo plazo', 'Consolidando conocimiento', 'Actualizando grafo de entidades'],
+interface CanvasNode {
+    id: string;
+    agent: Agent;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    radius: number;
+    orbit: number;       // orbit ring index
+    angle: number;       // current angle on orbit
+    speed: number;       // orbital speed
+    color: string;
+    pulsePhase: number;
+    isActive: boolean;
+    isSelected: boolean;
+}
+
+interface Particle {
+    x: number;
+    y: number;
+    targetX: number;
+    targetY: number;
+    progress: number;
+    speed: number;
+    fromId: string;
+    toId: string;
+    color: string;
+}
+
+// ─── Color palette by role ────────────────────────────────────────────────────
+
+const ROLE_COLORS: Record<string, string> = {
+    'lead': '#ef4444',
+    'analyst': '#3b82f6',
+    'builder': '#22c55e',
+    'guardian': '#a855f7',
+    'connector': '#f59e0b',
+    'researcher': '#06b6d4',
+    'strategist': '#f97316',
+    'default': '#6b7280',
 };
 
-const IDLE_MESSAGES = ['En espera...', 'Monitoreando...', 'Procesando...', 'Analizando contexto...', 'Listo para ejecutar...'];
+function getRoleColor(role: string): string {
+    const lower = role.toLowerCase();
+    for (const [key, color] of Object.entries(ROLE_COLORS)) {
+        if (lower.includes(key)) return color;
+    }
+    return ROLE_COLORS.default;
+}
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function MissionControlDashboard() {
-    const { agents } = useDashboard();
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const animFrameRef = useRef<number>(0);
+    const nodesRef = useRef<CanvasNode[]>([]);
+    const particlesRef = useRef<Particle[]>([]);
+    const synergiesRef = useRef<Synergy[]>([]);
+    const timeRef = useRef<number>(0);
 
-    const [agentNodes, setAgentNodes] = useState<AgentNode[]>([]);
-    const [chatBubbles, setChatBubbles] = useState<ChatBubble[]>([]);
-    const [selectedAgent, setSelectedAgent] = useState<AgentNode | null>(null);
-    const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
-
-    const [logs, setLogs] = useState<LogEntry[]>([
-        { id: 1, type: 'info',    text: 'Sistema UAI inicializado correctamente.',     time: new Date().toLocaleTimeString(), icon: '🚀' },
-        { id: 2, type: 'success', text: 'Todos los agentes en línea y sincronizados.', time: new Date().toLocaleTimeString(), icon: '✅' },
-        { id: 3, type: 'info',    text: 'Orquestador cognitivo activo.',               time: new Date().toLocaleTimeString(), icon: '🧠' },
-    ]);
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [synergies, setSynergies] = useState<Synergy[]>([]);
     const [missions, setMissions] = useState<Mission[]>([]);
-    const [metrics, setMetrics] = useState({ tokens: 0, cost: 0, latency: 0, synergies: 0, executions: 0 });
+    const [metrics, setMetrics] = useState<MetricsTotals | null>(null);
+    const [recentRuns, setRecentRuns] = useState<RunRecord[]>([]);
+    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [activeTab, setActiveTab] = useState<'log' | 'missions' | 'agents'>('log');
-    const [isCreatingMission, setIsCreatingMission] = useState(false);
-    const [newMissionName, setNewMissionName] = useState('');
-    const [newMissionDesc, setNewMissionDesc] = useState('');
+    const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([
+        { id: 1, type: 'system', text: 'Sistema UAI inicializado. Grafo orbital activo.', time: new Date().toLocaleTimeString() },
+    ]);
+    const [missionInput, setMissionInput] = useState('');
+    const [isRunning, setIsRunning] = useState(false);
+    const [runOutput, setRunOutput] = useState<string>('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const logIdRef = useRef(10);
-    const logsEndRef = useRef<HTMLDivElement>(null);
-    const animFrameRef = useRef<number | null>(null);
+    const addLog = useCallback((type: string, text: string) => {
+        setLogs(prev => [...prev.slice(-49), {
+            id: Date.now(),
+            type,
+            text,
+            time: new Date().toLocaleTimeString()
+        }]);
+    }, []);
 
-    // ─── Inicializar agentes ──────────────────────────────────────────────────
+    // ── Fetch data ────────────────────────────────────────────────────────────
+
+    const fetchAll = useCallback(async () => {
+        try {
+            const [agentsRes, synRes, missRes, metricsRes] = await Promise.all([
+                fetch('/api/agents'),
+                fetch('/api/mission-control/synergies'),
+                fetch('/api/mission-control/missions'),
+                fetch('/api/agent/metrics'),
+            ]);
+
+            if (agentsRes.ok) {
+                const data: Agent[] = await agentsRes.json();
+                setAgents(data);
+                addLog('system', `${data.length} agente(s) conectado(s) al grafo.`);
+            }
+            if (synRes.ok) {
+                const data: Synergy[] = await synRes.json();
+                setSynergies(data);
+                synergiesRef.current = data;
+                if (data.length > 0) addLog('synergy', `${data.length} sinergia(s) activa(s) detectada(s).`);
+            }
+            if (missRes.ok) {
+                const data: Mission[] = await missRes.json();
+                setMissions(data);
+            }
+            if (metricsRes.ok) {
+                const data = await metricsRes.json();
+                setMetrics(data.totals);
+                setRecentRuns(data.runs || []);
+            }
+        } catch {
+            setError('Error al cargar datos del sistema.');
+        } finally {
+            setLoading(false);
+        }
+    }, [addLog]);
 
     useEffect(() => {
-        const sourceAgents: Agent[] = agents.length > 0 ? agents : [
-            { id: 'uai-lead',     name: 'UAI Lead',  role: 'Estratega',   model: 'gpt-4o', level: 7, xp: 3200, avatar: '🐉' },
-            { id: 'uai-analyst',  name: 'Analyst',   role: 'Analítico',   model: 'gpt-4o', level: 5, xp: 1800, avatar: '🔬' },
-            { id: 'uai-builder',  name: 'Builder',   role: 'Constructor', model: 'claude', level: 4, xp: 1200, avatar: '⚙️' },
-            { id: 'uai-guardian', name: 'Guardian',  role: 'Seguridad',   model: 'gpt-4o', level: 6, xp: 2400, avatar: '🛡️' },
-        ];
-        const nodes: AgentNode[] = sourceAgents.map((agent, i) => {
-            const room = ROOMS[i % ROOMS.length];
-            const x = room.x + room.w / 2 + (Math.random() * 8 - 4);
-            const y = room.y + room.h / 2 + (Math.random() * 8 - 4);
-            return { id: agent.id, name: agent.name, avatar: agent.avatar || '🤖', color: AGENT_COLORS[i % AGENT_COLORS.length], x, y, targetX: x, targetY: y, roomId: room.id, status: 'idle', level: agent.level || 1 };
+        fetchAll();
+        const interval = setInterval(fetchAll, 15000);
+        return () => clearInterval(interval);
+    }, [fetchAll]);
+
+    // ── Build canvas nodes from agents ────────────────────────────────────────
+
+    useEffect(() => {
+        if (agents.length === 0) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        const orbits = [80, 140, 200, 260];
+        nodesRef.current = agents.map((agent, i) => {
+            const orbitIdx = Math.min(Math.floor(i / 3), orbits.length - 1);
+            const orbitR = orbits[orbitIdx];
+            const countInOrbit = Math.min(agents.length - orbitIdx * 3, 3);
+            const angleStep = (Math.PI * 2) / countInOrbit;
+            const startAngle = (i % 3) * angleStep;
+            return {
+                id: agent.id,
+                agent,
+                x: cx + Math.cos(startAngle) * orbitR,
+                y: cy + Math.sin(startAngle) * orbitR,
+                vx: 0,
+                vy: 0,
+                radius: 18,
+                orbit: orbitIdx,
+                angle: startAngle,
+                speed: 0.003 + Math.random() * 0.002,
+                color: getRoleColor(agent.role),
+                pulsePhase: Math.random() * Math.PI * 2,
+                isActive: true,
+                isSelected: false,
+            };
         });
-        setAgentNodes(nodes);
     }, [agents]);
 
-    // ─── Animación suave ──────────────────────────────────────────────────────
+    // ── Canvas render loop ────────────────────────────────────────────────────
 
     useEffect(() => {
-        const animate = () => {
-            setAgentNodes(prev => prev.map(node => {
-                const dx = node.targetX - node.x;
-                const dy = node.targetY - node.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 0.3) return { ...node, x: node.targetX, y: node.targetY, status: node.status === 'moving' ? 'idle' : node.status };
-                return { ...node, x: node.x + dx * 0.06, y: node.y + dy * 0.06, status: 'moving' as const };
-            }));
-            animFrameRef.current = requestAnimationFrame(animate);
-        };
-        animFrameRef.current = requestAnimationFrame(animate);
-        return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-    }, []);
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-    // ─── Comportamiento de agentes ────────────────────────────────────────────
+        const orbits = [80, 140, 200, 260];
 
-    useEffect(() => {
-        if (agentNodes.length === 0) return;
+        const render = (ts: number) => {
+            timeRef.current = ts;
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
 
-        const behaviorInterval = setInterval(() => {
-            setAgentNodes(prev => {
-                const updated = prev.map(node => {
-                    if (Math.random() > 0.75) {
-                        const targetRoom = ROOMS[Math.floor(Math.random() * ROOMS.length)];
-                        const tx = targetRoom.x + targetRoom.w * 0.2 + Math.random() * targetRoom.w * 0.6;
-                        const ty = targetRoom.y + targetRoom.h * 0.2 + Math.random() * targetRoom.h * 0.6;
-                        return { ...node, targetX: tx, targetY: ty, roomId: targetRoom.id, status: 'moving' as const };
-                    }
-                    const room = ROOMS.find(r => r.id === node.roomId);
-                    if (room) {
-                        const tx = Math.max(room.x + 2, Math.min(room.x + room.w - 2, node.targetX + (Math.random() * 4 - 2)));
-                        const ty = Math.max(room.y + 2, Math.min(room.y + room.h - 2, node.targetY + (Math.random() * 4 - 2)));
-                        return { ...node, targetX: tx, targetY: ty };
-                    }
-                    return node;
-                });
+            // Clear
+            ctx.clearRect(0, 0, w, h);
 
-                updated.forEach((a1, i) => {
-                    updated.forEach((a2, j) => {
-                        if (i >= j) return;
-                        if (a1.roomId === a2.roomId && Math.random() > 0.85) {
-                            const msgs = SYNERGY_MESSAGES[a1.roomId] || IDLE_MESSAGES;
-                            const msg = msgs[Math.floor(Math.random() * msgs.length)];
-                            const bubbleId = `bubble-${Date.now()}-${i}-${j}`;
-                            setChatBubbles(prev => [...prev.slice(-8), { id: bubbleId, agentId: a1.id, agentName: a1.name, agentColor: a1.color, message: msg, x: a1.x, y: a1.y - 8, createdAt: Date.now() }]);
-                            setMetrics(m => ({ ...m, synergies: m.synergies + 1 }));
-                            const logId = ++logIdRef.current;
-                            setLogs(prev => [...prev.slice(-49), { id: logId, type: 'synergy', text: `Sinergia: ${a1.name} + ${a2.name} — "${msg}"`, time: new Date().toLocaleTimeString(), icon: '⚡' }]);
-                        }
-                    });
-                });
-                return updated;
+            // Background gradient
+            const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) / 2);
+            bg.addColorStop(0, '#0a0a14');
+            bg.addColorStop(1, '#050508');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw orbit rings
+            orbits.forEach((r, i) => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255,255,255,${0.03 + i * 0.01})`;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 8]);
+                ctx.stroke();
+                ctx.setLineDash([]);
             });
-        }, 2800);
 
-        const bubbleCleanup = setInterval(() => {
-            setChatBubbles(prev => prev.filter(b => Date.now() - b.createdAt < 6000));
-        }, 1000);
+            // Central core
+            const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28);
+            coreGrad.addColorStop(0, 'rgba(239,68,68,0.9)');
+            coreGrad.addColorStop(0.5, 'rgba(239,68,68,0.3)');
+            coreGrad.addColorStop(1, 'rgba(239,68,68,0)');
+            ctx.beginPath();
+            ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+            ctx.fillStyle = coreGrad;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('UAI', cx, cy);
 
-        const metricsInterval = setInterval(() => {
-            setMetrics(m => ({ ...m, tokens: m.tokens + Math.floor(Math.random() * 120), cost: parseFloat((m.cost + Math.random() * 0.003).toFixed(4)), latency: Math.floor(180 + Math.random() * 300), executions: m.executions + (Math.random() > 0.7 ? 1 : 0) }));
-        }, 3000);
+            // Update node positions
+            nodesRef.current.forEach(node => {
+                node.angle += node.speed;
+                const r = orbits[Math.min(node.orbit, orbits.length - 1)];
+                node.x = cx + Math.cos(node.angle) * r;
+                node.y = cy + Math.sin(node.angle) * r;
+            });
 
-        return () => { clearInterval(behaviorInterval); clearInterval(bubbleCleanup); clearInterval(metricsInterval); };
-    }, [agentNodes.length]);
+            // Draw synergy connections
+            synergiesRef.current.forEach(syn => {
+                const [idA, idB] = syn.agent_ids;
+                const nodeA = nodesRef.current.find(n => n.id === idA);
+                const nodeB = nodesRef.current.find(n => n.id === idB);
+                if (!nodeA || !nodeB) return;
 
-    useEffect(() => { logsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+                const alpha = Math.min(syn.score / 100, 1) * 0.4;
+                ctx.beginPath();
+                ctx.moveTo(nodeA.x, nodeA.y);
+                // Bezier curve through center
+                ctx.quadraticCurveTo(cx, cy, nodeB.x, nodeB.y);
+                ctx.strokeStyle = `rgba(168,85,247,${alpha})`;
+                ctx.lineWidth = 1 + syn.score / 50;
+                ctx.stroke();
+            });
 
-    const loadMissions = useCallback(async () => {
-        try {
-            const res = await fetch('/api/mission-control/missions');
-            if (res.ok) setMissions(await res.json());
-        } catch { /* silencioso */ }
+            // Draw lines from center to each node
+            nodesRef.current.forEach(node => {
+                const alpha = node.isSelected ? 0.3 : 0.08;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(node.x, node.y);
+                ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+                ctx.lineWidth = node.isSelected ? 1.5 : 0.5;
+                ctx.stroke();
+            });
+
+            // Update and draw particles
+            particlesRef.current = particlesRef.current.filter(p => p.progress < 1);
+            particlesRef.current.forEach(p => {
+                p.progress = Math.min(p.progress + p.speed, 1);
+                const t = p.progress;
+                // Quadratic bezier through center
+                const bx = (1 - t) * (1 - t) * p.x + 2 * (1 - t) * t * cx + t * t * p.targetX;
+                const by = (1 - t) * (1 - t) * p.y + 2 * (1 - t) * t * cy + t * t * p.targetY;
+                ctx.beginPath();
+                ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            });
+
+            // Draw nodes
+            nodesRef.current.forEach(node => {
+                const pulse = Math.sin(ts * 0.002 + node.pulsePhase) * 0.3 + 0.7;
+
+                // Glow
+                const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 2.5);
+                glow.addColorStop(0, node.color + Math.round(pulse * 80).toString(16).padStart(2, '0'));
+                glow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = glow;
+                ctx.fill();
+
+                // Selection ring
+                if (node.isSelected) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius + 6, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                ctx.fillStyle = node.color + 'cc';
+                ctx.fill();
+                ctx.strokeStyle = node.color;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Avatar emoji
+                ctx.font = `${node.radius * 0.9}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.agent.avatar || '🤖', node.x, node.y);
+
+                // Name label
+                ctx.font = 'bold 8px monospace';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(
+                    node.agent.name.split(' ')[0].substring(0, 8),
+                    node.x,
+                    node.y + node.radius + 10
+                );
+            });
+
+            animFrameRef.current = requestAnimationFrame(render);
+        };
+
+        animFrameRef.current = requestAnimationFrame(render);
+        return () => cancelAnimationFrame(animFrameRef.current);
     }, []);
 
-    useEffect(() => { loadMissions(); }, [loadMissions]);
+    // ── Canvas click handler ──────────────────────────────────────────────────
 
-    const createMission = async () => {
-        if (!newMissionName.trim()) return;
+    const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+
+        let clicked: CanvasNode | null = null;
+        for (const node of nodesRef.current) {
+            const dx = node.x - mx;
+            const dy = node.y - my;
+            if (Math.sqrt(dx * dx + dy * dy) <= node.radius + 8) {
+                clicked = node;
+                break;
+            }
+        }
+
+        nodesRef.current.forEach(n => { n.isSelected = n.id === clicked?.id; });
+        setSelectedAgent(clicked ? clicked.agent : null);
+
+        if (clicked) {
+            addLog('select', `Agente seleccionado: ${clicked.agent.name}`);
+        }
+    }, [addLog]);
+
+    // ── Run mission for selected agent ────────────────────────────────────────
+
+    const runMission = useCallback(async () => {
+        if (!missionInput.trim() || isRunning) return;
+        setIsRunning(true);
+        setRunOutput('');
+        const instruction = missionInput.trim();
+        setMissionInput('');
+        addLog('mission', `Misión enviada: "${instruction.substring(0, 50)}..."`);
+
+        // Spawn particles between all nodes
+        const nodes = nodesRef.current;
+        if (nodes.length >= 2) {
+            for (let i = 0; i < Math.min(nodes.length - 1, 5); i++) {
+                const from = nodes[i];
+                const to = nodes[(i + 1) % nodes.length];
+                particlesRef.current.push({
+                    x: from.x, y: from.y,
+                    targetX: to.x, targetY: to.y,
+                    progress: 0,
+                    speed: 0.008 + Math.random() * 0.005,
+                    fromId: from.id,
+                    toId: to.id,
+                    color: from.color,
+                });
+            }
+        }
+
         try {
-            const res = await fetch('/api/mission-control/missions', {
+            const res = await fetch('/api/agent/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newMissionName, description: newMissionDesc, agentIds: agentNodes.slice(0, 2).map(a => a.id), synergyScore: Math.floor(Math.random() * 40 + 60) }),
+                body: JSON.stringify({
+                    input: instruction,
+                    agent: selectedAgent,
+                }),
             });
-            if (res.ok) {
-                await loadMissions();
-                setIsCreatingMission(false);
-                setNewMissionName('');
-                setNewMissionDesc('');
-                const logId = ++logIdRef.current;
-                setLogs(prev => [...prev, { id: logId, type: 'mission', text: `Nueva misión creada: "${newMissionName}"`, time: new Date().toLocaleTimeString(), icon: '🎯' }]);
+            if (!res.ok) throw new Error('Error en la respuesta del servidor');
+            const reader = res.body?.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const event = JSON.parse(line);
+                            if (event.type === 'node_update' && event.chunk?.messages) {
+                                const last = event.chunk.messages[event.chunk.messages.length - 1];
+                                const text = typeof last === 'string' ? last : last?.content;
+                                if (text && text.length > 5) {
+                                    setRunOutput(text);
+                                    addLog('process', text.substring(0, 70) + (text.length > 70 ? '...' : ''));
+                                }
+                            } else if (event.type === 'complete') {
+                                addLog('success', 'Misión completada con éxito.');
+                                fetchAll();
+                            }
+                        } catch { /* skip */ }
+                    }
+                }
             }
-        } catch { /* silencioso */ }
+        } catch (err: any) {
+            addLog('error', `Error: ${err.message}`);
+        } finally {
+            setIsRunning(false);
+        }
+    }, [missionInput, isRunning, selectedAgent, addLog, fetchAll]);
+
+    // ── Resize canvas ─────────────────────────────────────────────────────────
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const resize = () => {
+            const parent = canvas.parentElement;
+            if (!parent) return;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+        return () => window.removeEventListener('resize', resize);
+    }, []);
+
+    // ── Render ────────────────────────────────────────────────────────────────
+
+    const logColors: Record<string, string> = {
+        system: 'text-white/40',
+        synergy: 'text-purple-400',
+        mission: 'text-yellow-400',
+        process: 'text-blue-400',
+        success: 'text-green-400',
+        error: 'text-red-400',
+        select: 'text-cyan-400',
     };
 
-    // ─── Render ───────────────────────────────────────────────────────────────
-
     return (
-        <div className="flex h-full w-full overflow-hidden bg-[#0a0a0f] text-white">
+        <div className="h-full flex overflow-hidden bg-[#050508]">
+            {/* ── Canvas panel ── */}
+            <div className="flex-1 relative overflow-hidden">
+                <canvas
+                    ref={canvasRef}
+                    onClick={handleCanvasClick}
+                    className="w-full h-full cursor-crosshair"
+                />
 
-            {/* ── Ecosistema ── */}
-            <div className="relative flex-1 overflow-hidden min-h-0">
-
-                {/* Header del mapa */}
-                <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm border-b border-white/5">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-xs font-mono text-green-400 uppercase tracking-widest">UAI Habitat — En Vivo</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-[10px] text-white/40 font-mono">
-                        <span>{agentNodes.length} agentes</span>
-                        <span>⚡ {metrics.synergies} sinergias</span>
-                        <span>🔄 {metrics.executions} ejecuciones</span>
-                    </div>
+                {/* Top-left status */}
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
+                        UAI HABITAT — EN VIVO
+                    </span>
+                    {metrics && (
+                        <span className="text-[10px] font-mono text-white/20">
+                            {metrics.running_now > 0 ? `· ${metrics.running_now} ejecutando` : ''}
+                        </span>
+                    )}
                 </div>
 
-                {/* Mapa SVG */}
-                <svg
-                    viewBox="0 0 100 100"
-                    className="w-full h-full"
-                    style={{ paddingTop: '2rem', background: 'radial-gradient(ellipse at 50% 50%, #0d0d1a 0%, #050508 100%)' }}
-                    preserveAspectRatio="xMidYMid meet"
-                >
-                    <defs>
-                        <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
-                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.2" />
-                        </pattern>
-                        <filter id="agentGlow">
-                            <feGaussianBlur stdDeviation="0.8" result="coloredBlur" />
-                            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                        </filter>
-                    </defs>
-                    <rect width="100" height="100" fill="url(#grid)" />
+                {/* Top-right quick stats */}
+                {metrics && (
+                    <div className="absolute top-3 right-3 flex gap-3 text-[10px] font-mono text-white/30">
+                        <span>{agents.length} agentes</span>
+                        <span>⚡ {synergies.length} sinergias</span>
+                        <span>▶ {Number(metrics.total_runs)} runs</span>
+                    </div>
+                )}
 
-                    {/* Salas */}
-                    {ROOMS.map(room => (
-                        <g key={room.id} onMouseEnter={() => setHoveredRoom(room.id)} onMouseLeave={() => setHoveredRoom(null)} style={{ cursor: 'pointer' }}>
-                            <rect x={room.x} y={room.y} width={room.w} height={room.h} rx="1.5" ry="1.5"
-                                fill={hoveredRoom === room.id ? room.color.replace('0.08', '0.15') : room.color}
-                                stroke={room.borderColor} strokeWidth={hoveredRoom === room.id ? '0.5' : '0.3'}
-                                style={{ transition: 'all 0.3s ease' }}
-                            />
-                            <text x={room.x + room.w / 2} y={room.y + 4} textAnchor="middle" fontSize="1.8" fill="rgba(255,255,255,0.5)" fontFamily="monospace" fontWeight="bold">
-                                {room.name.toUpperCase()}
-                            </text>
-                            {hoveredRoom === room.id && (
-                                <text x={room.x + room.w / 2} y={room.y + room.h - 2} textAnchor="middle" fontSize="1.4" fill="rgba(255,255,255,0.3)" fontFamily="monospace">
-                                    {room.description}
-                                </text>
-                            )}
-                            {(() => {
-                                const count = agentNodes.filter(a => a.roomId === room.id).length;
-                                return count > 0 ? (
-                                    <text x={room.x + room.w - 2} y={room.y + 4} textAnchor="end" fontSize="1.5" fill={room.borderColor} fontFamily="monospace">×{count}</text>
-                                ) : null;
-                            })()}
-                        </g>
-                    ))}
+                {/* Loading overlay */}
+                {loading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <div className="flex flex-col items-center gap-3">
+                            <RefreshCw className="w-6 h-6 text-red-500 animate-spin" />
+                            <span className="text-xs text-white/40 font-mono">Inicializando grafo...</span>
+                        </div>
+                    </div>
+                )}
 
-                    {/* Líneas de sinergia */}
-                    {agentNodes.map((a1, i) =>
-                        agentNodes.slice(i + 1).map((a2) => {
-                            if (a1.roomId !== a2.roomId) return null;
-                            const dist = Math.sqrt((a1.x - a2.x) ** 2 + (a1.y - a2.y) ** 2);
-                            if (dist > 20) return null;
-                            return (
-                                <line key={`${a1.id}-${a2.id}`} x1={a1.x} y1={a1.y} x2={a2.x} y2={a2.y}
-                                    stroke={a1.color} strokeWidth="0.2" strokeOpacity={0.3} strokeDasharray="0.5 0.5" />
-                            );
-                        })
-                    )}
+                {/* Error overlay */}
+                {error && (
+                    <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                        <AlertCircle className="w-4 h-4 text-red-400" />
+                        <span className="text-xs text-red-400">{error}</span>
+                    </div>
+                )}
 
-                    {/* Avatares */}
-                    {agentNodes.map(node => (
-                        <g key={node.id} transform={`translate(${node.x}, ${node.y})`}
-                            onClick={() => setSelectedAgent(selectedAgent?.id === node.id ? null : node)}
-                            style={{ cursor: 'pointer' }} filter="url(#agentGlow)"
-                        >
-                            {selectedAgent?.id === node.id && (
-                                <circle r="3.5" fill="none" stroke={node.color} strokeWidth="0.4" strokeOpacity="0.8" strokeDasharray="1 0.5">
-                                    <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="3s" repeatCount="indefinite" />
-                                </circle>
-                            )}
-                            <circle r="2.5" fill={node.color} fillOpacity="0.9" />
-                            {node.status === 'working' && (
-                                <circle r="2.5" fill="none" stroke={node.color} strokeWidth="0.3">
-                                    <animate attributeName="r" values="2.5;4;2.5" dur="1.5s" repeatCount="indefinite" />
-                                    <animate attributeName="opacity" values="0.8;0;0.8" dur="1.5s" repeatCount="indefinite" />
-                                </circle>
-                            )}
-                            <text textAnchor="middle" dominantBaseline="central" fontSize="2.2" style={{ userSelect: 'none' }}>{node.avatar}</text>
-                            <text y="4" textAnchor="middle" fontSize="1.3" fill="rgba(255,255,255,0.7)" fontFamily="monospace">{node.name.split(' ')[0]}</text>
-                            <text x="2" y="-2" fontSize="1" fill={node.color} fontFamily="monospace" fontWeight="bold">Lv{node.level}</text>
-                        </g>
-                    ))}
-
-                    {/* Burbujas de chat */}
-                    {chatBubbles.map(bubble => (
-                        <g key={bubble.id} transform={`translate(${bubble.x}, ${bubble.y})`}>
-                            <rect x="-12" y="-4" width="24" height="5" rx="1" fill="rgba(0,0,0,0.85)" stroke={bubble.agentColor} strokeWidth="0.2" />
-                            <text textAnchor="middle" y="-1" fontSize="1.2" fill="rgba(255,255,255,0.9)" fontFamily="monospace">
-                                {bubble.message.length > 28 ? bubble.message.slice(0, 28) + '…' : bubble.message}
-                            </text>
-                            <polygon points="0,1 -1,2 1,2" fill={bubble.agentColor} fillOpacity="0.8" />
-                        </g>
-                    ))}
-                </svg>
-
-                {/* Panel de agente seleccionado */}
+                {/* Selected agent panel */}
                 <AnimatePresence>
                     {selectedAgent && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                            className="absolute bottom-4 left-4 w-56 bg-black/80 backdrop-blur-md border rounded-xl p-3 z-30"
-                            style={{ borderColor: selectedAgent.color + '60' }}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="absolute bottom-4 left-4 w-56 bg-black/80 border border-white/10 rounded-xl p-4 backdrop-blur-sm"
                         >
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xl">{selectedAgent.avatar}</span>
+                                    <span className="text-2xl">{selectedAgent.avatar || '🤖'}</span>
                                     <div>
-                                        <p className="text-xs font-bold text-white">{selectedAgent.name}</p>
-                                        <p className="text-[10px] text-white/40">Nivel {selectedAgent.level}</p>
+                                        <div className="text-xs font-bold text-white">{selectedAgent.name}</div>
+                                        <div className="text-[10px] text-white/40">{selectedAgent.role}</div>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedAgent(null)} className="text-white/30 hover:text-white/70"><X size={12} /></button>
+                                <button onClick={() => { setSelectedAgent(null); nodesRef.current.forEach(n => { n.isSelected = false; }); }}>
+                                    <X className="w-3 h-3 text-white/30 hover:text-white" />
+                                </button>
                             </div>
-                            <div className="text-[10px] text-white/50 space-y-1">
-                                <div className="flex justify-between"><span>Sala</span><span className="text-white/80">{ROOMS.find(r => r.id === selectedAgent.roomId)?.name}</span></div>
-                                <div className="flex justify-between"><span>Estado</span><span style={{ color: selectedAgent.color }} className="capitalize">{selectedAgent.status}</span></div>
+                            <div className="text-[10px] text-white/30 mb-2 font-mono">{selectedAgent.model}</div>
+                            <div className="flex items-center gap-1 w-full">
+                                <input
+                                    value={missionInput}
+                                    onChange={e => setMissionInput(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') runMission(); }}
+                                    placeholder="Enviar instrucción..."
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-red-500/50"
+                                />
+                                <button
+                                    onClick={runMission}
+                                    disabled={isRunning || !missionInput.trim()}
+                                    className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 disabled:opacity-30 transition-all"
+                                >
+                                    {isRunning ? <Activity className="w-3 h-3 text-red-400 animate-spin" /> : <Send className="w-3 h-3 text-red-400" />}
+                                </button>
                             </div>
+                            {runOutput && (
+                                <div className="mt-2 text-[9px] text-green-400 font-mono line-clamp-3 bg-green-500/5 rounded p-1">
+                                    {runOutput.substring(0, 120)}...
+                                </div>
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* ── Dashboard de Control ── */}
-            <div className="w-80 flex flex-col border-l border-white/5 bg-black/40 backdrop-blur-sm overflow-hidden shrink-0">
-
+            {/* ── Right panel ── */}
+            <div className="w-72 flex flex-col border-l border-white/5 bg-[#080810]">
                 {/* Header */}
-                <div className="px-4 py-3 border-b border-white/5 shrink-0">
+                <div className="p-4 border-b border-white/5">
                     <div className="flex items-center gap-2 mb-1">
-                        <Terminal size={14} className="text-red-400" />
+                        <Terminal className="w-4 h-4 text-red-500" />
                         <span className="text-xs font-bold text-white uppercase tracking-widest">Mission Control</span>
                     </div>
-                    <p className="text-[10px] text-white/30">Centro de comando cognitivo UAI</p>
+                    <div className="text-[10px] text-white/30">Centro de comando cognitivo UAI</div>
                 </div>
 
-                {/* Métricas */}
-                <div className="grid grid-cols-2 gap-2 p-3 border-b border-white/5 shrink-0">
-                    {[
-                        { label: 'Tokens',    value: metrics.tokens.toLocaleString(), icon: Cpu,       color: 'text-blue-400' },
-                        { label: 'Costo',     value: `$${metrics.cost.toFixed(4)}`,   icon: TrendingUp, color: 'text-green-400' },
-                        { label: 'Latencia',  value: `${metrics.latency}ms`,          icon: Activity,   color: 'text-yellow-400' },
-                        { label: 'Sinergias', value: metrics.synergies.toString(),    icon: Zap,        color: 'text-purple-400' },
-                    ].map(m => (
-                        <div key={m.label} className="bg-white/3 rounded-lg p-2 border border-white/5">
-                            <div className="flex items-center gap-1 mb-1">
-                                <m.icon size={10} className={m.color} />
-                                <span className="text-[9px] text-white/40 uppercase">{m.label}</span>
+                {/* Metrics grid */}
+                {metrics && (
+                    <div className="grid grid-cols-2 gap-2 p-3 border-b border-white/5">
+                        {[
+                            { label: 'TOKENS', value: Number(metrics.total_tokens).toLocaleString(), color: 'text-blue-400', icon: '◈' },
+                            { label: 'COSTO', value: `$${Number(metrics.total_cost).toFixed(4)}`, color: 'text-green-400', icon: '◆' },
+                            { label: 'LATENCIA', value: `${Math.round(Number(metrics.avg_latency_ms))}ms`, color: 'text-yellow-400', icon: '◉' },
+                            { label: 'SINERGIAS', value: String(synergies.length), color: 'text-purple-400', icon: '⚡' },
+                        ].map(m => (
+                            <div key={m.label} className="bg-white/3 rounded-lg p-2">
+                                <div className="text-[9px] text-white/30 font-mono mb-1">{m.icon} {m.label}</div>
+                                <div className={`text-sm font-bold font-mono ${m.color}`}>{m.value}</div>
                             </div>
-                            <p className={`text-sm font-bold font-mono ${m.color}`}>{m.value}</p>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Tabs */}
-                <div className="flex border-b border-white/5 shrink-0">
+                <div className="flex border-b border-white/5">
                     {(['log', 'missions', 'agents'] as const).map(tab => (
-                        <button key={tab} onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === tab ? 'text-red-400 border-b border-red-400' : 'text-white/30 hover:text-white/60'}`}
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === tab ? 'text-red-400 border-b border-red-500' : 'text-white/20 hover:text-white/50'}`}
                         >
-                            {tab === 'log' ? 'Log' : tab === 'missions' ? 'Misiones' : 'Agentes'}
+                            {tab}
                         </button>
                     ))}
                 </div>
 
-                {/* Contenido scrolleable */}
-                <div className="flex-1 overflow-y-auto min-h-0">
-
-                    {/* Log */}
+                {/* Tab content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {activeTab === 'log' && (
-                        <div className="p-2 space-y-1">
-                            {logs.map(entry => (
-                                <div key={entry.id} className={`flex gap-2 p-1.5 rounded text-[10px] border ${
-                                    entry.type === 'synergy' ? 'border-purple-500/20 bg-purple-500/5' :
-                                    entry.type === 'success' ? 'border-green-500/20 bg-green-500/5' :
-                                    entry.type === 'warning' ? 'border-yellow-500/20 bg-yellow-500/5' :
-                                    entry.type === 'mission' ? 'border-red-500/20 bg-red-500/5' :
-                                    'border-white/5 bg-white/2'
-                                }`}>
-                                    <span className="shrink-0">{entry.icon}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-white/70 leading-tight break-words">{entry.text}</p>
-                                        <p className="text-white/20 mt-0.5 font-mono">{entry.time}</p>
-                                    </div>
+                        <div className="p-3 space-y-2">
+                            {logs.slice().reverse().map(log => (
+                                <div key={log.id} className="flex gap-2 text-[10px] font-mono">
+                                    <span className="text-white/15 shrink-0">{log.time}</span>
+                                    <span className={logColors[log.type] || 'text-white/40'}>{log.text}</span>
                                 </div>
                             ))}
-                            <div ref={logsEndRef} />
                         </div>
                     )}
 
-                    {/* Misiones */}
                     {activeTab === 'missions' && (
                         <div className="p-3 space-y-3">
-                            <button onClick={() => setIsCreatingMission(!isCreatingMission)}
-                                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed border-white/10 text-[11px] text-white/40 hover:text-white/70 hover:border-white/20 transition-colors"
-                            >
-                                <Plus size={12} /> Nueva Misión
-                            </button>
-                            <AnimatePresence>
-                                {isCreatingMission && (
-                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-                                        <input value={newMissionName} onChange={e => setNewMissionName(e.target.value)} placeholder="Nombre de la misión..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-red-500/50" />
-                                        <textarea value={newMissionDesc} onChange={e => setNewMissionDesc(e.target.value)} placeholder="Descripción..." rows={2}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-red-500/50 resize-none" />
-                                        <button onClick={createMission} className="w-full py-2 bg-red-600/80 hover:bg-red-600 rounded-lg text-xs font-bold text-white transition-colors">
-                                            Lanzar Misión
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                            {/* Mission input */}
+                            <div className="space-y-2">
+                                <textarea
+                                    value={missionInput}
+                                    onChange={e => setMissionInput(e.target.value)}
+                                    placeholder="Nueva misión colaborativa..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-[11px] text-white placeholder-white/20 focus:outline-none focus:border-red-500/50 resize-none h-16"
+                                />
+                                <button
+                                    onClick={runMission}
+                                    disabled={isRunning || !missionInput.trim()}
+                                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 disabled:opacity-30 text-[10px] font-bold text-red-400 uppercase tracking-widest transition-all"
+                                >
+                                    {isRunning ? <Activity className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                                    {isRunning ? 'Ejecutando...' : 'Lanzar Misión'}
+                                </button>
+                            </div>
+
+                            {/* Missions list */}
                             {missions.length === 0 ? (
-                                <div className="py-8 text-center">
-                                    <p className="text-[11px] text-white/20">No hay misiones activas.</p>
-                                    <p className="text-[10px] text-white/10 mt-1">Crea una para coordinar agentes.</p>
-                                </div>
+                                <div className="text-center text-[10px] text-white/20 py-4">Sin misiones activas</div>
                             ) : (
-                                missions.map(m => (
-                                    <div key={m.id} className="p-3 rounded-xl bg-white/3 border border-white/5 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-xs font-bold text-white truncate">{m.name}</p>
-                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-green-500/20 text-green-400 uppercase shrink-0 ml-2">{m.status || 'activa'}</span>
+                                missions.slice(0, 8).map(m => (
+                                    <div key={m.id} className="bg-white/3 rounded-lg p-3 border border-white/5">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-[10px] font-bold text-white">{m.name}</span>
+                                            <span className="text-[9px] text-purple-400 font-mono">⚡{m.synergy_score}</span>
                                         </div>
-                                        {m.description && <p className="text-[10px] text-white/40 line-clamp-2">{m.description}</p>}
-                                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                                            <div className="flex -space-x-1">
-                                                {(m.assigned_agents || []).slice(0, 3).map((_, i) => (
-                                                    <div key={i} className="w-5 h-5 rounded-full border border-black flex items-center justify-center text-[9px]"
-                                                        style={{ background: AGENT_COLORS[i % AGENT_COLORS.length] }}>🤖</div>
-                                                ))}
-                                            </div>
-                                            <span className="text-[9px] font-mono text-white/30">Sinergia: {m.synergy_score}%</span>
-                                        </div>
+                                        <div className="text-[9px] text-white/30">{m.description?.substring(0, 60)}</div>
+                                        <div className="text-[9px] text-white/20 mt-1">{m.assigned_agents?.length || 0} agentes</div>
                                     </div>
                                 ))
                             )}
                         </div>
                     )}
 
-                    {/* Agentes */}
                     {activeTab === 'agents' && (
                         <div className="p-3 space-y-2">
-                            {agentNodes.map(node => {
-                                const room = ROOMS.find(r => r.id === node.roomId);
-                                return (
-                                    <div key={node.id} onClick={() => setSelectedAgent(selectedAgent?.id === node.id ? null : node)}
-                                        className="flex items-center gap-3 p-2.5 rounded-xl bg-white/3 border border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
-                                        style={{ borderColor: selectedAgent?.id === node.id ? node.color + '60' : undefined }}
-                                    >
-                                        <div className="relative shrink-0">
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-base"
-                                                style={{ background: node.color + '30', border: `1px solid ${node.color}60` }}>
-                                                {node.avatar}
-                                            </div>
-                                            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-black"
-                                                style={{ background: node.status === 'moving' ? '#f59e0b' : '#10b981' }} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-white truncate">{node.name}</p>
-                                            <p className="text-[10px] text-white/40 truncate">{room?.name}</p>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <p className="text-[10px] font-mono" style={{ color: node.color }}>Lv{node.level}</p>
-                                            <p className="text-[9px] text-white/20 capitalize">{node.status}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            <div className="mt-4 pt-3 border-t border-white/5">
-                                <p className="text-[9px] text-white/20 uppercase tracking-widest mb-2">Salas del Habitat</p>
-                                {ROOMS.map(room => {
-                                    const count = agentNodes.filter(a => a.roomId === room.id).length;
+                            {agents.length === 0 ? (
+                                <div className="text-center text-[10px] text-white/20 py-4">Sin agentes registrados</div>
+                            ) : (
+                                agents.map(agent => {
+                                    const node = nodesRef.current.find(n => n.id === agent.id);
+                                    const color = getRoleColor(agent.role);
                                     return (
-                                        <div key={room.id} className="flex items-center justify-between py-1">
-                                            <div className="flex items-center gap-1.5">
-                                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: room.borderColor }} />
-                                                <span className="text-[10px] text-white/40">{room.name}</span>
+                                        <button
+                                            key={agent.id}
+                                            onClick={() => {
+                                                nodesRef.current.forEach(n => { n.isSelected = n.id === agent.id; });
+                                                setSelectedAgent(agent);
+                                                addLog('select', `Agente seleccionado: ${agent.name}`);
+                                            }}
+                                            className="w-full flex items-center gap-3 bg-white/3 hover:bg-white/6 rounded-lg p-3 border border-white/5 hover:border-white/10 transition-all text-left"
+                                        >
+                                            <span className="text-xl">{agent.avatar || '🤖'}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-[10px] font-bold text-white truncate">{agent.name}</div>
+                                                <div className="text-[9px] text-white/30 truncate">{agent.role}</div>
                                             </div>
-                                            <span className="text-[10px] font-mono text-white/20">{count} agente{count !== 1 ? 's' : ''}</span>
-                                        </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                                                <ChevronRight className="w-3 h-3 text-white/20" />
+                                            </div>
+                                        </button>
                                     );
-                                })}
-                            </div>
+                                })
+                            )}
+
+                            {/* Recent runs */}
+                            {recentRuns.length > 0 && (
+                                <div className="mt-4">
+                                    <div className="text-[9px] text-white/20 font-mono uppercase tracking-widest mb-2">Últimas ejecuciones</div>
+                                    {recentRuns.slice(0, 5).map(run => (
+                                        <div key={run.mission_id} className="flex items-center justify-between py-1.5 border-b border-white/3 text-[9px] font-mono">
+                                            <span className={run.status === 'success' ? 'text-green-400' : run.status === 'error' ? 'text-red-400' : 'text-yellow-400'}>
+                                                {run.status === 'success' ? '✓' : run.status === 'error' ? '✗' : '⟳'} {run.status}
+                                            </span>
+                                            <span className="text-white/30">{Number(run.total_tokens)} tok</span>
+                                            <span className="text-white/20">{Math.round(Number(run.latency_ms))}ms</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
                 {/* Footer */}
-                <div className="px-3 py-2 border-t border-white/5 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-[9px] text-white/30 font-mono">SISTEMA NOMINAL</span>
-                    </div>
-                    <button onClick={loadMissions} className="text-white/20 hover:text-white/50 transition-colors" title="Refrescar">
-                        <RefreshCw size={10} />
+                <div className="p-3 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-[9px] font-mono text-green-400">● SISTEMA NOMINAL</span>
+                    <button onClick={fetchAll} className="p-1 hover:bg-white/5 rounded transition-all">
+                        <RefreshCw className="w-3 h-3 text-white/20 hover:text-white/50" />
                     </button>
                 </div>
             </div>
