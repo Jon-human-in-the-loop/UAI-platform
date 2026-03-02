@@ -222,9 +222,9 @@ export default function Dashboard() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="h-full"
+                            className="h-full overflow-hidden"
                         >
-                            <HabitatAmongUs />
+                            <MissionControlDashboard />
                         </motion.div>
                     ) : mainView === 'dashboard' ? (
                         <motion.div 
@@ -232,9 +232,9 @@ export default function Dashboard() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="h-full overflow-hidden"
+                            className="h-full overflow-y-auto custom-scrollbar"
                         >
-                            <MissionControlDashboard />
+                            <HabitatAmongUs />
                         </motion.div>
                     ) : (
                         <motion.div 
