@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 import FlowEditor from '@/components/flow-editor/FlowEditor';
 import MissionControlDashboard from '@/components/mission-control/MissionControlDashboard';
-import HabitatAmongUs from '@/components/dashboard/HabitatAmongUs';
 
 
 interface RunSummaryResponse {
@@ -14,6 +13,104 @@ interface RunSummaryResponse {
     updated_at: string;
     total_tokens: number;
     total_cost_credits: number;
+}
+
+// ─── Stats Panel ────────────────────────────────────────────────────────────
+
+function StatsPanel({ metrics, logs }: {
+    metrics: { latency: number; tokens: number; load: number; cost: number };
+    logs: { id: number; type: string; text: string; time: string }[];
+}) {
+    const [agentMetrics, setAgentMetrics] = React.useState<any>(null);
+    const [agents, setAgents] = React.useState<any[]>([]);
+
+    React.useEffect(() => {
+        fetch('/api/agent/metrics').then(r => r.ok ? r.json() : null).then(d => { if (d) setAgentMetrics(d.totals); });
+        fetch('/api/agents').then(r => r.ok ? r.json() : null).then(d => { if (Array.isArray(d)) setAgents(d); });
+    }, []);
+
+    const totals = agentMetrics || {};
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-4 h-4 text-red-500" />
+                <span className="text-xs font-bold text-white uppercase tracking-widest">Estadísticas del Sistema</span>
+            </div>
+
+            {/* Métricas globales */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                    { label: 'Runs Totales', value: totals.total_runs ?? '—', color: 'text-blue-400', icon: '▶' },
+                    { label: 'Tokens Usados', value: totals.total_tokens ? Number(totals.total_tokens).toLocaleString() : '—', color: 'text-green-400', icon: '◈' },
+                    { label: 'Costo Total', value: totals.total_cost ? `$${Number(totals.total_cost).toFixed(4)}` : '—', color: 'text-yellow-400', icon: '◆' },
+                    { label: 'Latencia Prom.', value: totals.avg_latency_ms ? `${Math.round(totals.avg_latency_ms)}ms` : '—', color: 'text-purple-400', icon: '◉' },
+                ].map(m => (
+                    <div key={m.label} className="bg-white/5 border border-white/5 rounded-xl p-4">
+                        <div className="text-[9px] text-white/30 font-mono mb-2">{m.icon} {m.label.toUpperCase()}</div>
+                        <div className={`text-xl font-black font-mono ${m.color}`}>{m.value}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Agentes */}
+            {agents.length > 0 && (
+                <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Agentes Registrados</div>
+                    <div className="space-y-2">
+                        {agents.map(a => (
+                            <div key={a.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-lg">{a.avatar || '🤖'}</span>
+                                    <div>
+                                        <div className="text-xs font-bold text-white">{a.name}</div>
+                                        <div className="text-[10px] text-white/30">{a.role} · {a.model}</div>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] text-green-400 font-mono">● Online</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Métricas de la última ejecución */}
+            <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Última Ejecución</div>
+                <div className="space-y-3">
+                    {[
+                        { label: 'Latencia', value: metrics.latency, max: 5000, unit: 'ms', color: 'bg-blue-500' },
+                        { label: 'Tokens', value: metrics.tokens, max: 1000, unit: '', color: 'bg-green-500' },
+                        { label: 'Costo', value: metrics.cost, max: 50, unit: ' CR', color: 'bg-yellow-500' },
+                        { label: 'Carga Neural', value: metrics.load, max: 100, unit: '%', color: 'bg-red-500' },
+                    ].map(m => (
+                        <div key={m.label}>
+                            <div className="flex justify-between text-[10px] mb-1">
+                                <span className="text-white/40">{m.label}</span>
+                                <span className="text-white font-mono">{m.value}{m.unit}</span>
+                            </div>
+                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className={`h-full ${m.color} transition-all`} style={{ width: `${Math.min((m.value / m.max) * 100, 100)}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Log reciente */}
+            <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Log de Actividad</div>
+                <div className="space-y-1 font-mono text-[10px] max-h-40 overflow-y-auto custom-scrollbar">
+                    {logs.slice().reverse().slice(0, 20).map(log => (
+                        <div key={log.id} className="flex gap-2">
+                            <span className="text-white/20 shrink-0">[{log.time}]</span>
+                            <span className={log.type === 'error' ? 'text-red-400' : log.type === 'success' ? 'text-green-400' : 'text-white/50'}>{log.text}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default function Dashboard() {
@@ -232,9 +329,9 @@ export default function Dashboard() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="h-full overflow-y-auto custom-scrollbar"
+                            className="h-full overflow-y-auto custom-scrollbar p-4"
                         >
-                            <HabitatAmongUs />
+                            <StatsPanel metrics={metrics} logs={logs} />
                         </motion.div>
                     ) : (
                         <motion.div 

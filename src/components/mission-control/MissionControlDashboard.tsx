@@ -187,10 +187,10 @@ export default function MissionControlDashboard() {
 
     // ── Build canvas nodes from agents ────────────────────────────────────────
 
-    useEffect(() => {
+    const buildNodes = useCallback(() => {
         if (agents.length === 0) return;
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas || canvas.width === 0) return;
         const cx = canvas.width / 2;
         const cy = canvas.height / 2;
 
@@ -219,6 +219,8 @@ export default function MissionControlDashboard() {
             };
         });
     }, [agents]);
+
+    useEffect(() => { buildNodes(); }, [buildNodes]);
 
     // ── Canvas render loop ────────────────────────────────────────────────────
 
@@ -494,11 +496,14 @@ export default function MissionControlDashboard() {
             if (!parent) return;
             canvas.width = parent.clientWidth;
             canvas.height = parent.clientHeight;
+            // Rebuild nodes after resize so they use the correct center
+            buildNodes();
         };
-        resize();
+        // Small delay to ensure parent has layout dimensions
+        setTimeout(resize, 50);
         window.addEventListener('resize', resize);
         return () => window.removeEventListener('resize', resize);
-    }, []);
+    }, [buildNodes]);
 
     // ── Render ────────────────────────────────────────────────────────────────
 
