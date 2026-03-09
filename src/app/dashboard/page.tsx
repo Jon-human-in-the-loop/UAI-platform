@@ -217,6 +217,14 @@ export default function Dashboard() {
                                 setCurrentThreadId(event.threadId);
                             } else if (event.type === 'node_update') {
                                 const state = event.chunk;
+                                // Live node tracking: map LangGraph node name to FlowEditor node id
+                                const nodeMap: Record<string, string> = {
+                                    analizador: '1', challenger: '1', ejecutor: '2',
+                                    validador: '3', reflexion: '4', healing: '3'
+                                };
+                                if (state?.next_node && nodeMap[state.next_node]) {
+                                    setActiveNodeId(nodeMap[state.next_node]);
+                                }
                                 if (state?.messages) {
                                     const lastMsg = state.messages[state.messages.length - 1];
                                     const text = typeof lastMsg === 'string' ? lastMsg : lastMsg.content;

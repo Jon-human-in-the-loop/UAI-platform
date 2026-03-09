@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
 import { dbPool } from '@/lib/database';
-import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { isDisposableEmail, checkRateLimit, isVpnOrProxy } from '@/lib/security';
-
-function hashPassword(password: string): string {
-    return crypto.createHash('sha256').update(password).digest('hex');
-}
 
 export async function POST(request: Request) {
     try {
@@ -76,7 +72,7 @@ export async function POST(request: Request) {
             }
 
             // Create new user
-            const passwordHash = hashPassword(password);
+            const passwordHash = await bcrypt.hash(password, 12);
             const result = await client.query(
                 `INSERT INTO users (name, email, password_hash, plan, role, level, xp)
                  VALUES ($1, $2, $3, $4, 'user', 1, 0)

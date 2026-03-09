@@ -16,9 +16,6 @@ interface ScheduledTask {
     metadata: any;
 }
 
-// Mapa para almacenar las instancias de CronJob activas
-const activeCronJobs = new Map<string, CronJob>();
-
 /**
  * Registra una nueva tarea programada en la base de datos.
  */
@@ -28,17 +25,16 @@ export async function createScheduledTask(
     missionTemplate: string,
     cronExpression: string
 ): Promise<ScheduledTask> {
+    const nextRun = calculateNextRun(cronExpression);
     const client = await dbPool.connect();
     try {
         const res = await client.query(
-            `INSERT INTO scheduled_tasks 
-             (user_id, agent_id, mission_template, cron_expression, status, created_at)
-             VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING *`,
-            [userId, agentId, missionTemplate, cronExpression, "ENABLED"]
+            `INSERT INTO scheduled_tasks
+             (user_id, agent_id, mission_template, cron_expression, status, next_run, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING *`,
+            [userId, agentId, missionTemplate, cronExpression, "ENABLED", nextRun]
         );
-        const newTask: ScheduledTask = res.rows[0];
-        scheduleTask(newTask);
-        return newTask;
+        return res.rows[0];
     } finally {
         client.release();
     }
@@ -90,9 +86,22 @@ export async function deleteScheduledTask(taskId: string) {
             `DELETE FROM scheduled_tasks WHERE id = $1`,
             [taskId]
         );
-        stopScheduledTask(taskId);
     } finally {
         client.release();
+    }
+}
+
+/**
+ * Calcula la próxima fecha de ejecución basada en una expresión cron.
+ * Usa el paquete 'cron' para parsing real de expresiones cron.
+ */
+export function calculateNextRun(cronExpression: string): Date {
+    try {
+        const job = new CronJob(cronExpression, () => {});
+        return (job.nextDate() as any).toDate();
+    } catch (error) {
+        console.error("Error al calcular la próxima ejecución cron:", error);
+        return new Date(Date.now() + 60 * 60 * 1000); // Fallback: 1 hora
     }
 }
 
@@ -114,11 +123,7 @@ async function executeScheduledMission(task: ScheduledTask) {
             errors: [],
             skills_active: [],
             context_memory: { scheduled_task_id: task.id, agent_id: task.agent_id },
-            budget_status: {
-                current: 0,
-                limit: 1000,
-                plan: 'professional'
-            },
+            budget_status: { current: 0, limit: 1000, plan: 'professional' },
             is_blocked: false,
             agent_config: {
                 name: 'UAI Scheduler Agent',
@@ -128,71 +133,69 @@ async function executeScheduledMission(task: ScheduledTask) {
             }
         };
 
-        // Ejecutar la misión y esperar el resultado (o manejar el stream si es necesario)
-        const result = await app.invoke(payload as any, config);
-        console.log(`[Scheduler] Misión programada ${task.id} completada. Resultado:`, result);
+        await app.invoke(payload as any, config);
+        console.log(`[Scheduler] Misión programada ${task.id} completada.`);
 
-        await updateScheduledTaskStatus(task.id, { last_run: new Date(), next_run: calculateNextRun(task.cron_expression), status: "COMPLETED" });
+        const nextRun = calculateNextRun(task.cron_expression);
+        await updateScheduledTaskStatus(task.id, { last_run: new Date(), next_run: nextRun, status: "ENABLED" });
     } catch (error: any) {
         console.error(`[Scheduler] Error al ejecutar misión programada ${task.id}:`, error);
-        await updateScheduledTaskStatus(task.id, { last_run: new Date(), status: "FAILED", metadata: { error: error.message } });
+        await updateScheduledTaskStatus(task.id, {
+            last_run: new Date(),
+            status: "FAILED",
+            metadata: { error: error.message }
+        });
     }
 }
 
 /**
- * Calcula la próxima fecha de ejecución basada en una expresión cron.
+ * Ejecuta todas las tareas vencidas. Diseñado para ser llamado por el endpoint
+ * /api/internal/scheduler-tick en lugar de un proceso CronJob en memoria.
+ * Seguro para entornos serverless.
  */
-function calculateNextRun(cronExpression: string): Date {
+export async function executeDueTasks(): Promise<{ executed: number; errors: number }> {
+    console.log("[Scheduler] Verificando tareas vencidas...");
+    const client = await dbPool.connect();
+    let dueTasks: ScheduledTask[] = [];
+
     try {
-        const job = new CronJob(cronExpression, () => {});
-        return  (job.nextDate() as any).toDate();
-    } catch (error) {
-        console.error("Error al calcular la próxima ejecución cron:", error);
-        return new Date(Date.now() + 60 * 60 * 1000); // Fallback: 1 hora en el futuro
+        const res = await client.query(
+            `SELECT * FROM scheduled_tasks
+             WHERE status = 'ENABLED' AND next_run <= NOW()
+             ORDER BY next_run ASC`
+        );
+        dueTasks = res.rows;
+    } finally {
+        client.release();
     }
+
+    console.log(`[Scheduler] ${dueTasks.length} tareas vencidas encontradas.`);
+
+    let executed = 0;
+    let errors = 0;
+
+    for (const task of dueTasks) {
+        try {
+            await executeScheduledMission(task);
+            executed++;
+        } catch (e) {
+            console.error(`[Scheduler] Fallo al ejecutar tarea ${task.id}:`, e);
+            errors++;
+        }
+    }
+
+    return { executed, errors };
 }
 
 /**
- * Programa una tarea usando node-cron.
- */
-export function scheduleTask(task: ScheduledTask) {
-    if (activeCronJobs.has(task.id)) {
-        stopScheduledTask(task.id);
-    }
-
-    const job = new CronJob(task.cron_expression, async () => {
-        await executeScheduledMission(task);
-    }, null, true, 'America/Los_Angeles'); // Usar una zona horaria consistente
-
-    activeCronJobs.set(task.id, job);
-    console.log(`[Scheduler] Tarea ${task.id} programada para ${ (job.nextDate() as any).toDate()}`);
-    updateScheduledTaskStatus(task.id, { next_run:  (job.nextDate() as any).toDate() });
-}
-
-/**
- * Detiene una tarea programada.
- */
-export function stopScheduledTask(taskId: string) {
-    const job = activeCronJobs.get(taskId);
-    if (job) {
-        job.stop();
-        activeCronJobs.delete(taskId);
-        console.log(`[Scheduler] Tarea ${taskId} detenida.`);
-    }
-}
-
-/**
- * Inicializa el programador al cargar la aplicación, cargando tareas existentes.
+ * Inicialización liviana: solo verifica conectividad a BD.
+ * No crea instancias CronJob en memoria (incompatibles con serverless).
  */
 export async function initializeScheduler() {
-    console.log("[Scheduler] Inicializando programador...");
-    const tasks = await getActiveScheduledTasks();
-    for (const task of tasks) {
-        scheduleTask(task);
+    try {
+        const tasks = await getActiveScheduledTasks();
+        console.log(`[Scheduler] ${tasks.length} tareas activas en BD. Modo polling activo.`);
+    } catch (e) {
+        console.error("[Scheduler] Error al verificar tareas:", e);
     }
-    console.log(`[Scheduler] ${tasks.length} tareas programadas cargadas.`);
 }
-
-// Asegurarse de que el scheduler se inicialice al inicio de la aplicación
-// Esto se llamaría en un archivo de inicialización del servidor o en el entry point.
-// initializeScheduler().catch(console.error);

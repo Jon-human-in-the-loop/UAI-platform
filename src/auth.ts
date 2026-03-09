@@ -22,17 +22,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                 if (!email || !password) return null;
 
-                // Imports dinámicos para mayor seguridad y aislamiento
+                const bcrypt = await import('bcryptjs');
                 const crypto = await import('crypto');
                 const { dbAdapter } = await import('@/lib/db-adapter');
-
-                const hashPassword = (pw: string) => crypto.createHash('sha256').update(pw).digest('hex');
+                const { dbPool } = await import('@/lib/database');
 
                 try {
                     const user = await dbAdapter.getUserByEmail(email);
-                    if (user && user.password_hash === hashPassword(password)) {
-                        console.log('Auth Success:', email);
-                        return { id: user.id, name: user.name, email: user.email };
+                    if (user) {
+                        let isValid = await bcrypt.compare(password, user.password_hash);
+
+                        // Migration escape hatch: support legacy SHA-256 hashes
+                        if (!isValid) {
+                            const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
+                            if (user.password_hash === sha256Hash) {
+                                // Re-hash with bcrypt and save
+                                const newHash = await bcrypt.hash(password, 12);
+                                await dbPool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]);
+                                isValid = true;
+                                console.log('Auth: Migrated password hash to bcrypt for', email);
+                            }
+                        }
+
+                        if (isValid) {
+                            console.log('Auth Success:', email);
+                            return { id: user.id, name: user.name, email: user.email };
+                        }
                     }
                     console.warn('Auth Failed: Invalid credentials for', email);
                 } catch (e) {

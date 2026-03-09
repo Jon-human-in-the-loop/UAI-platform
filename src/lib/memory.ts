@@ -58,6 +58,7 @@ export async function saveReflection(text: string, agent_id: string, mission_id:
                 metadata: {
                     text: summary,
                     agent_id,
+                    user_id: metadata.userId || agent_id, // Consistent key for user-scoped queries
                     mission_id,
                     learning_type,
                     details,
@@ -86,10 +87,14 @@ export async function queryMemory(query: string, limit: number = 3, learning_typ
 
         const queryVector = await embeddings.embedQuery(query);
 
+        const queryFilter: any = {};
+        if (userId) queryFilter.user_id = { $eq: userId };
+
         const queryResponse = await index.query({
             vector: queryVector,
             topK: limit,
             includeMetadata: true,
+            ...(Object.keys(queryFilter).length > 0 && { filter: queryFilter }),
         });
 
         let filteredMatches = queryResponse.matches;

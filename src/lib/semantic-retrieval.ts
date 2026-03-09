@@ -40,7 +40,7 @@ export async function semanticRetrievalOptimized(
     try {
         const pinecone = getPinecone();
         const embeddings = getEmbeddings();
-        const index = pinecone.Index("uai-memory");
+        const index = pinecone.Index(process.env.PINECONE_INDEX_NAME || "uai-memory");
 
         const queryEmbedding = await embeddings.embedQuery(query);
 
@@ -48,7 +48,7 @@ export async function semanticRetrievalOptimized(
             vector: queryEmbedding,
             topK,
             filter: {
-                userId: { $eq: userId },
+                user_id: { $eq: userId },
             },
             includeMetadata: true,
         });
@@ -85,43 +85,40 @@ export async function retrieveReflectionsByTopic(
  * Recupera patrones de error recurrentes en las misiones del usuario.
  */
 export async function retrieveErrorPatterns(userId: string): Promise<Array<{ pattern: string; frequency: number; solutions: string[] }>> {
-    const query = "Patrones de error, fallos recurrentes y soluciones aplicadas";
-    const results = await semanticRetrievalOptimized(query, userId, 20);
+    // Use Pinecone metadata filter on learning_type instead of brittle keyword matching
+    const results = await semanticRetrievalOptimized(
+        "error resolution recovery strategy failure",
+        userId,
+        20
+    );
 
-    const patterns: Record<string, { frequency: number; solutions: Set<string> }> = {};
+    // Filter results that have error_resolution learning_type from metadata
+    const errorResults = results.filter(r => r.metadata?.learning_type === 'error_resolution' || r.score > 0.75);
 
-    results.forEach(result => {
-        const text = result.text.toLowerCase();
-        
-        if (text.includes("timeout") || text.includes("lentitud")) {
-            const pattern = "Timeout/Rendimiento";
-            if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
-            patterns[pattern].frequency++;
-            patterns[pattern].solutions.add("Simplificar tarea, usar modelo más rápido");
-        }
-        
-        if (text.includes("error") || text.includes("fallo")) {
-            const pattern = "Error de LLM";
-            if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
-            patterns[pattern].frequency++;
-            patterns[pattern].solutions.add("Reintentar con modelo alternativo");
-        }
-        
-        if (text.includes("memoria") || text.includes("contexto")) {
-            const pattern = "Problema de Contexto";
-            if (!patterns[pattern]) patterns[pattern] = { frequency: 0, solutions: new Set() };
-            patterns[pattern].frequency++;
-            patterns[pattern].solutions.add("Recuperar más contexto, usar RAG");
-        }
-    });
+    if (errorResults.length === 0) return [];
 
-    return Object.entries(patterns)
-        .map(([pattern, data]) => ({
-            pattern,
-            frequency: data.frequency,
-            solutions: Array.from(data.solutions),
-        }))
-        .sort((a, b) => b.frequency - a.frequency);
+    // Group by score bands as frequency proxy
+    const high = errorResults.filter(r => r.score > 0.85);
+    const mid = errorResults.filter(r => r.score <= 0.85 && r.score > 0.75);
+
+    const patterns: Array<{ pattern: string; frequency: number; solutions: string[] }> = [];
+
+    if (high.length > 0) {
+        patterns.push({
+            pattern: high[0].text.substring(0, 80),
+            frequency: high.length,
+            solutions: high.map(r => r.text.substring(0, 150)),
+        });
+    }
+    if (mid.length > 0) {
+        patterns.push({
+            pattern: mid[0].text.substring(0, 80),
+            frequency: mid.length,
+            solutions: mid.map(r => r.text.substring(0, 150)),
+        });
+    }
+
+    return patterns.sort((a, b) => b.frequency - a.frequency);
 }
 
 /**
@@ -131,33 +128,22 @@ export async function retrieveSuccessfulStrategies(
     userId: string,
     missionType: string
 ): Promise<Array<{ strategy: string; successRate: number; description: string }>> {
-    const query = `Estrategias exitosas para misiones de tipo ${missionType}`;
-    const results = await semanticRetrievalOptimized(query, userId, 15);
+    // Filter by best_practice learning_type via metadata instead of keyword matching
+    const results = await semanticRetrievalOptimized(
+        `successful strategies best practices ${missionType}`,
+        userId,
+        15
+    );
 
-    const strategies: Record<string, { count: number; description: string }> = {};
+    const bestPractices = results.filter(
+        r => r.metadata?.learning_type === 'best_practice' || r.metadata?.learning_type === 'optimization' || r.score > 0.78
+    );
 
-    results.forEach(result => {
-        const text = result.text;
-        
-        if (text.includes("Recomendación") || text.includes("estrategia")) {
-            const strategyMatch = text.match(/Recomendación[:\s]+([^.]+)/);
-            if (strategyMatch) {
-                const strategy = strategyMatch[1].trim();
-                if (!strategies[strategy]) {
-                    strategies[strategy] = { count: 0, description: text.substring(0, 200) };
-                }
-                strategies[strategy].count++;
-            }
-        }
-    });
-
-    return Object.entries(strategies)
-        .map(([strategy, data]) => ({
-            strategy,
-            successRate: (data.count / results.length) * 100,
-            description: data.description,
-        }))
-        .sort((a, b) => b.successRate - a.successRate);
+    return bestPractices.map(r => ({
+        strategy: r.text.substring(0, 100),
+        successRate: Math.round(r.score * 100),
+        description: r.text.substring(0, 250),
+    })).sort((a, b) => b.successRate - a.successRate);
 }
 
 /**
@@ -171,7 +157,7 @@ export async function consolidateLongTermMemory(userId: string): Promise<string>
     try {
         const pinecone = getPinecone();
         const embeddings = getEmbeddings();
-        const index = pinecone.Index("uai-memory");
+        const index = pinecone.Index(process.env.PINECONE_INDEX_NAME || "uai-memory");
 
         const query = "Resumen general de todas las lecciones aprendidas";
         const queryEmbedding = await embeddings.embedQuery(query);
@@ -180,7 +166,7 @@ export async function consolidateLongTermMemory(userId: string): Promise<string>
             vector: queryEmbedding,
             topK: 50,
             filter: {
-                userId: { $eq: userId },
+                user_id: { $eq: userId },
             },
             includeMetadata: true,
         });
