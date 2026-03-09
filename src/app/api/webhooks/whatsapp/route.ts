@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processWhatsAppMessage, sendWhatsAppMessage, getWhatsAppConfig, getTwilioNumber, getTwilioAuthToken } from '@/lib/whatsapp-integration';
+import { processWhatsAppMessage, sendWhatsAppMessage, getWhatsAppConfig, getTwilioNumber, getTwilioAuthToken, getUserByTwilioNumber } from '@/lib/whatsapp-integration';
 import { dbPool } from '@/lib/database';
 import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage } from '@langchain/core/messages';
@@ -88,7 +88,16 @@ export async function POST(req: NextRequest) {
         }
 
         let { phoneNumber, text } = result as any;
-        const userId = phoneNumber;
+
+        // Look up the real user by the Twilio number (the 'To' field in the webhook payload)
+        const twilioTo = String(payload.To || '');
+        const userId = await getUserByTwilioNumber(twilioTo);
+        if (!userId) {
+            console.warn(`[Webhook WhatsApp] No se encontró usuario para el número Twilio ${twilioTo}`);
+            return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+                headers: { 'Content-Type': 'application/xml' },
+            });
+        }
 
         const config = await getWhatsAppConfig(userId);
         if (!config) {
@@ -158,7 +167,7 @@ async function triggerOrchestrationAsync(
                     budget_status: {
                         current: 0,
                         limit: 1000,
-                        plan: 'professional',
+                        plan: config?.metadata?.plan || 'essentials',
                     },
                     is_blocked: false,
                     agent_config: await getAgentForChannel(userId, 'WHATSAPP').then(a => a

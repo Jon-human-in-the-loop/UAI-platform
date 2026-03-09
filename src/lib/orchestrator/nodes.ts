@@ -1,8 +1,8 @@
 import { HumanMessage, AIMessage, BaseMessage, MessageContent } from "@langchain/core/messages";
 import { createMultimodalHumanMessage, containsMultimodalContent } from "../multimodal";
 import { saveReflection, queryMemory } from "../memory";
-import { updateUserProgress } from "../database";
 import { AgentState, uaiGraph } from "./graph";
+import { diagnoseError, logHealingEvent } from "../auto-healing";
 import { END } from "@langchain/langgraph";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { availableSkills } from "../skills";
@@ -21,31 +21,33 @@ export async function healingNode(state: AgentState): Promise<Partial<AgentState
     const lastError = state.errors[state.errors.length - 1];
     console.warn(`[AUTO-SANACIÓN] Error detectado: ${lastError}`);
 
-    // Estrategia 1: Reintento con un modelo diferente (si el error fue de LLM)
-    if (lastError.includes("LLM")) {
-        console.log("[AUTO-SANACIÓN] Intentando reintentar con un modelo alternativo...");
-        // Aquí podríamos cambiar el modelo en el estado o forzar un reintento con Gemini por ejemplo
-        // Por simplicidad, vamos a simular un reintento y volver al analizador
+    const strategy = diagnoseError(lastError);
+    console.log(`[AUTO-SANACIÓN] Estrategia seleccionada: ${strategy.action} - ${strategy.description}`);
+
+    // Registrar en BD de forma asíncrona (sin bloquear el flujo)
+    const agentId = state.agent_config?.id || 'unknown';
+    logHealingEvent(state.userId, agentId, lastError, strategy).catch(e =>
+        console.error('[AUTO-SANACIÓN] Error guardando evento:', e)
+    );
+
+    if (strategy.action === 'SWITCH_MODEL' || strategy.action === 'RETRY') {
         return {
             next_node: "analizador",
-            messages: [...state.messages, new AIMessage("Error de LLM detectado. Reintentando con un modelo alternativo...")],
-            errors: [...state.errors, "Reintento con modelo alternativo"] // Registrar el intento de sanación
+            messages: [...state.messages, new AIMessage(`Auto-sanación activada: ${strategy.description}`)],
+            errors: [...state.errors, `Reintento aplicado: ${strategy.action}`]
         };
     }
 
-    // Estrategia 2: Simplificación de la tarea (si el error es de complejidad)
-    if (lastError.includes("complejidad") || lastError.includes("timeout")) {
-        console.log("[AUTO-SANACIÓN] Intentando simplificar la tarea...");
-        // Aquí podríamos modificar el prompt o el plan para reducir la complejidad
+    if (strategy.action === 'SIMPLIFY_PROMPT') {
         return {
             next_node: "analizador",
-            messages: [...state.messages, new AIMessage("Tarea demasiado compleja. Simplificando y reintentando...")],
-            errors: [...state.errors, "Tarea simplificada"] // Registrar el intento de sanación
+            messages: [...state.messages, new AIMessage(`Auto-sanación: ${strategy.description}`)],
+            errors: [...state.errors, "Tarea simplificada"]
         };
     }
 
-    // Estrategia 3: Fallback a modo manual o reporte
-    console.error("[AUTO-SANACIÓN] No se pudo aplicar una estrategia de sanación automática. Requiere intervención.");
+    // FALLBACK: error no recuperable
+    console.error("[AUTO-SANACIÓN] No se pudo aplicar una estrategia automática. Requiere intervención.");
     return {
         next_node: "FIN",
         messages: [...state.messages, new AIMessage("Error crítico no recuperable automáticamente. Se requiere intervención manual.")]
@@ -660,11 +662,21 @@ export async function reflectionNode(state: AgentState): Promise<Partial<AgentSt
         console.error("Error al guardar reflexión:", e);
     }
 
-    // Otorgar XP al usuario
+    // Otorgar XP al usuario usando la lógica correcta de gamificación
     try {
-        // Calcular XP basado en la complejidad o simplemente un valor fijo por misión
-        const xpEarned = analysis?.complexity === 'High' ? 100 : 50; 
-        await updateUserProgress(state.userId, xpEarned);
+        const { dbAdapter } = await import('../db-adapter');
+        const { calculateLevel, XP_REWARDS } = await import('../gamification');
+        const xpEarned = XP_REWARDS.CICLO_COMPLETADO;
+        const currentUser = await dbAdapter.getUserById(state.userId);
+        if (currentUser) {
+            const newTotalXp = (currentUser.xp || 0) + xpEarned;
+            const newLevel = calculateLevel(newTotalXp);
+            await dbAdapter.updateUserGamification(state.userId, {
+                xp: newTotalXp,
+                level: newLevel,
+                lastActive: new Date()
+            });
+        }
     } catch (e) {
         console.error("Error al actualizar el progreso del usuario:", e);
     }

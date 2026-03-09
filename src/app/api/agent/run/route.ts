@@ -6,6 +6,50 @@ import { trackTokenUsage } from '@/lib/billing';
 import { v4 as uuidv4 } from 'uuid';
 import { startRunSummary, appendNodeMetric, finishRunSummary } from '@/lib/run-tracing';
 import { auth } from '@/auth';
+import { dbPool } from '@/lib/database';
+
+const RATE_LIMIT_PER_PLAN: Record<string, number> = {
+    free: 5,
+    essentials: 15,
+    professional: 60,
+    admin: Infinity,
+};
+
+async function checkUserQuota(userId: string): Promise<{ allowed: boolean; reason?: string }> {
+    try {
+        const userRes = await dbPool.query(
+            `SELECT total_credits, used_credits, plan FROM users WHERE id = $1`,
+            [userId]
+        );
+        if (userRes.rows.length === 0) return { allowed: false, reason: 'Usuario no encontrado' };
+
+        const { total_credits, used_credits, plan } = userRes.rows[0];
+
+        // Credit-based quota check (skip for professional/admin)
+        if (plan !== 'professional' && plan !== 'admin' && used_credits >= total_credits) {
+            return { allowed: false, reason: 'Créditos agotados. Actualiza tu plan para continuar.' };
+        }
+
+        // Per-minute rate limiting
+        const rpmLimit = RATE_LIMIT_PER_PLAN[plan] ?? 5;
+        if (rpmLimit < Infinity) {
+            const rpmRes = await dbPool.query(
+                `SELECT COUNT(*) as cnt FROM run_summaries
+                 WHERE user_id = $1 AND created_at > NOW() - INTERVAL '1 minute'`,
+                [userId]
+            );
+            const runsLastMinute = parseInt(rpmRes.rows[0]?.cnt || '0', 10);
+            if (runsLastMinute >= rpmLimit) {
+                return { allowed: false, reason: `Límite de ${rpmLimit} ejecuciones por minuto alcanzado. Espera un momento.` };
+            }
+        }
+
+        return { allowed: true };
+    } catch (e) {
+        console.error('[Rate Limit] Error verificando cuota:', e);
+        return { allowed: true }; // Allow on error to avoid blocking legit users
+    }
+}
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -22,6 +66,15 @@ export async function POST(req: NextRequest) {
 
         if (!input) {
             return NextResponse.json({ error: 'Falta el input' }, { status: 400 });
+        }
+
+        // Quota and rate limit check
+        const quota = await checkUserQuota(userId);
+        if (!quota.allowed) {
+            return NextResponse.json(
+                { error: quota.reason, upgradeUrl: '/dashboard/billing' },
+                { status: 429 }
+            );
         }
 
         // Persistencia: Usamos el threadId del frontend si existe, o generamos uno nuevo

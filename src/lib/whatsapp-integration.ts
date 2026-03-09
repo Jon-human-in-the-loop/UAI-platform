@@ -96,6 +96,30 @@ export async function processWhatsAppMessage(payload: any) {
 }
 
 /**
+ * Busca el usuario propietario de un número de Twilio configurado.
+ * El número `To` del webhook es el número Twilio del usuario.
+ */
+export async function getUserByTwilioNumber(twilioNumber: string): Promise<string | null> {
+    const normalized = twilioNumber.replace('whatsapp:', '');
+    const client = await dbPool.connect();
+    try {
+        const res = await client.query(
+            `SELECT user_id FROM channel_configs
+             WHERE channel_type = 'WHATSAPP' AND enabled = true
+             AND (
+                 metadata->>'fromNumber' = $1
+                 OR metadata->>'fromNumber' = $2
+             )
+             LIMIT 1`,
+            [normalized, twilioNumber]
+        );
+        return res.rows[0]?.user_id || null;
+    } finally {
+        client.release();
+    }
+}
+
+/**
  * Registra una nueva configuración de WhatsApp para un usuario
  */
 export async function registerWhatsAppConfig(
