@@ -25,7 +25,7 @@ export async function healingNode(state: AgentState): Promise<Partial<AgentState
     console.log(`[AUTO-SANACIÓN] Estrategia seleccionada: ${strategy.action} - ${strategy.description}`);
 
     // Registrar en BD de forma asíncrona (sin bloquear el flujo)
-    const agentId = state.agent_config?.id || 'unknown';
+    const agentId = (state.agent_config as any)?.id || 'unknown';
     logHealingEvent(state.userId, agentId, lastError, strategy).catch(e =>
         console.error('[AUTO-SANACIÓN] Error guardando evento:', e)
     );

@@ -21,14 +21,14 @@ export async function verifyDiscordSignature(
 
         const cryptoKey = await crypto.subtle.importKey(
             'raw',
-            keyBytes,
+            keyBytes.buffer as ArrayBuffer,
             { name: 'Ed25519' },
             false,
             ['verify']
         );
 
         const message = encoder.encode(timestamp + body);
-        return await crypto.subtle.verify('Ed25519', cryptoKey, sigBytes, message);
+        return await crypto.subtle.verify('Ed25519', cryptoKey, sigBytes.buffer as ArrayBuffer, message);
     } catch (e) {
         console.error('[Discord] Signature verification error:', e);
         return false;
