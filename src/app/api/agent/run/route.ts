@@ -18,15 +18,18 @@ const RATE_LIMIT_PER_PLAN: Record<string, number> = {
 async function checkUserQuota(userId: string): Promise<{ allowed: boolean; reason?: string }> {
     try {
         const userRes = await dbPool.query(
-            `SELECT total_credits, used_credits, plan FROM users WHERE id = $1`,
+            `SELECT total_credits, used_credits, plan, role FROM users WHERE id = $1`,
             [userId]
         );
         if (userRes.rows.length === 0) return { allowed: false, reason: 'Usuario no encontrado' };
 
-        const { total_credits, used_credits, plan } = userRes.rows[0];
+        const { total_credits, used_credits, plan, role } = userRes.rows[0];
 
-        // Credit-based quota check (skip for professional/admin)
-        if (plan !== 'professional' && plan !== 'admin' && used_credits >= total_credits) {
+        // Admins bypass all quota and rate limits
+        if (role === 'admin') return { allowed: true };
+
+        // Credit-based quota check (skip for professional)
+        if (plan !== 'professional' && used_credits >= total_credits) {
             return { allowed: false, reason: 'Créditos agotados. Actualiza tu plan para continuar.' };
         }
 
