@@ -167,7 +167,7 @@ async function triggerOrchestrationAsync(
                     budget_status: {
                         current: 0,
                         limit: 1000,
-                        plan: config?.metadata?.plan || 'essentials',
+                        plan: 'essentials',
                     },
                     is_blocked: false,
                     agent_config: await getAgentForChannel(userId, 'WHATSAPP').then(a => a
