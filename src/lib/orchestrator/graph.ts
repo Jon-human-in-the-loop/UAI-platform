@@ -16,6 +16,7 @@ export interface AgentState {
     };
     is_blocked: boolean;
     agent_config: {
+        id?: string;
         name: string;
         role: string;
         model: string;

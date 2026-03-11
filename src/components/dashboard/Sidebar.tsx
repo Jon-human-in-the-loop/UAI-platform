@@ -129,12 +129,12 @@ export default function Sidebar() {
                             <div className="space-y-1 relative z-10">
                                 <div className="flex justify-between text-[10px]">
                                     <span className="text-white/40">XP</span>
-                                    <span className="text-red-500 font-mono font-bold">{isAdmin ? 'MAX' : `${profile.currentXp} / ${profile.xpToNext}`}</span>
+                                    <span className="text-red-500 font-mono font-bold">{isAdmin ? 'MAX' : `${profile.xp?.toLocaleString() ?? 0} XP`}</span>
                                 </div>
                                 <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
-                                        animate={{ width: isAdmin ? '100%' : `${profile.progress}%` }}
+                                        animate={{ width: isAdmin ? '100%' : `${(profile as any).progressToNextLevel ?? profile.progress ?? 0}%` }}
                                         transition={{ duration: 1, ease: 'easeOut' }}
                                         className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 rounded-full relative"
                                     >
