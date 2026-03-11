@@ -103,6 +103,13 @@ export const dbAdapter = {
         return res.rows[0];
     },
 
+    async addCredits(userId: string, credits: number) {
+        await dbPool.query(
+            `UPDATE users SET total_credits = COALESCE(total_credits, 0) + $1 WHERE id = $2`,
+            [credits, userId]
+        );
+    },
+
     async updateAgent(agentId: string, updates: { xp?: number; level?: number }) {
         const fields: string[] = [];
         const values: any[] = [];

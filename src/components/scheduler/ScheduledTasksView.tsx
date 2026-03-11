@@ -241,11 +241,33 @@ export default function ScheduledTasksView() {
 
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => {/* TODO: Implementar pausa */}}
-                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-bold text-white/60 hover:text-white transition-all"
+                                            onClick={async () => {
+                                                const newStatus = task.status === 'PAUSED' ? 'ENABLED' : 'PAUSED';
+                                                try {
+                                                    const res = await fetch('/api/scheduled-tasks', {
+                                                        method: 'PATCH',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ taskId: task.id, status: newStatus })
+                                                    });
+                                                    if (res.ok) {
+                                                        setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+                                                    } else {
+                                                        const error = await res.json();
+                                                        alert(`Error: ${error.error}`);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Error toggling task:', error);
+                                                    alert('Error al cambiar estado de la tarea');
+                                                }
+                                            }}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-bold transition-all ${
+                                                task.status === 'PAUSED'
+                                                    ? 'bg-green-500/10 border border-green-500/20 text-green-500 hover:bg-green-500/20'
+                                                    : 'bg-white/5 border border-white/10 text-white/60 hover:text-white'
+                                            }`}
                                         >
-                                            <Pause className="w-3 h-3" />
-                                            Pausar
+                                            {task.status === 'PAUSED' ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                                            {task.status === 'PAUSED' ? 'Reanudar' : 'Pausar'}
                                         </button>
                                         <button
                                             onClick={() => handleDeleteTask(task.id)}

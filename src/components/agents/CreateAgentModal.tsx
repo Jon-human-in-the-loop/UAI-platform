@@ -11,11 +11,11 @@ interface CreateAgentModalProps {
 }
 
 const MODELS = [
-    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI' },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI' },
-    { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'Anthropic' },
+    { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'OpenAI' },
+    { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'OpenAI' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
+    { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
     { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic' },
-    { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google' },
 ];
 
 const ROLES = [
@@ -26,7 +26,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
     const [formData, setFormData] = useState({
         name: '',
         role: '',
-        model: 'gpt-4-turbo',
+        model: 'gpt-4.1-mini',
         system_prompt: '',
         avatar: ''
     });
@@ -54,7 +54,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
             onCreated(newAgent);
             onClose();
             // Reset form
-            setFormData({ name: '', role: '', model: 'gpt-4-turbo', system_prompt: '', avatar: '' });
+            setFormData({ name: '', role: '', model: 'gpt-4.1-mini', system_prompt: '', avatar: '' });
         } catch (err: any) {
             setError(err.message || 'Error desconocido');
         } finally {

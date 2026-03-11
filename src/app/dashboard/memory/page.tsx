@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Search, Cpu, Database, Network, Zap, Shield, Sparkles, Terminal, Activity } from 'lucide-react';
+import { Brain, Search, Cpu, Database, Network, Zap, Shield, Sparkles, Terminal, Activity, RefreshCw } from 'lucide-react';
 import NeuralNetworkVisualization from '@/components/memory/NeuralNetworkVisualization';
 
 interface Learning {
@@ -15,54 +15,85 @@ interface Learning {
     complexity: string;
 }
 
+interface MemoryStats {
+    totalLearnings: number;
+    agentsContributing: number;
+    recentLearnings: number;
+    semanticConnections: number;
+    computeSavings: number;
+    autoMitigations: number;
+}
+
 export default function CollectiveMemoryPage() {
-    const [viewMode, setViewMode] = useState<'network' | 'list'>('network');
+    const [viewMode, setViewMode] = useState<'network' | 'list'>('list');
     const [learnings, setLearnings] = useState<Learning[]>([]);
+    const [stats, setStats] = useState<MemoryStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        // Simulación de carga de datos (en producción esto vendría de /api/memory/learnings)
-        setTimeout(() => {
-            setLearnings([
-                {
-                    id: '1',
-                    agent_name: 'Lead de Estrategia',
-                    learning_type: 'MARKET_INSIGHT',
-                    summary: 'Detectada saturación en canales de LinkedIn para SaaS B2B. Los hooks basados en "miedo a la obsolescencia técnica" tienen un 40% más de CTR.',
-                    created_at: new Date().toISOString(),
-                    keywords: ['linkedin', 'saas', 'b2b', 'hooks'],
-                    complexity: 'High'
-                },
-                {
-                    id: '2',
-                    agent_name: 'Auditor de Seguridad',
-                    learning_type: 'VULNERABILITY',
-                    summary: 'Nueva vulnerabilidad zero-day en dependencias de Next.js detectada. Patrón de mitigación aplicado: actualización de middleware y headers de seguridad.',
-                    created_at: new Date(Date.now() - 86400000).toISOString(),
-                    keywords: ['nextjs', 'security', 'vulnerability'],
-                    complexity: 'Critical'
-                },
-                {
-                    id: '3',
-                    agent_name: 'UAI Nucleus',
-                    learning_type: 'OPTIMIZATION',
-                    summary: 'La orquestación paralela de agentes reduce la latencia en un 25% para misiones de investigación profunda.',
-                    created_at: new Date(Date.now() - 172800000).toISOString(),
-                    keywords: ['latency', 'orchestration', 'performance'],
-                    complexity: 'Medium'
-                }
-            ]);
+    const fetchLearnings = useCallback(async (search?: string) => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams();
+            if (search) params.set('search', search);
+            params.set('limit', '50');
+
+            const res = await fetch(`/api/memory/learnings?${params.toString()}`);
+            if (res.ok) {
+                const data = await res.json();
+                const mapped = (data.learnings || []).map((item: any) => ({
+                    id: item.id,
+                    agent_name: item.agent_name || 'Agente Desconocido',
+                    learning_type: item.learning_type,
+                    summary: item.summary,
+                    created_at: item.created_at,
+                    keywords: item.keywords || [],
+                    complexity: item.complexity || mapComplexity(item.learning_type),
+                }));
+                setLearnings(mapped);
+                if (data.stats) setStats(data.stats);
+            }
+        } catch (error) {
+            console.error('Error fetching learnings:', error);
+        } finally {
             setLoading(false);
-        }, 1000);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchLearnings();
+    }, [fetchLearnings]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchLearnings(searchTerm || undefined);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchTerm, fetchLearnings]);
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
+            {/* Toggle de vista */}
+            <div className="flex items-center gap-2 p-4 border-b border-white/5">
+                <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-accent/20 text-accent border border-accent/30' : 'bg-white/5 text-white/40 border border-white/10'}`}
+                >
+                    Vista Lista
+                </button>
+                <button
+                    onClick={() => setViewMode('network')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'network' ? 'bg-accent/20 text-accent border border-accent/30' : 'bg-white/5 text-white/40 border border-white/10'}`}
+                >
+                    Vista Red Neural
+                </button>
+            </div>
+
             {/* Vista de Red Neuronal */}
             {viewMode === 'network' && <NeuralNetworkVisualization />}
 
-            {/* Vista de Lista (Anterior) */}
+            {/* Vista de Lista */}
             {viewMode === 'list' && (
         <div className="h-full flex flex-col p-6 overflow-hidden max-w-7xl mx-auto space-y-8">
             {/* Header */}
@@ -81,15 +112,22 @@ export default function CollectiveMemoryPage() {
                         <Sparkles className="w-4 h-4 text-accent" />
                         <span className="text-xs font-black text-accent uppercase tracking-widest">Swarm Intel</span>
                     </div>
+                    <button
+                        onClick={() => fetchLearnings(searchTerm || undefined)}
+                        className="p-2 rounded-xl hover:bg-white/5 transition-colors"
+                        title="Refrescar datos"
+                    >
+                        <RefreshCw className={`w-4 h-4 text-white/40 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
                 </div>
             </div>
 
             {/* Stats Bar */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <StatCard icon={Database} label="Nodos de Memoria" value="1,248" color="text-blue-500" />
-                <StatCard icon={Network} label="Conexiones Semánticas" value="5,892" color="text-purple-500" />
-                <StatCard icon={Zap} label="Ahorro de Cómputo" value="18%" color="text-yellow-500" />
-                <StatCard icon={Shield} label="Mitigaciones Auto" value="42" color="text-green-500" />
+                <StatCard icon={Database} label="Nodos de Memoria" value={stats?.totalLearnings?.toLocaleString() ?? '0'} color="text-blue-500" />
+                <StatCard icon={Network} label="Conexiones Semánticas" value={stats?.semanticConnections?.toLocaleString() ?? '0'} color="text-purple-500" />
+                <StatCard icon={Zap} label="Ahorro de Cómputo" value={`${stats?.computeSavings ?? 0}%`} color="text-yellow-500" />
+                <StatCard icon={Shield} label="Mitigaciones Auto" value={stats?.autoMitigations?.toString() ?? '0'} color="text-green-500" />
             </div>
 
             {/* Search & Filter */}
@@ -108,6 +146,14 @@ export default function CollectiveMemoryPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                 {loading ? (
                     [1, 2, 3].map(i => <div key={i} className="h-32 bg-white/5 rounded-3xl animate-pulse" />)
+                ) : learnings.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <Brain className="w-16 h-16 text-white/10 mb-4" />
+                        <h3 className="text-lg font-bold text-white/40">Sin aprendizajes registrados</h3>
+                        <p className="text-sm text-white/20 mt-2 max-w-md">
+                            Los agentes almacenarán aquí sus descubrimientos y patrones a medida que ejecuten misiones.
+                        </p>
+                    </div>
                 ) : (
                     <AnimatePresence>
                         {learnings.map((item, index) => (
@@ -131,9 +177,9 @@ export default function CollectiveMemoryPage() {
                                             <span className="text-[10px] font-mono text-white/20">{new Date(item.created_at).toLocaleString()}</span>
                                         </div>
                                         <p className="text-sm text-white/70 leading-relaxed font-mono italic">
-                                            "{item.summary}"
+                                            &ldquo;{item.summary}&rdquo;
                                         </p>
-                                        <div className="flex items-center gap-2 pt-2">
+                                        <div className="flex items-center gap-2 pt-2 flex-wrap">
                                             {item.keywords.map(kw => (
                                                 <span key={kw} className="text-[9px] font-bold text-accent/60 bg-accent/5 px-2 py-1 rounded-md border border-accent/10 uppercase">
                                                     #{kw}
@@ -174,4 +220,15 @@ function StatCard({ icon: Icon, label, value, color }: any) {
             </div>
         </div>
     );
+}
+
+function mapComplexity(learningType: string): string {
+    const map: Record<string, string> = {
+        'VULNERABILITY': 'Critical',
+        'MARKET_INSIGHT': 'High',
+        'OPTIMIZATION': 'Medium',
+        'CONVERSION_PATTERN': 'Medium',
+        'ENGAGEMENT_INSIGHT': 'Medium',
+    };
+    return map[learningType] || 'Medium';
 }

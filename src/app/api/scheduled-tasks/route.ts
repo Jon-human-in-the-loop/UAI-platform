@@ -57,6 +57,37 @@ export async function POST(req: NextRequest) {
     }
 }
 
+export async function PATCH(req: NextRequest) {
+    const session = await auth();
+    if (!session || !session.user?.id) {
+        return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    try {
+        const { taskId, status } = await req.json();
+
+        if (!taskId) {
+            return NextResponse.json({ error: 'Se requiere taskId' }, { status: 400 });
+        }
+
+        const newStatus = status || 'PAUSED';
+        if (!['ENABLED', 'PAUSED'].includes(newStatus)) {
+            return NextResponse.json({ error: 'Estado inválido. Use ENABLED o PAUSED' }, { status: 400 });
+        }
+
+        await updateScheduledTaskStatus(taskId, newStatus);
+
+        return NextResponse.json({
+            success: true,
+            message: `Tarea ${newStatus === 'PAUSED' ? 'pausada' : 'reanudada'} exitosamente`,
+            status: newStatus
+        });
+    } catch (error: any) {
+        console.error('[Scheduled Tasks API] Error:', error);
+        return NextResponse.json({ error: 'Error interno' }, { status: 500 });
+    }
+}
+
 export async function DELETE(req: NextRequest) {
     const session = await auth();
     if (!session || !session.user?.id) {
