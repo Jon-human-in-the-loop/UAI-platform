@@ -1,9 +1,14 @@
 import { Pool } from 'pg';
 
 // Configuración de la base de datos PostgreSQL
+// DATABASE_URL debe apuntar al endpoint con pooling de Neon para Vercel (serverless):
+// postgresql://neondb_owner:pass@ep-xxx-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 20,
+    ssl: process.env.DATABASE_URL?.includes('neon.tech') || process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }
+        : false,
+    max: 10,                  // Reducido para free tier de Neon (max 100 conexiones)
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
 });
