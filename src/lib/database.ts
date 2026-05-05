@@ -39,6 +39,32 @@ export async function initDatabase() {
     try {
         const client = await pool.connect();
         try {
+            // 0. Enable pgvector extension (required for memory_vectors)
+            await client.query(`CREATE EXTENSION IF NOT EXISTS vector;`);
+
+            // 0b. Create MEMORY VECTORS table (replaces Pinecone)
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS memory_vectors (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    agent_id VARCHAR(255) NOT NULL,
+                    user_id VARCHAR(255),
+                    mission_id VARCHAR(255),
+                    learning_type VARCHAR(50) NOT NULL,
+                    summary TEXT NOT NULL,
+                    details JSONB DEFAULT '{}'::jsonb,
+                    keywords TEXT[],
+                    embedding vector(1536),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                -- HNSW index for fast approximate nearest-neighbor cosine search
+                CREATE INDEX IF NOT EXISTS idx_memory_vectors_embedding
+                    ON memory_vectors USING hnsw (embedding vector_cosine_ops);
+
+                CREATE INDEX IF NOT EXISTS idx_memory_vectors_user
+                    ON memory_vectors (user_id, learning_type, created_at DESC);
+            `);
+
             // 1. Create USERS table
             await client.query(`
                 CREATE TABLE IF NOT EXISTS users (
@@ -328,7 +354,7 @@ export async function initDatabase() {
                 CREATE INDEX IF NOT EXISTS idx_remote_request_nonces_created ON remote_request_nonces(created_at DESC);
 
             `);
-            console.log("--- DB Schema Verified (Full Phase 4 & Marketplace Ready) ---");
+            console.log("--- DB Schema Verified (Full Phase 4, Marketplace & pgvector Ready) ---");
         } finally {
             client.release();
         }

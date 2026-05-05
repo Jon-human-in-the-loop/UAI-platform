@@ -625,7 +625,7 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
 
 // Nodo 4: Reflexión Post-Tarea (Memoria Cognitiva)
 export async function reflectionNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: REFLEXIÓN (Guardando en Pinecone) ---");
+    console.log("--- NODO: REFLEXIÓN (Guardando en pgvector) ---");
 
     const lastMessageObj = state.messages[state.messages.length - 1];
     let lastMessage: string | HumanMessage;

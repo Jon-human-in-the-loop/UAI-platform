@@ -22,13 +22,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run lint
-        run: npm run lint
-
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.ci.json
+
+      - name: Lint
+        run: npm run lint
+
       - name: Run tests
         run: npm run test:ci
 
       - name: Build
         run: npm run build
+        env:
+          # Provide dummy values so the build doesn't fail on missing secrets
+          # Real values are set in Vercel environment variables
+          DATABASE_URL: postgresql://dummy:dummy@localhost/dummy
+          AUTH_SECRET: dummy-secret-for-ci-build-only-32chars
+          AUTH_TRUST_HOST: "true"
+          NEXT_PUBLIC_SENTRY_DSN: ""
+          ANTHROPIC_API_KEY: dummy
+          OPENAI_API_KEY: dummy

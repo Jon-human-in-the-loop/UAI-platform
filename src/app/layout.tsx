@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
     title: "UAI - Unified Agentic Intelligence",
     description: "Plataforma de orquestación de agentes de IA de próxima generación. Automatiza, conecta y escala tu operación con inteligencia agéntica.",
-    metadataBase: new URL('https://uai-platform-production.up.railway.app'),
+    metadataBase: new URL('https://www.uaiplatform.store'),
     openGraph: {
         title: "UAI - Unified Agentic Intelligence",
         description: "Plataforma de orquestación de agentes de IA de próxima generación.",
-        url: 'https://uai-platform-production.up.railway.app',
+        url: 'https://www.uaiplatform.store',
         siteName: 'UAI Platform',
         images: [
             {
@@ -52,6 +54,9 @@ export default function RootLayout({
                         </main>
                     </div>
                 </Providers>
+                {/* Vercel Observability */}
+                <Analytics />
+                <SpeedInsights />
             </body>
         </html>
     );

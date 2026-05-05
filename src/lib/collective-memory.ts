@@ -23,7 +23,7 @@ export async function abstractLearning(record: LearningRecord) {
     console.log(`--- [Swarm Intelligence] Abstrayendo aprendizaje para el agente ${record.agent_id} ---`);
 
     try {
-        // 1. Guardar en Memoria Semántica (Pinecone)
+        // 1. Guardar en Memoria Semántica (pgvector)
         await saveReflection(
             record.summary,
             record.agent_id,

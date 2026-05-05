@@ -1,73 +1,92 @@
-import { Pinecone } from "@pinecone-database/pinecone";
-import { OpenAIEmbeddings } from "@langchain/openai";
+/**
+ * semantic-retrieval.ts — Advanced semantic retrieval via pgvector
+ *
+ * Migrated from Pinecone to pgvector (Neon PostgreSQL).
+ * Provides optimized semantic search, topic-based retrieval,
+ * error pattern analysis, and memory consolidation.
+ */
+
+import { dbPool } from './database';
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-// Lazy initialization to avoid build errors when API keys are missing
-let pineconeInstance: Pinecone | null = null;
-function getPinecone() {
-    if (!pineconeInstance) {
-        pineconeInstance = new Pinecone({
-            apiKey: process.env.PINECONE_API_KEY || "dummy-key-for-build",
-        });
+// ─── Embedding Generation ──────────────────────────────────────────────────────
+
+async function generateEmbedding(text: string): Promise<number[]> {
+    if (!process.env.OPENAI_API_KEY) return [];
+
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: text.slice(0, 8000),
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`OpenAI Embeddings error: ${await response.text()}`);
     }
-    return pineconeInstance;
+
+    const data = await response.json() as { data: Array<{ embedding: number[] }> };
+    return data.data[0].embedding;
 }
 
-let embeddingsInstance: OpenAIEmbeddings | null = null;
-function getEmbeddings() {
-    if (!embeddingsInstance) {
-        embeddingsInstance = new OpenAIEmbeddings({
-            openAIApiKey: process.env.OPENAI_API_KEY || "dummy-key-for-build",
-            modelName: "text-embedding-3-small",
-        });
-    }
-    return embeddingsInstance;
-}
+// ─── Core Semantic Search ──────────────────────────────────────────────────────
 
 /**
- * Optimiza la recuperación semántica de reflexiones en Pinecone.
+ * Optimized semantic retrieval from pgvector memory_vectors table.
  */
 export async function semanticRetrievalOptimized(
     query: string,
     userId: string,
     topK: number = 5
-): Promise<Array<{ id: string; text: string; score: number; metadata: any }>> {
-    if (!process.env.PINECONE_API_KEY || !process.env.OPENAI_API_KEY) {
-        console.warn("[Recuperación Semántica] API Keys faltantes, retornando resultados vacíos.");
+): Promise<Array<{ id: string; text: string; score: number; metadata: Record<string, unknown> }>> {
+    if (!process.env.OPENAI_API_KEY) {
+        console.warn('[Semantic Retrieval] OPENAI_API_KEY ausente, retornando vacío.');
         return [];
     }
 
     try {
-        const pinecone = getPinecone();
-        const embeddings = getEmbeddings();
-        const index = pinecone.Index(process.env.PINECONE_INDEX_NAME || "uai-memory");
+        const embedding = await generateEmbedding(query);
+        if (embedding.length === 0) return [];
 
-        const queryEmbedding = await embeddings.embedQuery(query);
+        const embeddingLiteral = `[${embedding.join(',')}]`;
 
-        const results = await index.query({
-            vector: queryEmbedding,
-            topK,
-            filter: {
-                user_id: { $eq: userId },
+        const result = await dbPool.query(
+            `SELECT id, summary, details, keywords, learning_type, agent_id, mission_id,
+                    1 - (embedding <=> $1::vector) AS score
+             FROM memory_vectors
+             WHERE user_id = $2
+             ORDER BY embedding <=> $1::vector
+             LIMIT $3`,
+            [embeddingLiteral, userId, topK]
+        );
+
+        const retrievedItems = result.rows.map(row => ({
+            id: row.id,
+            text: row.summary || '',
+            score: parseFloat(row.score) || 0,
+            metadata: {
+                learning_type: row.learning_type,
+                agent_id: row.agent_id,
+                mission_id: row.mission_id,
+                details: row.details,
+                keywords: row.keywords,
             },
-            includeMetadata: true,
-        });
-
-        const retrievedItems = results.matches.map((match: any) => ({
-            id: match.id,
-            text: match.metadata?.text || "",
-            score: match.score,
-            metadata: match.metadata,
         }));
 
-        console.log(`[Recuperación Semántica] Encontrados ${retrievedItems.length} resultados relevantes para el usuario ${userId}.`);
-
+        console.log(`[Semantic Retrieval] ${retrievedItems.length} resultados para usuario ${userId}.`);
         return retrievedItems;
     } catch (error) {
-        console.error("Error en recuperación semántica:", error);
+        console.error('[Semantic Retrieval] Error:', error);
         return [];
     }
 }
+
+// ─── Topic-Based Retrieval ─────────────────────────────────────────────────────
 
 /**
  * Recupera reflexiones relacionadas con un tema específico.
@@ -81,23 +100,26 @@ export async function retrieveReflectionsByTopic(
     return results.map(r => ({ id: r.id, text: r.text, score: r.score }));
 }
 
+// ─── Error Pattern Analysis ────────────────────────────────────────────────────
+
 /**
  * Recupera patrones de error recurrentes en las misiones del usuario.
  */
-export async function retrieveErrorPatterns(userId: string): Promise<Array<{ pattern: string; frequency: number; solutions: string[] }>> {
-    // Use Pinecone metadata filter on learning_type instead of brittle keyword matching
+export async function retrieveErrorPatterns(
+    userId: string
+): Promise<Array<{ pattern: string; frequency: number; solutions: string[] }>> {
     const results = await semanticRetrievalOptimized(
-        "error resolution recovery strategy failure",
+        'error resolution recovery strategy failure',
         userId,
         20
     );
 
-    // Filter results that have error_resolution learning_type from metadata
-    const errorResults = results.filter(r => r.metadata?.learning_type === 'error_resolution' || r.score > 0.75);
+    const errorResults = results.filter(
+        r => r.metadata?.learning_type === 'error_resolution' || r.score > 0.75
+    );
 
     if (errorResults.length === 0) return [];
 
-    // Group by score bands as frequency proxy
     const high = errorResults.filter(r => r.score > 0.85);
     const mid = errorResults.filter(r => r.score <= 0.85 && r.score > 0.75);
 
@@ -121,6 +143,8 @@ export async function retrieveErrorPatterns(userId: string): Promise<Array<{ pat
     return patterns.sort((a, b) => b.frequency - a.frequency);
 }
 
+// ─── Successful Strategies ─────────────────────────────────────────────────────
+
 /**
  * Recupera estrategias exitosas que pueden aplicarse a nuevas misiones.
  */
@@ -128,7 +152,6 @@ export async function retrieveSuccessfulStrategies(
     userId: string,
     missionType: string
 ): Promise<Array<{ strategy: string; successRate: number; description: string }>> {
-    // Filter by best_practice learning_type via metadata instead of keyword matching
     const results = await semanticRetrievalOptimized(
         `successful strategies best practices ${missionType}`,
         userId,
@@ -136,7 +159,9 @@ export async function retrieveSuccessfulStrategies(
     );
 
     const bestPractices = results.filter(
-        r => r.metadata?.learning_type === 'best_practice' || r.metadata?.learning_type === 'optimization' || r.score > 0.78
+        r => r.metadata?.learning_type === 'best_practice' ||
+             r.metadata?.learning_type === 'optimization' ||
+             r.score > 0.78
     );
 
     return bestPractices.map(r => ({
@@ -146,46 +171,38 @@ export async function retrieveSuccessfulStrategies(
     })).sort((a, b) => b.successRate - a.successRate);
 }
 
+// ─── Memory Consolidation ──────────────────────────────────────────────────────
+
 /**
- * Mejora la memoria de largo plazo mediante la consolidación de reflexiones relacionadas.
+ * Consolida la memoria de largo plazo usando un LLM para generar resúmenes.
  */
 export async function consolidateLongTermMemory(userId: string): Promise<string> {
-    if (!process.env.PINECONE_API_KEY || !process.env.OPENAI_API_KEY) {
-        return "API Keys faltantes para consolidación de memoria.";
+    if (!process.env.OPENAI_API_KEY) {
+        return 'OPENAI_API_KEY requerida para consolidación de memoria.';
     }
 
     try {
-        const pinecone = getPinecone();
-        const embeddings = getEmbeddings();
-        const index = pinecone.Index(process.env.PINECONE_INDEX_NAME || "uai-memory");
+        const results = await semanticRetrievalOptimized(
+            'Resumen general de todas las lecciones aprendidas',
+            userId,
+            50
+        );
 
-        const query = "Resumen general de todas las lecciones aprendidas";
-        const queryEmbedding = await embeddings.embedQuery(query);
+        const consolidatedText = results
+            .map(r => r.text)
+            .filter(t => t.length > 0)
+            .join('\n---\n');
 
-        const results = await index.query({
-            vector: queryEmbedding,
-            topK: 50,
-            filter: {
-                user_id: { $eq: userId },
-            },
-            includeMetadata: true,
-        });
+        if (consolidatedText.length === 0) return 'No hay reflexiones para consolidar.';
 
-        const consolidatedText = results.matches
-            .map((match: any) => match.metadata?.text || "")
-            .filter((text: string) => text.length > 0)
-            .join("\n---\n");
-
-        if (consolidatedText.length === 0) return "No hay reflexiones para consolidar.";
-
-        const { ChatOpenAI } = await import("@langchain/openai");
+        const { ChatOpenAI } = await import('@langchain/openai');
         const llm = new ChatOpenAI({
-            modelName: "gpt-4o",
+            modelName: 'gpt-4o',
             openAIApiKey: process.env.OPENAI_API_KEY,
             temperature: 0.2,
         });
 
-        const { PromptTemplate } = await import("@langchain/core/prompts");
+        const { PromptTemplate } = await import('@langchain/core/prompts');
         const consolidationPrompt = PromptTemplate.fromTemplate(`
         Analiza las siguientes reflexiones y lecciones aprendidas del usuario, y genera un resumen consolidado que incluya:
         - Los temas principales aprendidos.
@@ -203,7 +220,11 @@ export async function consolidateLongTermMemory(userId: string): Promise<string>
 
         return response.content.toString();
     } catch (error) {
-        console.error("Error consolidando memoria de largo plazo:", error);
-        return "Error en la consolidación de memoria.";
+        console.error('[Semantic Retrieval] Error consolidando memoria:', error);
+        return 'Error en la consolidación de memoria.';
     }
 }
+
+// ─── Text Splitter utility (kept for document ingestion) ───────────────────────
+
+export { RecursiveCharacterTextSplitter };

@@ -41,7 +41,7 @@ const initialNodes: Node[] = [
         id: '4',
         type: 'uaiNode',
         position: { x: 800, y: 150 },
-        data: { label: 'Reflexión (Pinecone Memory)' },
+        data: { label: 'Reflexión (pgvector Memory)' },
     },
 ];
 
