@@ -38,10 +38,13 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const ROLES = [
-    "Investigador", "Redactor", "Programador", "Analista de Datos",
-    "Asistente Virtual", "Consultor SEO", "Experto en Marketing",
-    "Agente de Ventas", "Soporte al Cliente", "Data Scientist",
+    "SDR Autónomo", "Growth Hacker", "AI Strategist",
+    "Arquitecto de Agentes", "Analista de Datos BI", "Evals Engineer",
+    "Brand Guardian", "Content Multiplier", "Customer Success",
+    "Legal Tech Advisor", "Specialized Researcher", "UX/UI Auditor",
+    "DevOps Automator", "Expert Copywriter", "Prompt Engineer"
 ];
+
 
 const MODELS_BY_PROVIDER = [
     { key: 'anthropic', label: 'Anthropic / Claude', models: ALL_MODELS.filter(m => m.provider === 'anthropic' && m.available) },
@@ -134,7 +137,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs uppercase font-bold text-white/50">Rol</label>
+                                    <label className="text-xs uppercase font-bold text-white/50">Rol / Especialidad</label>
                                     <input
                                         type="text"
                                         required
@@ -142,7 +145,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                         onChange={e => setFormData({ ...formData, role: e.target.value })}
                                         list="roles-list"
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
-                                        placeholder="Ej: Investigador"
+                                        placeholder="Elige o escribe un rol..."
                                     />
                                     <datalist id="roles-list">
                                         {ROLES.map(r => <option key={r} value={r} />)}
