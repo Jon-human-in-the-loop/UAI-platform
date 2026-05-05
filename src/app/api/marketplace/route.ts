@@ -118,7 +118,40 @@ export async function POST(req: NextRequest) {
 
         await recordPurchase(access.user.id, templateId, 'agent_template', template.price_credits);
 
-        return NextResponse.json({ success: true, message: 'Template adquirido exitosamente', template });
+        // 🔑 KEY FIX: Actually create the agent in the agents table
+        // The marketplace value IS the system_prompt + role + model configuration.
+        const client = await dbPool.connect();
+        let newAgent;
+        try {
+            // Ensure updated_at column exists (safe migration)
+            await client.query(`
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
+            `);
+
+            const agentRes = await client.query(
+                `INSERT INTO agents (user_id, name, role, model, system_prompt, level, xp, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, 1, 0, NOW())
+                 RETURNING *`,
+                [
+                    access.user.id,
+                    template.name,
+                    template.role,
+                    template.model || 'claude-sonnet-4-6',
+                    template.system_prompt || '',
+                ]
+            );
+            newAgent = agentRes.rows[0];
+        } finally {
+            client.release();
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: `Agente "${template.name}" clonado y listo en tu Agent Studio`,
+            template,
+            agent: newAgent, // Frontend can use this to navigate to the new agent
+        });
+
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

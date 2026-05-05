@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Bot, Zap, Code, BarChart3, Briefcase, Plus, Check, Star, Rocket, Activity, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Bot, Zap, Code, BarChart3, Briefcase, Plus, Check, Star, Rocket, Activity, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
+import { useRouter } from 'next/navigation';
 
 interface Template {
     id: string;
@@ -19,12 +20,14 @@ interface Template {
 
 export default function MarketplacePage() {
     const { profile, refreshProfile } = useDashboard();
+    const router = useRouter();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
     const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [cloneSuccess, setCloneSuccess] = useState<{ name: string } | null>(null);
 
     useEffect(() => {
         loadData();
@@ -64,6 +67,7 @@ export default function MarketplacePage() {
     const handlePurchase = async (template: Template) => {
         if (purchasingId) return;
         setPurchasingId(template.id);
+        setCloneSuccess(null);
         
         try {
             const res = await fetch('/api/marketplace', {
@@ -76,12 +80,17 @@ export default function MarketplacePage() {
             if (res.ok && data.success) {
                 setPurchasedIds(prev => [...prev, template.id]);
                 refreshProfile();
+                // Show success banner with link to Agent Studio
+                setCloneSuccess({ name: data.agent?.name || template.name });
+                setTimeout(() => setCloneSuccess(null), 8000);
             } else {
-                alert(data.error || 'Error al adquirir la plantilla');
+                setError(data.error || 'Error al adquirir la plantilla');
+                setTimeout(() => setError(null), 5000);
             }
         } catch (error) {
             console.error('Purchase error:', error);
-            alert('Error de conexión');
+            setError('Error de conexión al procesar la compra');
+            setTimeout(() => setError(null), 5000);
         } finally {
             setPurchasingId(null);
         }
@@ -108,8 +117,8 @@ export default function MarketplacePage() {
                         <ShoppingBag className="w-10 h-10 text-red-500" /> Marketplace <span className="text-red-500/50">de Agentes</span>
                     </h1>
                     <p className="text-white/40 text-sm font-medium mt-2 max-w-2xl">
-                        Adquiere plantillas de agentes pre-optimizados por expertos para tareas específicas. 
-                        Cada agente viene con prompts refinados y habilidades integradas.
+                        Cada agente viene con un <span className="text-white/70 font-bold">System Prompt profesional</span> listo para usar — 
+                        horas de ingeniería de prompts encapsuladas en un clic. Clónalo y personalízalo desde tu Agent Studio.
                     </p>
                 </div>
                 <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
@@ -123,6 +132,36 @@ export default function MarketplacePage() {
                     </button>
                 </div>
             </div>
+
+            {/* Clone success banner */}
+            <AnimatePresence>
+                {cloneSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-4 bg-green-500/10 border border-green-500/30 rounded-2xl flex items-center justify-between gap-3"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-500/20 rounded-xl">
+                                <Sparkles className="w-5 h-5 text-green-400" />
+                            </div>
+                            <div>
+                                <p className="text-green-400 font-bold text-sm">¡Agente clonado exitosamente!</p>
+                                <p className="text-white/50 text-xs mt-0.5">
+                                    <span className="text-white/80 font-semibold">{cloneSuccess.name}</span> ya está disponible en tu Agent Studio con su System Prompt completo.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.push('/dashboard/agents')}
+                            className="flex items-center gap-2 text-sm font-bold text-green-400 hover:text-white border border-green-500/30 hover:border-green-400 px-4 py-2 rounded-xl transition-all hover:bg-green-500/10 shrink-0"
+                        >
+                            Ir a Agent Studio <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-sm">
