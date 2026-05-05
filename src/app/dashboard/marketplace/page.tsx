@@ -194,14 +194,14 @@ export default function MarketplacePage() {
                                     </p>
 
                                     <div className="flex flex-wrap gap-2 relative z-10">
-                                        {template.skills.slice(0, 2).map(skill => (
+                                        {(template.skills || []).slice(0, 2).map(skill => (
                                             <span key={skill} className="text-[9px] font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-md text-white/40 uppercase">
                                                 {skill.replace('-skill', '')}
                                             </span>
                                         ))}
-                                        {template.skills.length > 2 && (
+                                        {(template.skills || []).length > 2 && (
                                             <span className="text-[9px] font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-md text-white/40 uppercase">
-                                                +{template.skills.length - 2}
+                                                +{(template.skills || []).length - 2}
                                             </span>
                                         )}
                                     </div>
