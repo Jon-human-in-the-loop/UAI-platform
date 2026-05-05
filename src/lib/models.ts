@@ -6,8 +6,8 @@
  */
 
 export interface UAIModel {
-    id: string;            // ID de API de Anthropic / OpenAI / Google
-    name: string;          // Nombre para mostrar al usuario
+    id: string;            // ID de API
+    name: string;          // Nombre para mostrar
     provider: 'anthropic' | 'openai' | 'google';
     contextInput: number;  // tokens
     contextOutput: number; // tokens
@@ -15,14 +15,15 @@ export interface UAIModel {
     creditRateIn: number;
     /** Créditos UAI por 1k tokens de salida */
     creditRateOut: number;
-    /** USD por 1M tokens entrada (referencia) */
+    /** USD por 1M tokens entrada */
     priceInUSD: number | null;
-    /** USD por 1M tokens salida (referencia) */
+    /** USD por 1M tokens salida */
     priceOutUSD: number | null;
     tier: 'experimental' | 'premium' | 'balanced' | 'fast';
     description: string;
     capabilities: string[];
     available: boolean;
+    isNew?: boolean;
 }
 
 // ─── Anthropic / Claude ────────────────────────────────────────────────────────
@@ -36,12 +37,13 @@ export const CLAUDE_MODELS: UAIModel[] = [
         contextOutput: 128_000,
         creditRateIn: 30,
         creditRateOut: 120,
-        priceInUSD: null,  // Consultar
+        priceInUSD: null,
         priceOutUSD: null,
         tier: 'experimental',
         description: 'El modelo más potente y experimental de Anthropic, con capacidades de razonamiento extremas.',
         capabilities: ['razonamiento-extendido', 'codigo', 'agentes', 'analisis-profundo'],
         available: true,
+        isNew: true,
     },
     {
         id: 'claude-opus-4-7',
@@ -54,9 +56,10 @@ export const CLAUDE_MODELS: UAIModel[] = [
         priceInUSD: 5,
         priceOutUSD: 25,
         tier: 'premium',
-        description: 'Mejora significativa en ingeniería de software y tareas complejas respecto a Opus 4.6.',
+        description: '+13% en resolución de código complejo vs 4.6. Autonomía de largo horizonte.',
         capabilities: ['codigo', 'agentes', 'razonamiento', 'analisis-profundo', '1m-contexto'],
         available: true,
+        isNew: true,
     },
     {
         id: 'claude-opus-4-6',
@@ -69,7 +72,7 @@ export const CLAUDE_MODELS: UAIModel[] = [
         priceInUSD: 5,
         priceOutUSD: 25,
         tier: 'premium',
-        description: 'Primer modelo Opus con ventana de 1M de tokens. Excelente para codificación y agentes complejos.',
+        description: 'Primer Opus con ventana de 1M tokens. Ideal para bases de código y documentos legales extensos.',
         capabilities: ['codigo', 'agentes', 'razonamiento', '1m-contexto'],
         available: true,
     },
@@ -84,9 +87,10 @@ export const CLAUDE_MODELS: UAIModel[] = [
         priceInUSD: 3,
         priceOutUSD: 15,
         tier: 'balanced',
-        description: 'Equilibrio extraordinario entre costo y rendimiento. Supera a Opus 4.5 en muchas tareas.',
-        capabilities: ['codigo', 'razonamiento', 'escritura', '1m-contexto'],
+        description: '"Salto masivo" para desarrolladores. Incluye Computer Use y supera a Opus 4.5 en muchas tareas.',
+        capabilities: ['codigo', 'razonamiento', 'escritura', '1m-contexto', 'computer-use'],
         available: true,
+        isNew: true,
     },
     {
         id: 'claude-sonnet-4-5',
@@ -99,7 +103,7 @@ export const CLAUDE_MODELS: UAIModel[] = [
         priceInUSD: 3,
         priceOutUSD: 15,
         tier: 'balanced',
-        description: 'Versión estable anterior de Sonnet, muy probada para aplicaciones de producción.',
+        description: 'Versión estable y muy probada para aplicaciones de producción.',
         capabilities: ['codigo', 'razonamiento', 'escritura'],
         available: true,
     },
@@ -114,7 +118,7 @@ export const CLAUDE_MODELS: UAIModel[] = [
         priceInUSD: 3,
         priceOutUSD: 15,
         tier: 'balanced',
-        description: 'Modelo con capacidades de razonamiento (thinking) integradas.',
+        description: 'Modelo con capacidades de razonamiento extendido (thinking) integradas.',
         capabilities: ['razonamiento', 'thinking', 'codigo'],
         available: true,
     },
@@ -144,7 +148,7 @@ export const CLAUDE_MODELS: UAIModel[] = [
         priceInUSD: 0.25,
         priceOutUSD: 1.25,
         tier: 'fast',
-        description: 'Extremadamente rápido y eficiente para tareas de baja latencia y alto volumen.',
+        description: 'Extremadamente rápido para tareas de alto volumen. El más económico de Anthropic.',
         capabilities: ['velocidad', 'economia', 'clasificacion'],
         available: true,
     },
@@ -153,6 +157,54 @@ export const CLAUDE_MODELS: UAIModel[] = [
 // ─── OpenAI / GPT ──────────────────────────────────────────────────────────────
 
 export const OPENAI_MODELS: UAIModel[] = [
+    {
+        id: 'gpt-5.5',
+        name: 'GPT-5.5',
+        provider: 'openai',
+        contextInput: 1_000_000,
+        contextOutput: 128_000,
+        creditRateIn: 20,
+        creditRateOut: 120,
+        priceInUSD: 5,
+        priceOutUSD: 30,
+        tier: 'premium',
+        description: 'Modelo insignia de OpenAI para razonamiento complejo y codificación. Multimodal con visión.',
+        capabilities: ['multimodal', 'codigo', 'razonamiento', 'vision', '1m-contexto'],
+        available: true,
+        isNew: true,
+    },
+    {
+        id: 'gpt-5.4',
+        name: 'GPT-5.4',
+        provider: 'openai',
+        contextInput: 1_000_000,
+        contextOutput: 128_000,
+        creditRateIn: 10,
+        creditRateOut: 60,
+        priceInUSD: 2.5,
+        priceOutUSD: 15,
+        tier: 'balanced',
+        description: 'El más asequible de la familia GPT-5. Ideal para codificación y trabajo profesional con visión.',
+        capabilities: ['multimodal', 'codigo', 'razonamiento', 'vision'],
+        available: true,
+        isNew: true,
+    },
+    {
+        id: 'gpt-5.4-mini',
+        name: 'GPT-5.4 Mini',
+        provider: 'openai',
+        contextInput: 400_000,
+        contextOutput: 128_000,
+        creditRateIn: 3,
+        creditRateOut: 18,
+        priceInUSD: 0.75,
+        priceOutUSD: 4.5,
+        tier: 'fast',
+        description: 'El mini más potente de OpenAI. Perfecto para subagentes y computer use.',
+        capabilities: ['velocidad', 'codigo', 'multimodal', 'vision'],
+        available: true,
+        isNew: true,
+    },
     {
         id: 'gpt-4o',
         name: 'GPT-4o',
@@ -164,8 +216,38 @@ export const OPENAI_MODELS: UAIModel[] = [
         priceInUSD: 2.5,
         priceOutUSD: 10,
         tier: 'balanced',
-        description: 'Modelo multimodal insignia de OpenAI. Sólido para análisis y ejecución.',
+        description: 'Modelo multimodal versátil de OpenAI. Sólido para análisis, redacción y ejecución.',
         capabilities: ['multimodal', 'codigo', 'razonamiento', 'vision'],
+        available: true,
+    },
+    {
+        id: 'o1',
+        name: 'o1 Razonamiento',
+        provider: 'openai',
+        contextInput: 200_000,
+        contextOutput: 100_000,
+        creditRateIn: 60,
+        creditRateOut: 240,
+        priceInUSD: 15,
+        priceOutUSD: 60,
+        tier: 'premium',
+        description: 'Entrenado con RL para razonamiento profundo. Piensa antes de responder.',
+        capabilities: ['razonamiento', 'matematicas', 'ciencia', 'codigo'],
+        available: true,
+    },
+    {
+        id: 'o3-mini',
+        name: 'o3-mini',
+        provider: 'openai',
+        contextInput: 200_000,
+        contextOutput: 100_000,
+        creditRateIn: 4,
+        creditRateOut: 18,
+        priceInUSD: 1.1,
+        priceOutUSD: 4.4,
+        tier: 'fast',
+        description: 'Razonamiento a bajo costo y latencia. Soporta salida estructurada y function calling.',
+        capabilities: ['razonamiento', 'velocidad', 'economia', 'estructurado'],
         available: true,
     },
     {
@@ -179,7 +261,7 @@ export const OPENAI_MODELS: UAIModel[] = [
         priceInUSD: 0.15,
         priceOutUSD: 0.6,
         tier: 'fast',
-        description: 'Versión reducida de GPT-4o. Excelente relación coste-rendimiento.',
+        description: 'Versión reducida de GPT-4o. Excelente relación coste-rendimiento para tareas simples.',
         capabilities: ['velocidad', 'economia', 'codigo'],
         available: true,
     },
@@ -241,9 +323,10 @@ export const DEFAULT_AGENT_MODEL = 'claude-sonnet-4-6';
 /** Modelos permitidos por plan */
 export const PLAN_ALLOWED_MODELS: Record<string, string[]> = {
     free: [
-        'claude-haiku-3-5',
         'claude-3-5-haiku-20241022',
+        'claude-haiku-4-5',
         'gpt-4o-mini',
+        'gpt-5.4-mini',
         'gemini-1.5-flash',
         'gemini-2.0-flash',
     ],
@@ -254,6 +337,9 @@ export const PLAN_ALLOWED_MODELS: Record<string, string[]> = {
         'claude-3-7-sonnet-20250219',
         'gpt-4o',
         'gpt-4o-mini',
+        'gpt-5.4',
+        'gpt-5.4-mini',
+        'o3-mini',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
     ],

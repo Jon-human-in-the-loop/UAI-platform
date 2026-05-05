@@ -1,21 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bot, Brain, Sparkles, Wand2, Zap, ChevronDown, ChevronUp } from 'lucide-react';
-import { ALL_MODELS, DEFAULT_AGENT_MODEL } from '@/lib/models';
+import { X, Bot, Brain, Sparkles, Save, Trash2, AlertTriangle, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { ALL_MODELS } from '@/lib/models';
 
-interface CreateAgentModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onCreated: (agent: any) => void;
+interface Agent {
+    id: string;
+    name: string;
+    role: string;
+    model: string;
+    system_prompt: string;
+    level: number;
+    xp: number;
+    avatar?: string;
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
-    anthropic: 'Anthropic',
-    openai: 'OpenAI',
-    google: 'Google',
-};
+interface EditAgentModalProps {
+    agent: Agent | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onUpdated: (agent: Agent) => void;
+    onDeleted: (agentId: string) => void;
+}
 
 const PROVIDER_COLORS: Record<string, string> = {
     anthropic: 'text-orange-400',
@@ -37,54 +44,59 @@ const TIER_LABELS: Record<string, string> = {
     fast: 'Rápido',
 };
 
-const ROLES = [
-    "Investigador", "Redactor", "Programador", "Analista de Datos",
-    "Asistente Virtual", "Consultor SEO", "Experto en Marketing",
-    "Agente de Ventas", "Soporte al Cliente", "Data Scientist",
-];
-
 const MODELS_BY_PROVIDER = [
     { key: 'anthropic', label: 'Anthropic / Claude', models: ALL_MODELS.filter(m => m.provider === 'anthropic' && m.available) },
     { key: 'openai', label: 'OpenAI / GPT', models: ALL_MODELS.filter(m => m.provider === 'openai' && m.available) },
     { key: 'google', label: 'Google / Gemini', models: ALL_MODELS.filter(m => m.provider === 'google' && m.available) },
 ];
 
-export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateAgentModalProps) {
-    const [formData, setFormData] = useState({
-        name: '',
-        role: '',
-        model: DEFAULT_AGENT_MODEL,
-        system_prompt: '',
-        avatar: ''
-    });
+export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDeleted }: EditAgentModalProps) {
+    const [formData, setFormData] = useState({ name: '', role: '', model: '', system_prompt: '' });
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [error, setError] = useState('');
-    const [expandedProvider, setExpandedProvider] = useState<string | null>('anthropic');
+    const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (agent) {
+            setFormData({
+                name: agent.name,
+                role: agent.role,
+                model: agent.model,
+                system_prompt: agent.system_prompt || '',
+            });
+            // Auto-expand the provider of the agent's current model
+            const currentModel = ALL_MODELS.find(m => m.id === agent.model);
+            if (currentModel) setExpandedProvider(currentModel.provider);
+            setShowDeleteConfirm(false);
+            setError('');
+        }
+    }, [agent]);
 
     const selectedModel = ALL_MODELS.find(m => m.id === formData.model);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!agent) return;
         setLoading(true);
         setError('');
 
         try {
-            const res = await fetch('/api/agents', {
-                method: 'POST',
+            const res = await fetch(`/api/agents/${agent.id}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Error al crear agente');
+                throw new Error(errorData.error || 'Error al actualizar agente');
             }
 
-            const newAgent = await res.json();
-            onCreated(newAgent);
+            const updatedAgent = await res.json();
+            onUpdated(updatedAgent);
             onClose();
-            setFormData({ name: '', role: '', model: DEFAULT_AGENT_MODEL, system_prompt: '', avatar: '' });
-            setExpandedProvider('anthropic');
         } catch (err: any) {
             setError(err.message || 'Error desconocido');
         } finally {
@@ -92,7 +104,21 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
         }
     };
 
-    if (!isOpen) return null;
+    const handleDelete = async () => {
+        if (!agent) return;
+        setDeleting(true);
+        try {
+            const res = await fetch(`/api/agents/${agent.id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Error al eliminar agente');
+            onDeleted(agent.id);
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'Error al eliminar');
+            setDeleting(false);
+        }
+    };
+
+    if (!isOpen || !agent) return null;
 
     return (
         <AnimatePresence>
@@ -106,10 +132,13 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-accent/10 rounded-lg">
-                                <Bot className="w-5 h-5 text-accent" />
+                            <div className="p-2 bg-white/10 rounded-lg">
+                                <Bot className="w-5 h-5 text-white/70" />
                             </div>
-                            <h2 className="text-xl font-bold text-white">Diseñar Nuevo Agente</h2>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Configurar Agente</h2>
+                                <p className="text-xs text-white/40">Nivel {agent.level} · {agent.xp.toLocaleString()} XP</p>
+                            </div>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                             <X className="w-5 h-5 text-white/50" />
@@ -130,7 +159,6 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
-                                        placeholder="Ej: Alpha One"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -140,30 +168,24 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                         required
                                         value={formData.role}
                                         onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                        list="roles-list"
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all"
-                                        placeholder="Ej: Investigador"
                                     />
-                                    <datalist id="roles-list">
-                                        {ROLES.map(r => <option key={r} value={r} />)}
-                                    </datalist>
                                 </div>
                             </div>
 
                             {/* Model Selection */}
                             <div className="space-y-3">
                                 <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
-                                    <Brain className="w-3 h-3" /> Modelo Base
+                                    <Brain className="w-3 h-3" /> Cerebro del Agente
                                 </label>
 
-                                {/* Selected model preview */}
                                 {selectedModel && (
                                     <div className="p-3 bg-accent/5 border border-accent/20 rounded-xl flex items-center justify-between">
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-bold text-white">{selectedModel.name}</span>
                                                 {selectedModel.isNew && (
-                                                    <span className="text-[9px] font-black bg-accent text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">Nuevo</span>
+                                                    <span className="text-[9px] font-black bg-accent text-white px-1.5 py-0.5 rounded-full uppercase">Nuevo</span>
                                                 )}
                                             </div>
                                             <p className="text-[11px] text-white/40 mt-0.5">{selectedModel.description}</p>
@@ -174,7 +196,6 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                     </div>
                                 )}
 
-                                {/* Provider Accordions */}
                                 <div className="space-y-2">
                                     {MODELS_BY_PROVIDER.map(group => (
                                         <div key={group.key} className="border border-white/10 rounded-xl overflow-hidden">
@@ -188,7 +209,6 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                                 </span>
                                                 {expandedProvider === group.key ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
                                             </button>
-
                                             <AnimatePresence>
                                                 {expandedProvider === group.key && (
                                                     <motion.div
@@ -204,7 +224,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                                                     key={model.id}
                                                                     type="button"
                                                                     onClick={() => setFormData({ ...formData, model: model.id })}
-                                                                    className={`px-4 py-3 rounded-xl border text-left transition-all relative ${formData.model === model.id
+                                                                    className={`px-4 py-3 rounded-xl border text-left transition-all ${formData.model === model.id
                                                                         ? 'bg-accent/10 border-accent'
                                                                         : 'bg-white/3 border-white/5 hover:bg-white/8 hover:border-white/15'
                                                                     }`}
@@ -249,14 +269,53 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                             {/* System Prompt */}
                             <div className="space-y-2">
                                 <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
-                                    Instrucciones Maestras (System Prompt) <Sparkles className="w-3 h-3 text-accent" />
+                                    Instrucciones Maestras <Sparkles className="w-3 h-3 text-accent" />
                                 </label>
                                 <textarea
                                     value={formData.system_prompt}
                                     onChange={e => setFormData({ ...formData, system_prompt: e.target.value })}
-                                    className="w-full h-32 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none text-sm font-mono"
-                                    placeholder="Define la personalidad, habilidades y limitaciones de tu agente. Ej: Eres un experto en marketing digital que responde con datos y evita el lenguaje genérico..."
+                                    className="w-full h-36 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none text-sm font-mono"
+                                    placeholder="Define la personalidad, habilidades y limitaciones del agente..."
                                 />
+                            </div>
+
+                            {/* Delete section */}
+                            <div className="border border-red-500/20 rounded-xl p-4 bg-red-500/5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                                        <span className="text-sm font-bold text-red-400">Zona de Peligro</span>
+                                    </div>
+                                    {!showDeleteConfirm ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="text-xs text-red-400 hover:text-red-300 font-bold px-3 py-1.5 rounded-lg border border-red-500/30 hover:border-red-400/50 transition-colors"
+                                        >
+                                            Eliminar Agente
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-white/50">¿Confirmas?</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDeleteConfirm(false)}
+                                                className="text-xs text-white/50 hover:text-white px-2 py-1 transition-colors"
+                                            >
+                                                No
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleDelete}
+                                                disabled={deleting}
+                                                className="text-xs font-black bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -274,9 +333,9 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                 disabled={loading}
                                 className="flex-[2] py-3 bg-white text-black hover:bg-white/90 rounded-xl font-bold transition-transform active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {loading ? 'Creando...' : (
+                                {loading ? 'Guardando...' : (
                                     <>
-                                        <Wand2 className="w-4 h-4" /> Instanciar Agente
+                                        <Save className="w-4 h-4" /> Guardar Cambios
                                     </>
                                 )}
                             </button>

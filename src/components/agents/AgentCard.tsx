@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Zap, Brain, Activity, Settings } from 'lucide-react';
+import { Bot, Brain, Settings } from 'lucide-react';
 
 interface Agent {
     id: string;
@@ -12,15 +12,17 @@ interface Agent {
     level: number;
     xp: number;
     avatar?: string;
+    system_prompt?: string;
 }
 
 interface AgentCardProps {
     agent: Agent;
     onSelect?: (agent: Agent) => void;
+    onEdit?: (agent: Agent) => void;
 }
 
-export default function AgentCard({ agent, onSelect }: AgentCardProps) {
-    const xpPercentage = (agent.xp / (agent.level * 1000)) * 100;
+export default function AgentCard({ agent, onSelect, onEdit }: AgentCardProps) {
+    const xpPercentage = Math.min((agent.xp / (agent.level * 1000)) * 100, 100);
 
     return (
         <motion.div
@@ -68,14 +70,14 @@ export default function AgentCard({ agent, onSelect }: AgentCardProps) {
                 <div className="flex items-center gap-2 text-xs text-white/40">
                     <Brain className="w-3 h-3" />
                     <span className="uppercase tracking-wider">Cerebro:</span>
-                    <span className="text-white/80 font-mono">{agent.model}</span>
+                    <span className="text-white/80 font-mono truncate">{agent.model}</span>
                 </div>
 
                 {/* XP Bar */}
                 <div className="space-y-1">
                     <div className="flex justify-between text-[10px] text-white/40 uppercase font-bold tracking-wider">
                         <span>XP</span>
-                        <span>{agent.xp} / {agent.level * 1000}</span>
+                        <span>{agent.xp.toLocaleString()} / {(agent.level * 1000).toLocaleString()}</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                         <motion.div
@@ -90,10 +92,14 @@ export default function AgentCard({ agent, onSelect }: AgentCardProps) {
                 </div>
             </div>
 
-            {/* Hover Actions Hint */}
-            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                <Settings className="w-4 h-4 text-white/20 hover:text-white transition-colors" />
-            </div>
+            {/* Settings Button — stops propagation so it doesn't navigate */}
+            <button
+                onClick={e => { e.stopPropagation(); onEdit?.(agent); }}
+                className="absolute bottom-4 right-4 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hover:bg-white/10 text-white/30 hover:text-white"
+                title="Configurar agente"
+            >
+                <Settings className="w-4 h-4" />
+            </button>
         </motion.div>
     );
 }

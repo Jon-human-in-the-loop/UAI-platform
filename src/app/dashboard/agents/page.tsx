@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Plus, Bot, Search, Loader2 } from 'lucide-react';
 import AgentCard from '@/components/agents/AgentCard';
 import CreateAgentModal from '@/components/agents/CreateAgentModal';
+import EditAgentModal from '@/components/agents/EditAgentModal';
 import { useRouter } from 'next/navigation';
 import { useDashboard } from '@/components/dashboard/DashboardContext';
 
@@ -13,7 +14,8 @@ export default function AgentsPage() {
     const { setActiveAgent } = useDashboard();
     const [agents, setAgents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [editingAgent, setEditingAgent] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
@@ -38,6 +40,14 @@ export default function AgentsPage() {
         setAgents([newAgent, ...agents]);
     };
 
+    const handleAgentUpdated = (updatedAgent: any) => {
+        setAgents(prev => prev.map(a => a.id === updatedAgent.id ? updatedAgent : a));
+    };
+
+    const handleAgentDeleted = (deletedId: string) => {
+        setAgents(prev => prev.filter(a => a.id !== deletedId));
+    };
+
     const handleAgentSelect = (agent: any) => {
         setActiveAgent(agent);
         router.push('/dashboard');
@@ -59,7 +69,7 @@ export default function AgentsPage() {
                     <p className="text-white/40">Gestiona, entrena y despliega tus unidades de inteligencia artificial.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => setIsCreateOpen(true)}
                     className="group flex items-center gap-2 bg-white text-black px-5 py-3 rounded-xl font-bold hover:bg-accent hover:text-white transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(220,38,38,0.4)]"
                 >
                     <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
@@ -67,7 +77,7 @@ export default function AgentsPage() {
                 </button>
             </div>
 
-            {/* Search & Filters */}
+            {/* Search */}
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                 <input
@@ -94,6 +104,7 @@ export default function AgentsPage() {
                             key={agent.id}
                             agent={agent}
                             onSelect={handleAgentSelect}
+                            onEdit={setEditingAgent}
                         />
                     ))}
                 </motion.div>
@@ -112,9 +123,17 @@ export default function AgentsPage() {
             )}
 
             <CreateAgentModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isCreateOpen}
+                onClose={() => setIsCreateOpen(false)}
                 onCreated={handleAgentCreated}
+            />
+
+            <EditAgentModal
+                agent={editingAgent}
+                isOpen={!!editingAgent}
+                onClose={() => setEditingAgent(null)}
+                onUpdated={handleAgentUpdated}
+                onDeleted={handleAgentDeleted}
             />
         </div>
     );
