@@ -110,12 +110,14 @@ export default withSentryConfig(nextConfig, {
     // Route browser requests through Next.js to bypass ad-blockers
     tunnelRoute: "/monitoring",
 
-    // Hide source maps from client bundles (security)
-    hideSourceMaps: true,
+    sourcemaps: {
+        disable: false,
+    },
 
-    // Remove Sentry debug logging in production
-    disableLogger: true,
-
-    // Automatically instrument Vercel Cron Jobs
-    automaticVercelMonitors: true,
+    webpack: {
+        // Remove Sentry debug logging in production
+        treeshake: { removeDebugLogging: true },
+        // Automatically instrument Vercel Cron Jobs
+        automaticVercelMonitors: true,
+    }
 });
