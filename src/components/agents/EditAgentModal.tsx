@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bot, Brain, Sparkles, Save, Trash2, AlertTriangle, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Bot, Brain, Sparkles, Save, Trash2, AlertTriangle, Zap, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { ALL_MODELS } from '@/lib/models';
+import { usePromptOptimizer } from '@/hooks/usePromptOptimizer';
 
 interface Agent {
     id: string;
@@ -65,6 +66,12 @@ export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDe
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [error, setError] = useState('');
     const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
+
+    const { isOptimizing, optimizerInput, setOptimizerInput, showOptimizerInput, setShowOptimizerInput, handleOptimize } =
+        usePromptOptimizer({
+            onSuccess: (prompt) => setFormData(prev => ({ ...prev, system_prompt: prompt })),
+            onError: (msg) => setError(msg),
+        });
 
     useEffect(() => {
         if (agent) {
@@ -280,15 +287,63 @@ export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDe
                             </div>
 
                             {/* System Prompt */}
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
-                                    Instrucciones Maestras <Sparkles className="w-3 h-3 text-accent" />
-                                </label>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
+                                        Instrucciones Maestras <Sparkles className="w-3 h-3 text-accent" />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOptimizerInput(!showOptimizerInput)}
+                                        className="flex items-center gap-1.5 text-[11px] font-bold text-accent hover:text-white border border-accent/30 hover:border-accent/70 px-3 py-1.5 rounded-lg transition-all hover:bg-accent/10"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        Regenerar con IA
+                                    </button>
+                                </div>
+
+                                {/* Optimizer input */}
+                                <AnimatePresence>
+                                    {showOptimizerInput && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="p-4 bg-accent/5 border border-accent/20 rounded-xl space-y-3">
+                                                <p className="text-xs text-white/50">
+                                                    ✨ Describe los cambios que quieres hacer. La IA regenerará el System Prompt.
+                                                </p>
+                                                <textarea
+                                                    value={optimizerInput}
+                                                    onChange={e => setOptimizerInput(e.target.value)}
+                                                    rows={3}
+                                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-accent focus:outline-none resize-none"
+                                                    placeholder="Ej: Quiero que sea más agresivo en ventas, que siempre pida el cierre de la venta al final de cada respuesta..."
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOptimize(formData.name, formData.role)}
+                                                    disabled={isOptimizing || !optimizerInput.trim()}
+                                                    className="w-full py-2.5 bg-accent text-white font-bold rounded-lg hover:bg-accent/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isOptimizing ? (
+                                                        <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
+                                                    ) : (
+                                                        <><Sparkles className="w-4 h-4" /> Optimizar con IA</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
                                 <textarea
                                     value={formData.system_prompt}
                                     onChange={e => setFormData({ ...formData, system_prompt: e.target.value })}
                                     className="w-full h-36 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none text-sm font-mono"
-                                    placeholder="Define la personalidad, habilidades y limitaciones del agente..."
+                                    placeholder="Define la personalidad, habilidades y limitaciones del agente, o usa 'Regenerar con IA' para mejorarlo..."
                                 />
                             </div>
 

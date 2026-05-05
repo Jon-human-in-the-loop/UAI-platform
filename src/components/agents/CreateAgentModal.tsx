@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bot, Brain, Sparkles, Wand2, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Bot, Brain, Sparkles, Wand2, Zap, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { ALL_MODELS, DEFAULT_AGENT_MODEL } from '@/lib/models';
+import { usePromptOptimizer } from '@/hooks/usePromptOptimizer';
 
 interface CreateAgentModalProps {
     isOpen: boolean;
@@ -63,6 +64,12 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [expandedProvider, setExpandedProvider] = useState<string | null>('anthropic');
+
+    const { isOptimizing, optimizerInput, setOptimizerInput, showOptimizerInput, setShowOptimizerInput, handleOptimize } =
+        usePromptOptimizer({
+            onSuccess: (prompt) => setFormData(prev => ({ ...prev, system_prompt: prompt })),
+            onError: (msg) => setError(msg),
+        });
 
     const selectedModel = ALL_MODELS.find(m => m.id === formData.model);
 
@@ -250,15 +257,63 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                             </div>
 
                             {/* System Prompt */}
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
-                                    Instrucciones Maestras (System Prompt) <Sparkles className="w-3 h-3 text-accent" />
-                                </label>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
+                                        Instrucciones Maestras <Sparkles className="w-3 h-3 text-accent" />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOptimizerInput(!showOptimizerInput)}
+                                        className="flex items-center gap-1.5 text-[11px] font-bold text-accent hover:text-white border border-accent/30 hover:border-accent/70 px-3 py-1.5 rounded-lg transition-all hover:bg-accent/10"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        Generar con IA
+                                    </button>
+                                </div>
+
+                                {/* Optimizer input */}
+                                <AnimatePresence>
+                                    {showOptimizerInput && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="p-4 bg-accent/5 border border-accent/20 rounded-xl space-y-3">
+                                                <p className="text-xs text-white/50">
+                                                    ✨ Describe en lenguaje simple qué debe hacer tu agente. La IA generará un System Prompt profesional.
+                                                </p>
+                                                <textarea
+                                                    value={optimizerInput}
+                                                    onChange={e => setOptimizerInput(e.target.value)}
+                                                    rows={3}
+                                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-accent focus:outline-none resize-none"
+                                                    placeholder="Ej: Un agente que ayude a dueños de negocios locales a vender más por redes sociales, con un tono amigable y cercano..."
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOptimize(formData.name, formData.role)}
+                                                    disabled={isOptimizing || !optimizerInput.trim()}
+                                                    className="w-full py-2.5 bg-accent text-white font-bold rounded-lg hover:bg-accent/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isOptimizing ? (
+                                                        <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
+                                                    ) : (
+                                                        <><Sparkles className="w-4 h-4" /> Optimizar con IA</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
                                 <textarea
                                     value={formData.system_prompt}
                                     onChange={e => setFormData({ ...formData, system_prompt: e.target.value })}
                                     className="w-full h-32 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none text-sm font-mono"
-                                    placeholder="Define la personalidad, habilidades y limitaciones de tu agente. Ej: Eres un experto en marketing digital que responde con datos y evita el lenguaje genérico..."
+                                    placeholder="Define la personalidad, habilidades y limitaciones de tu agente, o usa 'Generar con IA' para que lo hagamos por ti..."
                                 />
                             </div>
                         </div>
