@@ -102,16 +102,18 @@ export async function initDatabase() {
                     avatar VARCHAR(255),
                     level INTEGER DEFAULT 1,
                     xp INTEGER DEFAULT 0,
-                    model VARCHAR(50) NOT NULL,
+                    model VARCHAR(100) NOT NULL,
                     system_prompt TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
-                ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(50) DEFAULT 'gpt-4-turbo';
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'claude-sonnet-4-6';
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS system_prompt TEXT;
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
             `);
 
             // 3. Create MISSION CONTROL tables

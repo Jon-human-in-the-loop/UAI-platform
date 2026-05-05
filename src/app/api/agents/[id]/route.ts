@@ -17,6 +17,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         const client = await dbPool.connect();
         try {
+            // Ensure updated_at column exists (safe migration)
+            await client.query(`
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
+            `);
+
             const res = await client.query(
                 `UPDATE agents
                  SET name = $1, role = $2, model = $3, system_prompt = $4, updated_at = NOW()
@@ -38,6 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return NextResponse.json({ error: `Error actualizando agente: ${error.message}` }, { status: 500 });
     }
 }
+
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
