@@ -1,16 +1,17 @@
 import type { TokenUsage } from './billing';
+import { MODEL_MAP } from './models';
 
 export function calculateCreditCost(usage: TokenUsage): number {
     const { model, promptTokens, completionTokens } = usage;
-    const totalTokens = promptTokens + completionTokens;
+    
+    // Look up model rates in the central catalog
+    const modelConfig = MODEL_MAP.get(model);
+    
+    const rateIn = modelConfig?.creditRateIn ?? 5;
+    const rateOut = modelConfig?.creditRateOut ?? 15;
+    
+    const costIn = (promptTokens / 1000) * rateIn;
+    const costOut = (completionTokens / 1000) * rateOut;
 
-    const rates: Record<string, number> = {
-        'gpt-4-turbo': 10,
-        'claude-3-opus': 15,
-        'gemini-pro': 5,
-        'gpt-3.5-turbo': 2,
-    };
-
-    const rate = rates[model] || 5;
-    return Math.ceil((totalTokens / 1000) * rate);
+    return Math.ceil(costIn + costOut);
 }

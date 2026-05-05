@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
                 } : {
                     name: "UAI Core",
                     role: "Orquestador Default",
-                    model: "claude-3-opus",
+                    model: "claude-sonnet-4-6",
                     system_prompt: "Eres el núcleo de la plataforma." + memoryContext
                 }
             };
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
                 await trackTokenUsage({
                     userId: userId,
                     missionId: currentThreadId,
-                    model: agent?.model || 'gpt-4-turbo',
+                    model: agent?.model || 'claude-sonnet-4-6',
                     promptTokens: Math.max(200, Math.floor(cumulativeTokens * 0.6)),
                     completionTokens: Math.max(100, Math.floor(cumulativeTokens * 0.4))
                 });

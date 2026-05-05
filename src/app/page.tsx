@@ -50,7 +50,7 @@ export default function LandingPage() {
                         </h1>
 
                         <p className="text-xl md:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed font-light">
-                            Mientras el resto pierde el tiempo con prompts manuales, <span className="text-white font-medium">UAI construye ecosistemas autónomos</span> que piensan, ejecutan y aprenden. Potenciado por la lógica indomable de <span className="text-accent underline decoration-primary/30 underline-offset-8">Claude 3.7</span>.
+                            Mientras el resto pierde el tiempo con prompts manuales, <span className="text-white font-medium">UAI construye ecosistemas autónomos</span> que piensan, ejecutan y aprenden. Potenciado por la lógica indomable de <span className="text-accent underline decoration-primary/30 underline-offset-8">Claude Opus 4.7 y Sonnet 4.6</span>.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
@@ -151,7 +151,7 @@ export default function LandingPage() {
                                 <div className="grid grid-cols-1 gap-4">
                                     {[
                                         { user: "Alex @ Quant", msg: "He compartido mi agente de 'Arbitraje de Cripto V3'. Un 15% más eficiente.", likes: 842, rank: "Robot Dragon 3000", color: "text-red-500" },
-                                        { user: "Elena Studio", msg: "Mi flujo de 'SEO Multi-Idioma' ya está disponible. ¡Usadlo con Claude 3.7!", likes: 1205, rank: "Cyber Phoenix", color: "text-orange-400" },
+                                        { user: "Elena Studio", msg: "Mi flujo de 'SEO Multi-Idioma' ya está disponible. ¡Usadlo con Claude Opus 4.7!", likes: 1205, rank: "Cyber Phoenix", color: "text-orange-400" },
                                         { user: "SaaS Builder", msg: "Implementada la auto-sanación en mi bot de soporte. Cero caídas.", likes: 673, rank: "Neon Titan", color: "text-blue-400" }
                                     ].map((post, i) => (
                                         <motion.div

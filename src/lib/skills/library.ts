@@ -174,7 +174,7 @@ export class DatabaseArchitectTool extends StructuredTool {
     async _call({ requirement }: z.infer<typeof DatabaseArchitectSchema>) {
         return `Arquitectura de Datos: ${requirement}
 - Transaccional: Postgres con indexación optimizada.
-- Cognitivo: Pinecone con dimensiones adaptadas a embeddings de Claude 3.
+- Cognitivo: pgvector con dimensiones adaptadas a embeddings de Claude 4.x.
 - Relación: Uso de Foreign Keys para mantener la integridad entre mensajes y threads.`;
     }
 }
