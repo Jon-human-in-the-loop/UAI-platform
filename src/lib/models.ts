@@ -291,7 +291,6 @@ export const DEFAULT_ORCHESTRATOR_MODEL = 'gpt-4o';
 export const DEFAULT_AGENT_MODEL = 'gpt-4o';
 
 /** Modelos permitidos por plan */
-/** Modelos permitidos por plan */
 export const PLAN_ALLOWED_MODELS: Record<string, string[]> = {
     free: [
         'claude-3-5-haiku-20241022',
@@ -301,9 +300,10 @@ export const PLAN_ALLOWED_MODELS: Record<string, string[]> = {
     ],
     essentials: [
         'claude-3-5-haiku-20241022',
+        'claude-haiku-4-5',
+        'claude-sonnet-4-6',
         'gpt-4o',
         'gpt-4o-mini',
-        'o3-mini',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
     ],
