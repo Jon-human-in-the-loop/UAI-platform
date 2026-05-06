@@ -53,8 +53,10 @@ export default function MarketplacePage() {
                 setError('No se pudieron cargar los templates');
             }
 
-            if (Array.isArray(pData)) {
-                setPurchasedIds(pData.map(p => p.id));
+            if (Array.isArray(pData) && pData.length > 0) {
+                setPurchasedIds(pData.map((p: any) => p.id));
+                // Silently repair any purchases that were never materialized as agents
+                fetch('/api/marketplace/sync', { method: 'POST' }).catch(() => {});
             }
         } catch (err) {
             console.error('Error loading marketplace:', err);
