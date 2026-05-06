@@ -14,9 +14,9 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { IDENTITY_PROMPT_TEMPLATE } from "./identity";
 import { analyzeSynergy, calculateTeamSynergy, ROLE_SYNERGY_MATRIX } from "../mission-control";
 
-// --- NODO DE AUTO-SANACIÓN ---
+// --- Healing Node ---
 export async function healingNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: AUTO-SANACIÓN (Estrategias de Recuperación) ---");
+    console.log("[Node] Healing");
 
     const lastError = state.errors[state.errors.length - 1];
     console.warn(`[AUTO-SANACIÓN] Error detectado: ${lastError}`);
@@ -46,16 +46,14 @@ export async function healingNode(state: AgentState): Promise<Partial<AgentState
         };
     }
 
-    // FALLBACK: error no recuperable
-    console.error("[AUTO-SANACIÓN] No se pudo aplicar una estrategia automática. Requiere intervención.");
+    // Fallback: unrecoverable error
+    console.error("[Node] Healing: Unrecoverable error.");
     return {
         next_node: "FIN",
-        messages: [...state.messages, new AIMessage("Error crítico no recuperable automáticamente. Se requiere intervención manual.")]
+        messages: [...state.messages, new AIMessage("Critical error requiring manual intervention.")]
     };
 }
 
-
-// --- CLIENTES DE MODELOS SOTA (Carga Perezosa para evitar fallos de build por llaves faltantes) ---
 let _orchestratorModel: ChatOpenAI | null = null;
 function getOrchestratorModel() {
     if (!_orchestratorModel) {
@@ -92,11 +90,11 @@ function getGeminiPro() {
     return _geminiPro;
 }
 
-// Nodo 1: Analizador de Requerimientos (GPT-4o - Razonamiento Profundo)
+// Analyzer Node (GPT-4o)
 export async function analyzerNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: ANALIZADOR (GPT-4o Real + Memoria) ---");
+    console.log("[Node] Analyzer");
 
-    // Guardrail de Seguridad: Verificación de Presupuesto y Abuso
+    // Budget & Security Guardrail
     const isAdmin = (state.budget_status.plan as any) === 'admin';
 
     if (!isAdmin && (state.is_blocked || state.budget_status.current >= state.budget_status.limit)) {
@@ -139,14 +137,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
         console.error("Error recuperando memoria (outer catch):", e);
     }
 
-    // Configuración Dinámica del Agente
-    const config = state.agent_config || {
-        name: "UAI Nucleus",
-        role: "Orquestador Superior",
-        system_prompt: "Eres el núcleo analítico de UAI Platform."
-    };
-
-    // --- ROUTER AVANZADO (Multimodal) ---
+    // Dynamic Agent Config
     try {
         const routerPrompt = PromptTemplate.fromTemplate(`
         ${IDENTITY_PROMPT_TEMPLATE}
@@ -168,7 +159,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
             const routeResult: any = await routerChain.invoke({ input: typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage) });
             category = routeResult.category;
 
-            // HIGIENE COGNITIVA: Si el tema cambia drásticamente, reseteamos el contexto anterior
+            // Reset context if topic changes significantly
             const previousContext = state.context_memory.analysis?.audit || "";
             const changeDetectorPrompt = PromptTemplate.fromTemplate(`
             ¿El nuevo mensaje trata sobre el mismo tema que el contexto anterior?
@@ -185,7 +176,7 @@ export async function analyzerNode(state: AgentState): Promise<Partial<AgentStat
                 state.context_memory.dynamic_agents = [];
             }
 
-            // Mejora: Si es EXECUTE pero el mensaje es largo, probablemente hay instrucciones nuevas -> PLANNING
+            // Route long EXECUTE messages to PLANNING
             if (category === "EXECUTE" && ((typeof lastMessage === "string" ? lastMessage : (lastMessage as any).content).length > 100)) {
                 category = "PLANNING";
             }
@@ -311,9 +302,9 @@ Recomendación: ${res.recommendation}
 }
 
 
-// Nodo 2: Ejecución Workforce Dinámico (GPT-5/o3 - Operación Masiva)
+// Executor Node
 export async function executorNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: EJECUTOR (Síntesis Dinámica Real) ---");
+    console.log("[Node] Executor");
 
     const analysis = state.context_memory.analysis;
     const skills = state.skills_active;
@@ -360,7 +351,7 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
 
     const results = await Promise.all(assignedAgents.map(async (agent: any) => {
         try {
-            // Mapeo EXPLÍCITO de herramientas (Sin adivinanzas)
+            // Map available tools
             const agentSkills = agent.required_skills || [];
             const agentTools = agentSkills.map((s: string) => skillMap[s]).filter(Boolean);
 
@@ -443,9 +434,8 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
         }
     }));
 
-    // PURGA NUCLEAR DE SÍMBOLOS MARKDOWN
+    // Clean up markdown artifacts
     const finalSummary = results.map(r => {
-        // Eliminar numerales, asteriscos, guiones al inicio de línea y mayor que (bloques)
         const cleanOutput = r.output
             .replace(/[#*]/g, "") // Elimina todo # y * en cualquier parte
             .replace(/^[ \t]*[-+>][ \t]+/gm, "") // Elimina viñetas y blockquotes
@@ -467,13 +457,12 @@ export async function executorNode(state: AgentState): Promise<Partial<AgentStat
     };
 }
 
-// Nodo 2.5: The Challenger (Auditoría Técnica Hostil)
-// "Tu único trabajo es DESTRUIR este plan."
+// Challenger Node (Technical Audit)
 export async function challengerNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: CHALLENGER (Protocolo de Verdades Incómodas) ---");
+    console.log("[Node] Challenger");
 
     const analysis = state.context_memory.analysis;
-    // Si ya falló 2 veces, aprobamos por desgaste para evitar bucle infinito (pero con advertencia)
+    // Fallback if max retries reached
     const failureCount = state.errors.filter(e => e.includes("RECHAZADO POR CHALLENGER")).length;
 
     if (failureCount >= 2) {
@@ -567,9 +556,9 @@ export async function challengerNode(state: AgentState): Promise<Partial<AgentSt
 }
 
 
-// Nodo 3: Validador y Auto-sanación (Reflexión Crítica con GPT-4o)
+// Validator Node
 export async function validatorNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: VALIDADOR (Auto-sanación Real con GPT-4o) ---");
+    console.log("[Node] Validator");
 
     const executionResults = state.context_memory.execution_results || [];
     const lastSummary = executionResults.map((r: any) => `${r.agent}: ${r.output}`).join("\n");
@@ -623,9 +612,9 @@ export async function validatorNode(state: AgentState): Promise<Partial<AgentSta
     }
 }
 
-// Nodo 4: Reflexión Post-Tarea (Memoria Cognitiva)
+// Reflection Node
 export async function reflectionNode(state: AgentState): Promise<Partial<AgentState>> {
-    console.log("--- NODO: REFLEXIÓN (Guardando en pgvector) ---");
+    console.log("[Node] Reflection");
 
     const lastMessageObj = state.messages[state.messages.length - 1];
     let lastMessage: string | HumanMessage;

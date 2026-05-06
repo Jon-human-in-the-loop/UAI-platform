@@ -83,16 +83,7 @@ export async function POST(req: NextRequest) {
         // Persistencia: Usamos el threadId del frontend si existe, o generamos uno nuevo
         const currentThreadId = threadId || uuidv4();
 
-        console.log(`--- Ejecución ${threadId ? 'Continua' : 'Nueva'} (Thread: ${currentThreadId}) ---`);
-        if (agent) console.log(`--- Agente Activo: ${agent.name} (${agent.role}) ---`);
-
-        // DIAGNÓSTICO DE KEYS (sin exponer fragmentos de secretos en logs)
-        console.log("--- DIAGNÓSTICO DE KEYS ---");
-        console.log("ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Presente" : "❌ AUSENTE");
-        console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Presente" : "❌ AUSENTE");
-        console.log("GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? "✅ Presente" : "❌ AUSENTE");
-        console.log("---------------------------");
-
+        console.log(`[Run] Thread: ${currentThreadId} | Agent: ${agent?.name || 'Default'}`);
         const encoder = new TextEncoder();
         const stream = new TransformStream();
         const writer = stream.writable.getWriter();
@@ -108,7 +99,6 @@ export async function POST(req: NextRequest) {
 
         await startRunSummary(currentThreadId, userId, { source: 'api/agent/run' });
 
-        // RECUPERACIÓN DE MEMORIA COLECTIVA
         const collectiveKnowledge = await retrieveCollectiveKnowledge(input);
         const memoryContext = collectiveKnowledge.length > 0 
             ? "\n\n[MEMORIA COLECTIVA - APRENDIZAJES PASADOS]:\n" + collectiveKnowledge.join("\n")
@@ -155,10 +145,9 @@ export async function POST(req: NextRequest) {
                 });
 
                 for await (const rawChunk of graphStream) {
-                    const chunk = rawChunk as any; // Forza el tipo para evitar error de Uint8Array en el build
+                    const chunk = rawChunk as any;
 
-                    // SERIALIZACIÓN ROBUSTA: LangChain messages pueden tener estructuras complejas
-                    // Nos aseguramos de enviar un objeto limpio que el frontend pueda entender fácilmente.
+                    // Serialize LangChain messages for frontend
                     const simplifiedMessages = (chunk.messages || []).map((m: any) => ({
                         content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
                         role: m._getType ? m._getType() : 'ai'
@@ -179,8 +168,6 @@ export async function POST(req: NextRequest) {
                     await appendNodeMetric(currentThreadId, chunk.next_node || 'FIN', estimatedTokens, estimatedCost);
                 }
 
-                // ABSTRACCIÓN DE APRENDIZAJE AL FINALIZAR (Simplificado para el demo)
-                // En producción, esto se dispararía basado en el éxito de la misión o errores resueltos.
                 if (agent && agent.id) {
                     await abstractLearning({
                         agent_id: agent.id,
@@ -192,8 +179,6 @@ export async function POST(req: NextRequest) {
                     });
                 }
 
-                // SEGUIMIENTO DE TOKENS (Simulado con valores fijos para el demo)
-                // En producción, LangGraph devolvería el uso real en el AgentState
                 await trackTokenUsage({
                     userId: userId,
                     missionId: currentThreadId,
