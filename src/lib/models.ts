@@ -76,67 +76,7 @@ export const CLAUDE_MODELS: UAIModel[] = [
         capabilities: ['codigo', 'agentes', 'razonamiento', '1m-contexto'],
         available: true,
     },
-    {
-        id: 'claude-sonnet-4-6',
-        name: 'Claude Sonnet 4.6',
-        provider: 'anthropic',
-        contextInput: 1_000_000,
-        contextOutput: 64_000,
-        creditRateIn: 12,
-        creditRateOut: 60,
-        priceInUSD: 3,
-        priceOutUSD: 15,
-        tier: 'balanced',
-        description: '"Salto masivo" para desarrolladores. Incluye Computer Use y supera a Opus 4.5 en muchas tareas.',
-        capabilities: ['codigo', 'razonamiento', 'escritura', '1m-contexto', 'computer-use'],
-        available: true,
-        isNew: true,
-    },
-    {
-        id: 'claude-sonnet-4-5',
-        name: 'Claude Sonnet 4.5',
-        provider: 'anthropic',
-        contextInput: 200_000,
-        contextOutput: 8_192,
-        creditRateIn: 12,
-        creditRateOut: 60,
-        priceInUSD: 3,
-        priceOutUSD: 15,
-        tier: 'balanced',
-        description: 'Versión estable y muy probada para aplicaciones de producción.',
-        capabilities: ['codigo', 'razonamiento', 'escritura'],
-        available: true,
-    },
-    {
-        id: 'claude-3-7-sonnet-20250219',
-        name: 'Claude Sonnet 3.7',
-        provider: 'anthropic',
-        contextInput: 200_000,
-        contextOutput: 8_192,
-        creditRateIn: 12,
-        creditRateOut: 60,
-        priceInUSD: 3,
-        priceOutUSD: 15,
-        tier: 'balanced',
-        description: 'Modelo con capacidades de razonamiento extendido (thinking) integradas.',
-        capabilities: ['razonamiento', 'thinking', 'codigo'],
-        available: true,
-    },
-    {
-        id: 'claude-haiku-4-5',
-        name: 'Claude Haiku 4.5',
-        provider: 'anthropic',
-        contextInput: 200_000,
-        contextOutput: 4_096,
-        creditRateIn: 4,
-        creditRateOut: 20,
-        priceInUSD: 1,
-        priceOutUSD: 5,
-        tier: 'fast',
-        description: 'El modelo más rápido y económico de la serie 4. Ideal para tareas de baja latencia.',
-        capabilities: ['velocidad', 'economia', 'clasificacion', 'extraccion'],
-        available: true,
-    },
+
     {
         id: 'claude-3-5-haiku-20241022',
         name: 'Claude Haiku 3.5',
@@ -315,30 +255,24 @@ export const MODEL_MAP = new Map<string, UAIModel>(
 );
 
 /** Modelo por defecto del orquestador */
-export const DEFAULT_ORCHESTRATOR_MODEL = 'claude-sonnet-4-6';
+export const DEFAULT_ORCHESTRATOR_MODEL = 'gpt-4o';
 
 /** Modelo por defecto para agentes nuevos */
-export const DEFAULT_AGENT_MODEL = 'claude-sonnet-4-6';
+export const DEFAULT_AGENT_MODEL = 'gpt-4o';
 
+/** Modelos permitidos por plan */
 /** Modelos permitidos por plan */
 export const PLAN_ALLOWED_MODELS: Record<string, string[]> = {
     free: [
         'claude-3-5-haiku-20241022',
-        'claude-haiku-4-5',
         'gpt-4o-mini',
-        'gpt-5.4-mini',
         'gemini-1.5-flash',
         'gemini-2.0-flash',
     ],
     essentials: [
-        'claude-haiku-4-5',
-        'claude-sonnet-4-5',
-        'claude-sonnet-4-6',
-        'claude-3-7-sonnet-20250219',
+        'claude-3-5-haiku-20241022',
         'gpt-4o',
         'gpt-4o-mini',
-        'gpt-5.4',
-        'gpt-5.4-mini',
         'o3-mini',
         'gemini-2.0-flash',
         'gemini-1.5-flash',

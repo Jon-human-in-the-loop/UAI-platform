@@ -109,7 +109,7 @@ export async function initDatabase() {
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
-                ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'claude-sonnet-4-6';
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'gpt-4o';
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS system_prompt TEXT;
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS personal_context TEXT;
                 ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);

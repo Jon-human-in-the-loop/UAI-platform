@@ -50,7 +50,7 @@ export default function LandingPage() {
                         </h1>
 
                         <p className="text-xl md:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed font-light">
-                            Mientras el resto pierde el tiempo con prompts manuales, <span className="text-white font-medium">UAI construye ecosistemas autónomos</span> que piensan, ejecutan y aprenden. Potenciado por la lógica indomable de <span className="text-accent underline decoration-primary/30 underline-offset-8">Claude Opus 4.7 y Sonnet 4.6</span>.
+                            Mientras el resto pierde el tiempo con prompts manuales, <span className="text-white font-medium">UAI construye ecosistemas autónomos</span> que piensan, ejecutan y aprenden. Potenciado por la lógica indomable de <span className="text-accent underline decoration-primary/30 underline-offset-8">GPT-4o y Claude 3.5 Haiku</span>.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">

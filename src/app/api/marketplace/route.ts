@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
                     access.user.id,
                     template.name,
                     template.role,
-                    template.model || 'claude-sonnet-4-6',
+                    template.model || 'gpt-4o',
                     template.system_prompt || '',
                 ]
             );

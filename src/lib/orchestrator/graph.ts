@@ -69,7 +69,7 @@ const workflow = new StateGraph<AgentState>({
         },
         agent_config: {
             value: (x: any, y: any) => y ?? x,
-            default: () => ({ name: "UAI Core", role: "Orquestador", model: "claude-sonnet-4-6", system_prompt: "Eres el núcleo de la plataforma." }),
+            default: () => ({ name: "UAI Core", role: "Orquestador", model: "gpt-4o", system_prompt: "Eres el núcleo de la plataforma." }),
         }
     }
 });
