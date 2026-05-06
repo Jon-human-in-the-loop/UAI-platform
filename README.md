@@ -13,7 +13,7 @@ UAI Platform es un **motor agentic SOTA (State of the Art)** que permite crear, 
 - **Orquestación Cognitiva:** Basado en LangGraph, permite a los agentes razonar, planificar y ejecutar tareas complejas en múltiples pasos.
 - **Marketplace de Agentes:** Un ecosistema para adquirir plantillas de agentes (roles) pre-entrenadas con *System Prompts* de grado profesional.
 - **Personalización Segura (Contexto de Marca):** Separa estrictamente el Prompt del experto (intocable) del contexto específico del usuario (empresa, tono, producto), evitando la degradación del comportamiento original.
-- **Optimizador de Prompts Mágico ✨:** Integración de Claude Haiku (Meta-prompting) para transformar descripciones simples de usuarios en *System Prompts* avanzados.
+- **Optimizador de Prompts Mágico ✨:** Integración de Claude 3.5 Haiku (Meta-prompting) para transformar descripciones simples de usuarios en *System Prompts* avanzados.
 - **Memoria Colectiva Vectorial:** El sistema aprende de las interacciones, extrayendo abstracciones clave (Abstract Learning) y almacenándolas en PostgreSQL (pgvector) para consultas futuras.
 
 ## Stack Tecnológico
@@ -22,7 +22,7 @@ UAI Platform es un **motor agentic SOTA (State of the Art)** que permite crear, 
 |:---|:---|
 | **Frontend / Fullstack** | Next.js 15 (App Router), React, Framer Motion, TailwindCSS |
 | **Orquestación Agentic** | LangGraph, LangChain |
-| **Modelos IA** | Claude 3.7 Sonnet / Haiku (Anthropic), OpenAI, Google Gemini |
+| **Modelos IA** | GPT-4o (OpenAI), Claude 3.5 Haiku (Anthropic), Google Gemini 1.5 Flash |
 | **Base de Datos & Memoria** | Neon PostgreSQL (Neon Serverless), pgvector |
 | **Autenticación** | NextAuth v5 (Auth.js) |
 | **Diseño & UI** | Lucide React |
@@ -80,7 +80,7 @@ cp .env.example .env
 ### Variables de Entorno Requeridas (.env)
 
 ```env
-ANTHROPIC_API_KEY=         # (Opcional) Claude 3.7 Haiku (Para el Optimizador de Prompts)
+ANTHROPIC_API_KEY=         # (Opcional) Claude 3.5 Haiku (Para el Optimizador de Prompts)
 OPENAI_API_KEY=            # GPT-4o (Motor principal de Orquestación y Embeddings)
 GOOGLE_API_KEY=            # (Opcional) Gemini Flash
 DATABASE_URL=              # PostgreSQL (Conexión Transactional)
