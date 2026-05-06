@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { name, role, model, system_prompt, avatar } = await req.json();
+        const { name, role, model, system_prompt, personal_context, avatar } = await req.json();
 
         // Validation
         if (!name || !role || !model) {
@@ -44,10 +44,10 @@ export async function POST(req: NextRequest) {
         const client = await dbPool.connect();
         try {
             const res = await client.query(
-                `INSERT INTO agents (user_id, name, role, model, system_prompt, avatar) 
-                 VALUES ($1, $2, $3, $4, $5, $6) 
+                `INSERT INTO agents (user_id, name, role, model, system_prompt, personal_context, avatar) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7) 
                  RETURNING *`,
-                [session.user.id, name, role, model, system_prompt || '', avatar || '']
+                [session.user.id, name, role, model, system_prompt || '', personal_context || '', avatar || '']
             );
             return NextResponse.json(res.rows[0], { status: 201 });
         } finally {
@@ -58,3 +58,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Error creating agent: ${error.message}` }, { status: 500 });
     }
 }
+

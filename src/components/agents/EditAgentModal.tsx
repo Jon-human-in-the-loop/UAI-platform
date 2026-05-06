@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bot, Brain, Sparkles, Save, Trash2, AlertTriangle, Zap, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { X, Bot, Brain, Sparkles, Save, Trash2, AlertTriangle, Zap, ChevronDown, ChevronUp, Loader2, Briefcase } from 'lucide-react';
 import { ALL_MODELS } from '@/lib/models';
 import { usePromptOptimizer } from '@/hooks/usePromptOptimizer';
 
@@ -12,6 +12,7 @@ interface Agent {
     role: string;
     model: string;
     system_prompt: string;
+    personal_context?: string;
     level: number;
     xp: number;
     avatar?: string;
@@ -60,7 +61,7 @@ const MODELS_BY_PROVIDER = [
 ];
 
 export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDeleted }: EditAgentModalProps) {
-    const [formData, setFormData] = useState({ name: '', role: '', model: '', system_prompt: '' });
+    const [formData, setFormData] = useState({ name: '', role: '', model: '', system_prompt: '', personal_context: '' });
     const [loading, setLoading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -80,6 +81,7 @@ export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDe
                 role: agent.role,
                 model: agent.model,
                 system_prompt: agent.system_prompt || '',
+                personal_context: agent.personal_context || '',
             });
             // Auto-expand the provider of the agent's current model
             const currentModel = ALL_MODELS.find(m => m.id === agent.model);
@@ -286,6 +288,23 @@ export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDe
                                 </div>
                             </div>
 
+                            {/* Personal Context */}
+                            <div className="space-y-3">
+                                <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
+                                    <Briefcase className="w-3 h-3 text-accent" /> Contexto de Marca / Empresa
+                                </label>
+                                <p className="text-[11px] text-white/40 leading-relaxed">
+                                    Escribe aquí el nombre de tu empresa, a qué te dedicas y cómo quieres que el agente se dirija a tus clientes. 
+                                    <strong className="text-white/70 ml-1">Esto se inyectará en la memoria del agente sin alterar sus instrucciones originales.</strong>
+                                </p>
+                                <textarea
+                                    value={formData.personal_context}
+                                    onChange={e => setFormData({ ...formData, personal_context: e.target.value })}
+                                    className="w-full h-24 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none text-sm"
+                                    placeholder="Ej: 'Me llamo Carlos, mi empresa es UAI. Quiero que el agente sea amigable, trate de tú y mencione nuestros 10 años de experiencia...'"
+                                />
+                            </div>
+
                             {/* System Prompt */}
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
@@ -300,6 +319,12 @@ export default function EditAgentModal({ agent, isOpen, onClose, onUpdated, onDe
                                         <Sparkles className="w-3 h-3" />
                                         Regenerar con IA
                                     </button>
+                                </div>
+                                <div className="p-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-yellow-500/80 leading-relaxed">
+                                        Si adquiriste este agente en el Marketplace, editar este campo sobreescribirá la ingeniería de prompts del experto. Usa el <strong>Contexto de Marca</strong> arriba para personalizarlo de forma segura.
+                                    </p>
                                 </div>
 
                                 {/* Optimizer input */}

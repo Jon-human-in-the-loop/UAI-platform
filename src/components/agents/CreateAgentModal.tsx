@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bot, Brain, Sparkles, Wand2, Zap, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { X, Bot, Brain, Sparkles, Wand2, Zap, ChevronDown, ChevronUp, Loader2, Briefcase } from 'lucide-react';
 import { ALL_MODELS, DEFAULT_AGENT_MODEL } from '@/lib/models';
 import { usePromptOptimizer } from '@/hooks/usePromptOptimizer';
 
@@ -59,6 +59,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
         role: '',
         model: DEFAULT_AGENT_MODEL,
         system_prompt: '',
+        personal_context: '',
         avatar: ''
     });
     const [loading, setLoading] = useState(false);
@@ -93,7 +94,7 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
             const newAgent = await res.json();
             onCreated(newAgent);
             onClose();
-            setFormData({ name: '', role: '', model: DEFAULT_AGENT_MODEL, system_prompt: '', avatar: '' });
+            setFormData({ name: '', role: '', model: DEFAULT_AGENT_MODEL, system_prompt: '', personal_context: '', avatar: '' });
             setExpandedProvider('anthropic');
         } catch (err: any) {
             setError(err.message || 'Error desconocido');
@@ -254,6 +255,22 @@ export default function CreateAgentModal({ isOpen, onClose, onCreated }: CreateA
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* Personal Context */}
+                            <div className="space-y-3">
+                                <label className="text-xs uppercase font-bold text-white/50 flex items-center gap-2">
+                                    <Briefcase className="w-3 h-3 text-accent" /> Contexto de Marca / Personal
+                                </label>
+                                <p className="text-[11px] text-white/40">
+                                    Aquí puedes escribir información sobre ti, tu empresa, o el tono específico que deseas. Esto se inyecta en el agente sin modificar sus instrucciones maestras.
+                                </p>
+                                <textarea
+                                    value={formData.personal_context}
+                                    onChange={e => setFormData({ ...formData, personal_context: e.target.value })}
+                                    className="w-full h-24 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none text-sm"
+                                    placeholder="Ej: 'Me llamo Carlos, vendo seguros en España. Quiero que el agente sea muy cercano, trate de tú y mencione nuestros 20 años de experiencia...'"
+                                />
                             </div>
 
                             {/* System Prompt */}

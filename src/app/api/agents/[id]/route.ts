@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
 
     try {
-        const { name, role, model, system_prompt } = await req.json();
+        const { name, role, model, system_prompt, personal_context } = await req.json();
 
         if (!name || !role || !model) {
             return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 });
@@ -17,17 +17,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         const client = await dbPool.connect();
         try {
-            // Ensure updated_at column exists (safe migration)
+            // Ensure updated_at and personal_context columns exist (safe migration)
             await client.query(`
-                ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+                ALTER TABLE agents ADD COLUMN IF NOT EXISTS personal_context TEXT;
             `);
 
             const res = await client.query(
                 `UPDATE agents
-                 SET name = $1, role = $2, model = $3, system_prompt = $4, updated_at = NOW()
-                 WHERE id = $5 AND user_id = $6
+                 SET name = $1, role = $2, model = $3, system_prompt = $4, personal_context = $5, updated_at = NOW()
+                 WHERE id = $6 AND user_id = $7
                  RETURNING *`,
-                [name, role, model, system_prompt || '', id, session.user.id]
+                [name, role, model, system_prompt || '', personal_context || '', id, session.user.id]
             );
 
             if (res.rows.length === 0) {

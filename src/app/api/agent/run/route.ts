@@ -129,7 +129,9 @@ export async function POST(req: NextRequest) {
                 is_blocked: false,
                 agent_config: agent ? {
                     ...agent,
-                    system_prompt: (agent.system_prompt || "") + memoryContext
+                    system_prompt: (agent.system_prompt || "") + 
+                                   (agent.personal_context ? `\n\n[CONTEXTO DE MARCA/USUARIO]:\n${agent.personal_context}` : "") + 
+                                   memoryContext
                 } : {
                     name: "UAI Core",
                     role: "Orquestador Default",
