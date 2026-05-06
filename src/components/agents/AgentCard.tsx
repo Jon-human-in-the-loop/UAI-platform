@@ -57,10 +57,20 @@ export default function AgentCard({ agent, onSelect, onEdit }: AgentCardProps) {
                     </div>
                 </div>
 
-                {/* Level Badge */}
-                <div className="flex flex-col items-end">
-                    <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Nivel</span>
-                    <span className="text-2xl font-mono text-accent font-bold">{agent.level}</span>
+                {/* Level Badge & Settings */}
+                <div className="flex items-start gap-2 -mr-2">
+                    <div className="flex flex-col items-end">
+                        <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Nivel</span>
+                        <span className="text-2xl font-mono text-accent font-bold">{agent.level}</span>
+                    </div>
+                    {/* Settings Button */}
+                    <button
+                        onClick={e => { e.stopPropagation(); onEdit?.(agent); }}
+                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 text-white/30 hover:text-white"
+                        title="Configurar agente"
+                    >
+                        <Settings className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
@@ -91,15 +101,6 @@ export default function AgentCard({ agent, onSelect, onEdit }: AgentCardProps) {
                     </div>
                 </div>
             </div>
-
-            {/* Settings Button — stops propagation so it doesn't navigate */}
-            <button
-                onClick={e => { e.stopPropagation(); onEdit?.(agent); }}
-                className="absolute bottom-4 right-4 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hover:bg-white/10 text-white/30 hover:text-white"
-                title="Configurar agente"
-            >
-                <Settings className="w-4 h-4" />
-            </button>
         </motion.div>
     );
 }
