@@ -1,6 +1,6 @@
 # UAI PLATFORM
 
-> **Motor de Orquestación de Agentes IA Autónomos** — Potenciado por LangGraph, Claude 3.7 y una capa cognitiva de memoria persistente.
+> **Motor de Orquestación de Agentes IA Autónomos** — Potenciado por LangGraph, GPT-4o y una capa cognitiva de memoria persistente.
 
 ---
 
@@ -80,9 +80,9 @@ cp .env.example .env
 ### Variables de Entorno Requeridas (.env)
 
 ```env
-ANTHROPIC_API_KEY=         # Claude 3.7 (Motor principal y Optimizador)
-OPENAI_API_KEY=            # (Opcional) OpenAI Embeddings/Modelos
-GOOGLE_API_KEY=            # (Opcional) Gemini
+ANTHROPIC_API_KEY=         # (Opcional) Claude 3.7 Haiku (Para el Optimizador de Prompts)
+OPENAI_API_KEY=            # GPT-4o (Motor principal de Orquestación y Embeddings)
+GOOGLE_API_KEY=            # (Opcional) Gemini Flash
 DATABASE_URL=              # PostgreSQL (Conexión Transactional)
 DATABASE_URL_SESSION=      # PostgreSQL (Conexión Pooled para Edge/Serverless)
 AUTH_SECRET=               # Hash para NextAuth (generar con `openssl rand -base64 32`)
