@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Cpu, Flame, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useDashboard } from './DashboardContext';
+import { calculateLevel } from '@/lib/gamification';
 
 interface NavbarProps {
     currentThreadId?: string;
@@ -45,7 +46,7 @@ export default function Navbar({ currentThreadId }: NavbarProps) {
                         <span className="text-lg">{profile.rankEmoji}</span>
                         <div className="flex flex-col">
                             <span className="text-[10px] font-bold text-white/80 leading-tight">{profile.name}</span>
-                            <span className="text-[8px] text-white/40 font-mono leading-tight">Lvl {profile.level}</span>
+                            <span className="text-[8px] text-white/40 font-mono leading-tight">Lvl {calculateLevel(profile.xp ?? 0)}</span>
                         </div>
                     </div>
                 )}

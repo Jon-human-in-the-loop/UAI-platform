@@ -30,19 +30,22 @@ export default function AnalyticsPage() {
     const metrics = {
         hoursSaved: data?.hoursSaved ?? 0,
         costSaved: data?.costSaved ?? 0,
-        cognitiveLoadReduction: data?.successRate ?? 0,
+        // Reducción de carga cognitiva: basada en tasa de éxito, siempre 0-99
+        cognitiveLoadReduction: data && data.totalRuns > 0
+            ? Math.max(0, Math.min(99, Math.round((data.successfulRuns / data.totalRuns) * 100)))
+            : 0,
         efficiencyGain: data && data.totalRuns > 0
-            ? Math.min(99, Math.round((data.successfulRuns / data.totalRuns) * 100))
+            ? Math.max(0, Math.min(99, Math.round((data.successfulRuns / data.totalRuns) * 100)))
             : 0,
     };
 
-    // Build bar chart heights from runsPerDay (last 7 days)
+    // Build bar chart heights from runsPerDay (últimos 7 días — siempre 7 barras)
     const barHeights = data?.runsPerDay.length
         ? (() => {
             const maxRuns = Math.max(...data.runsPerDay.map(d => d.runs), 1);
-            return data.runsPerDay.slice(-5).map(d => Math.round((d.runs / maxRuns) * 100));
+            return data.runsPerDay.map(d => Math.round((d.runs / maxRuns) * 100));
         })()
-        : [0, 0, 0, 0, 0];
+        : [0, 0, 0, 0, 0, 0, 0];
 
     const automationRate = data && data.totalRuns > 0
         ? Math.min(99, Math.round((data.successfulRuns / data.totalRuns) * 100))
@@ -71,20 +74,20 @@ export default function AnalyticsPage() {
                         <BarChart3 className="w-5 h-5 text-blue-400" />
                         <h3 className="text-sm font-bold text-white uppercase">Ejecuciones (Últimos 7 días)</h3>
                     </div>
-                    <div className="h-48 flex items-end gap-4 px-4">
-                        {(barHeights.length === 5 ? barHeights : [0, 0, 0, 0, 0]).map((h, i) => (
+                    <div className="h-48 flex items-end gap-2 px-4">
+                        {barHeights.map((h, i) => (
                             <div key={i} className="flex-1 bg-blue-500/20 rounded-t-lg relative group">
                                 <div
                                     className="absolute bottom-0 left-0 right-0 bg-blue-500 rounded-t-lg transition-all group-hover:bg-blue-400"
-                                    style={{ height: `${h}%` }}
+                                    style={{ height: `${Math.max(h, 2)}%` }}
                                 ></div>
                             </div>
                         ))}
                     </div>
-                    <div className="flex justify-between text-[10px] text-white/30 uppercase font-bold px-2">
-                        {data?.runsPerDay.slice(-5).map((d, i) => (
-                            <span key={i}>{new Date(d.day).toLocaleDateString('es', { weekday: 'short' })}</span>
-                        )) ?? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map((d, i) => <span key={i}>{d}</span>)}
+                    <div suppressHydrationWarning className="flex justify-between text-[10px] text-white/30 uppercase font-bold px-2">
+                        {data?.runsPerDay.map((d, i) => (
+                            <span suppressHydrationWarning key={i}>{new Date(d.day).toLocaleDateString('es', { weekday: 'short' })}</span>
+                        )) ?? ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i}>{d}</span>)}
                     </div>
                 </div>
 

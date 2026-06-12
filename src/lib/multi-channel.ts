@@ -75,8 +75,14 @@ export function formatResponseForChannel(channel: ChannelType, response: string)
 
 /**
  * Envía una respuesta a través del canal correspondiente.
+ * Despacho real a las APIs externas según el tipo de canal.
  */
-export async function sendChannelResponse(channel: ChannelType, recipientId: string, message: string, config: ChannelConfig) {
+export async function sendChannelResponse(
+    channel: ChannelType,
+    recipientId: string,
+    message: string,
+    config: ChannelConfig
+): Promise<{ success: boolean; messageId?: string; channel?: ChannelType; recipientId?: string; timestamp?: Date; error?: string }> {
     if (!config.enabled) {
         console.warn(`[Multi-Channel] Intento de envío por canal deshabilitado: ${channel}`);
         return { success: false, error: 'Channel disabled' };
@@ -84,17 +90,58 @@ export async function sendChannelResponse(channel: ChannelType, recipientId: str
 
     const formattedMessage = formatResponseForChannel(channel, message);
     console.log(`[Multi-Channel] Enviando respuesta a ${recipientId} vía ${channel}`);
-    
-    // Simulación de integración con APIs externas
-    // En producción, aquí se usarían fetch() a las APIs de Telegram, Twilio, etc.
-    
-    return { 
-        success: true, 
-        messageId: crypto.randomUUID(),
-        channel,
-        recipientId,
-        timestamp: new Date()
-    };
+
+    switch (channel) {
+        case 'TELEGRAM': {
+            try {
+                const { sendTelegramMessage } = await import('./telegram-integration');
+                const botToken = config.apiKey ?? '';
+                const chatId = parseFloat(recipientId);
+                await sendTelegramMessage(botToken, chatId, formattedMessage);
+                return {
+                    success: true,
+                    messageId: crypto.randomUUID(),
+                    channel,
+                    recipientId,
+                    timestamp: new Date(),
+                };
+            } catch (err: any) {
+                console.error('[Multi-Channel] Error enviando por Telegram:', err);
+                return { success: false, error: err?.message ?? 'Telegram send failed' };
+            }
+        }
+
+        case 'WHATSAPP': {
+            try {
+                const {
+                    sendWhatsAppMessage,
+                    getTwilioNumber,
+                    getTwilioAuthToken,
+                } = await import('./whatsapp-integration');
+                const accountSid = config.apiKey ?? '';
+                const authToken = getTwilioAuthToken(config);
+                const fromNumber = getTwilioNumber(config);
+                await sendWhatsAppMessage(accountSid, authToken, fromNumber, recipientId, formattedMessage);
+                return {
+                    success: true,
+                    messageId: crypto.randomUUID(),
+                    channel,
+                    recipientId,
+                    timestamp: new Date(),
+                };
+            } catch (err: any) {
+                console.error('[Multi-Channel] Error enviando por WhatsApp:', err);
+                return { success: false, error: err?.message ?? 'WhatsApp send failed' };
+            }
+        }
+
+        case 'DISCORD':
+        case 'EMAIL':
+            return { success: false, error: 'Canal no soportado para envío directo' };
+
+        default:
+            return { success: false, error: `Canal ${channel} no soportado` };
+    }
 }
 
 /**

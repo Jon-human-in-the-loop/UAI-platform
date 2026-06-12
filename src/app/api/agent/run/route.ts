@@ -3,6 +3,7 @@ import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { retrieveCollectiveKnowledge, abstractLearning } from '@/lib/collective-memory';
 import { trackTokenUsage } from '@/lib/billing';
+import { getUserBudgetStatus } from '@/lib/budget';
 import { v4 as uuidv4 } from 'uuid';
 import { startRunSummary, appendNodeMetric, finishRunSummary } from '@/lib/run-tracing';
 import { auth } from '@/auth';
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
 
         // Si hay threadId, enviamos solo el nuevo mensaje (LangGraph se encarga de la historia)
         // Si no hay, enviamos el estado inicial completo
+        const budgetStatus = await getUserBudgetStatus(userId);
         const payload = threadId
             ? { messages: [new HumanMessage(input)] }
             : {
@@ -115,12 +117,12 @@ export async function POST(req: NextRequest) {
                 errors: [],
                 skills_active: [],
                 context_memory: {},
-                budget_status: { current: 0, limit: 100, plan: "free" },
+                budget_status: budgetStatus,
                 is_blocked: false,
                 agent_config: agent ? {
                     ...agent,
-                    system_prompt: (agent.system_prompt || "") + 
-                                   (agent.personal_context ? `\n\n[CONTEXTO DE MARCA/USUARIO]:\n${agent.personal_context}` : "") + 
+                    system_prompt: (agent.system_prompt || "") +
+                                   (agent.personal_context ? `\n\n[CONTEXTO DE MARCA/USUARIO]:\n${agent.personal_context}` : "") +
                                    memoryContext
                 } : {
                     name: "UAI Core",

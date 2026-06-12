@@ -126,9 +126,11 @@ export default function Dashboard() {
     const logsEndRef = useRef<HTMLDivElement>(null);
     const missionStartRef = useRef<number | null>(null);
     
-    const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([
-        { id: 1, type: 'info', text: 'Sincronización de Centro de Comando completada.', time: new Date().toLocaleTimeString() },
-    ]);
+    const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([]);
+
+    useEffect(() => {
+        setLogs([{ id: 1, type: 'info', text: 'Sincronización de Centro de Comando completada.', time: new Date().toLocaleTimeString() }]);
+    }, []);
 
     const [metrics, setMetrics] = useState({
         latency: 0,

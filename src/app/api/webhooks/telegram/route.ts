@@ -3,6 +3,7 @@ import { processTelegramMessage, sendTelegramMessage, getTelegramConfig } from '
 import { dbPool } from '@/lib/database';
 import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage } from '@langchain/core/messages';
+import { getUserBudgetStatus } from '@/lib/budget';
 
 /**
  * Obtiene el agente asignado al canal de Telegram del usuario.
@@ -90,6 +91,7 @@ async function triggerOrchestrationAsync(userId: string, input: string, chatId: 
                     configurable: { thread_id: `telegram-${chatId}-${Date.now()}` }
                 };
 
+                const budgetStatus = await getUserBudgetStatus(userId);
                 const payload = {
                     userId: userId,
                     messages: [new HumanMessage(input)],
@@ -97,11 +99,7 @@ async function triggerOrchestrationAsync(userId: string, input: string, chatId: 
                     errors: [],
                     skills_active: [],
                     context_memory: {},
-                    budget_status: {
-                        current: 0,
-                        limit: 1000,
-                        plan: 'professional'
-                    },
+                    budget_status: budgetStatus,
                     is_blocked: false,
                     agent_config: await getAgentForChannel(userId, 'TELEGRAM').then(a => a
                         ? { name: a.name, role: a.role, model: a.model || 'gpt-4o', system_prompt: a.system_prompt || 'Eres un asistente de IA. Responde de forma concisa y útil.' }

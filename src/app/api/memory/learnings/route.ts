@@ -9,33 +9,44 @@ export async function GET(req: NextRequest) {
     if (!access.ok) return access.response;
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search') || '';
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const search = (searchParams.get('search') || '').trim();
+
+    // Paginación: limit (1-200, default 50) y offset (>= 0, default 0)
+    const rawLimit = parseInt(searchParams.get('limit') || '50', 10);
+    const rawOffset = parseInt(searchParams.get('offset') || '0', 10);
+    const limit = Math.min(Math.max(Number.isNaN(rawLimit) ? 50 : rawLimit, 1), 200);
+    const offset = Math.max(Number.isNaN(rawOffset) ? 0 : rawOffset, 0);
 
     try {
         const client = await dbPool.connect();
         try {
-            // Obtener aprendizajes de los agentes del usuario
-            const query = search
-                ? `SELECT al.*, a.name as agent_name
+            // Obtener aprendizajes de los agentes del usuario.
+            // Construcción limpia: los placeholders SIEMPRE coinciden con los params.
+            // - Sin búsqueda: $1 = userId, $2 = limit, $3 = offset
+            // - Con búsqueda: $1 = userId, $2 = patrón ILIKE, $3 = limit, $4 = offset
+            let query: string;
+            let params: (string | number)[];
+
+            if (search) {
+                query = `SELECT al.*, a.name as agent_name
                    FROM agent_learnings al
                    LEFT JOIN agents a ON al.agent_id = a.id
                    WHERE a.user_id = $1
                      AND (al.summary ILIKE $2 OR al.learning_type ILIKE $2 OR $2 = ANY(al.keywords))
                    ORDER BY al.created_at DESC
-                   LIMIT $3`
-                : `SELECT al.*, a.name as agent_name
+                   LIMIT $3 OFFSET $4`;
+                params = [access.user.id, `%${search}%`, limit, offset];
+            } else {
+                query = `SELECT al.*, a.name as agent_name
                    FROM agent_learnings al
                    LEFT JOIN agents a ON al.agent_id = a.id
                    WHERE a.user_id = $1
                    ORDER BY al.created_at DESC
-                   LIMIT $3`;
+                   LIMIT $2 OFFSET $3`;
+                params = [access.user.id, limit, offset];
+            }
 
-            const params = search
-                ? [access.user.id, `%${search}%`, limit]
-                : [access.user.id, limit, limit];
-
-            const res = await client.query(query, search ? params : [access.user.id, limit]);
+            const res = await client.query(query, params);
 
             // Stats globales
             const statsRes = await client.query(

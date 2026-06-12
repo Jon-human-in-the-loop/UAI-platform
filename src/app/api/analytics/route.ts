@@ -26,16 +26,18 @@ export async function GET(req: NextRequest) {
                 [userId]
             );
 
-            // Ejecuciones por día (últimos 7 días)
+            // Ejecuciones por día (últimos 7 días) — siempre 7 filas, 0 en días sin datos
             const perDayRes = await client.query(
                 `SELECT
-                    DATE_TRUNC('day', created_at) AS day,
-                    COUNT(*) AS runs,
-                    COUNT(CASE WHEN status = 'success' THEN 1 END) AS successful
-                 FROM run_summaries
-                 WHERE user_id = $1 AND created_at > NOW() - INTERVAL '7 days'
-                 GROUP BY day
-                 ORDER BY day ASC`,
+                    d.day::date AS day,
+                    COALESCE(COUNT(rs.id), 0) AS runs,
+                    COALESCE(COUNT(CASE WHEN rs.status = 'success' THEN 1 END), 0) AS successful
+                 FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d(day)
+                 LEFT JOIN run_summaries rs
+                     ON DATE(rs.created_at) = d.day::date
+                     AND rs.user_id = $1
+                 GROUP BY d.day
+                 ORDER BY d.day ASC`,
                 [userId]
             );
 

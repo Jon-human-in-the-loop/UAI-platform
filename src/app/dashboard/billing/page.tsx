@@ -19,6 +19,7 @@ export default function BillingPage() {
     const { profile } = useDashboard();
     const [loading, setLoading] = useState<string | null>(null);
     const [usage, setUsage] = useState<UsageMetrics | null>(null);
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUsage = async () => {
@@ -68,17 +69,23 @@ export default function BillingPage() {
 
     const handleSubscribe = async (planId: string) => {
         setLoading(planId);
+        setCheckoutError(null);
         try {
             const res = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ planId, provider: 'stripe' })
             });
-            const { url } = await res.json();
-            if (url) window.location.href = url;
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                setLoading(null);
+                setCheckoutError(data?.error || 'Error al iniciar el proceso de pago. Intenta nuevamente.');
+            }
         } catch (error) {
             console.error('Checkout error:', error);
-        } finally {
+            setCheckoutError('Error de conexión. Verifica tu internet e intenta nuevamente.');
             setLoading(null);
         }
     };
@@ -152,6 +159,12 @@ export default function BillingPage() {
                     </div>
                 </div>
             </div>
+
+            {checkoutError && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">
+                    {checkoutError}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-10">
                 {plans.map((plan) => (

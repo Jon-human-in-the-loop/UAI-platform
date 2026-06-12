@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { Bot, Cpu, Lock, Mail } from 'lucide-react';
+import { Cpu, Lock, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('admin@uai.ai');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -103,8 +104,14 @@ export default function LoginPage() {
                         {loading ? 'Sincronizando...' : 'Iniciar Sesión'}
                     </button>
 
-                    <div className="text-center">
+                    <div className="text-center space-y-2">
                         <span className="text-[10px] text-white/20 uppercase tracking-[0.2em]">Acceso de seguridad nivel 5</span>
+                        <p className="text-sm text-white/40">
+                            ¿No tienes cuenta?{' '}
+                            <Link href="/registro" className="text-accent hover:text-white transition-colors font-semibold">
+                                Crea una gratis
+                            </Link>
+                        </p>
                     </div>
                 </form>
             </motion.div>
