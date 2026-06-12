@@ -154,7 +154,7 @@ export default function HealingPage() {
                                     <ArrowRight className="w-3 h-3 text-white/20" />
                                     <span className="text-xs font-bold text-accent/80 uppercase">{event.strategy.replace(/_/g, ' ')}</span>
                                 </div>
-                                <span className="text-[10px] text-white/30 font-mono">
+                                <span suppressHydrationWarning className="text-[10px] text-white/30 font-mono">
                                     {new Date(event.timestamp).toLocaleString()}
                                 </span>
                             </div>
