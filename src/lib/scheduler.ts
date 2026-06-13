@@ -133,7 +133,7 @@ export async function processPendingTasks(): Promise<{
 
             // Importar orquestador de forma dinámica para evitar ciclos de dependencia
             const { getCompiledApp } = await import('./orchestrator/nodes');
-            const app = getCompiledApp();
+            const app = await getCompiledApp();
 
             // Callback para capturar tokens consumidos
             let accumulatedTokens = 0;
