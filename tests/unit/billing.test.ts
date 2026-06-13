@@ -6,13 +6,15 @@ import { calculateCreditCost } from '../../src/lib/billing-pricing.ts';
 test('calculateCreditCost aplica tarifa por modelo y redondea hacia arriba', () => {
     const cost = calculateCreditCost({
         userId: 'u1',
-        model: 'gpt-4-turbo',
+        model: 'gpt-4o',
         promptTokens: 1200,
         completionTokens: 450,
     });
 
-    // 1650 tokens * 10/1000 = 16.5 => ceil = 17
-    assert.equal(cost, 17);
+    // promptTokens: 1200 * rateIn(10)/1000 = 12
+    // completionTokens: 450 * rateOut(40)/1000 = 18
+    // total = ceil(30) = 30
+    assert.equal(cost, 30);
 });
 
 test('calculateCreditCost usa tarifa fallback para modelos no mapeados', () => {

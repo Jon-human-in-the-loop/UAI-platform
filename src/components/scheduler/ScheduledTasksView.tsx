@@ -228,12 +228,12 @@ export default function ScheduledTasksView() {
                                             <span>{formatCronExpression(task.cron_expression)}</span>
                                         </div>
                                         {task.last_run && (
-                                            <div>
+                                            <div suppressHydrationWarning>
                                                 <span className="text-white/40">Última ejecución:</span> {new Date(task.last_run).toLocaleString()}
                                             </div>
                                         )}
                                         {task.next_run && (
-                                            <div>
+                                            <div suppressHydrationWarning>
                                                 <span className="text-white/40">Próxima ejecución:</span> {new Date(task.next_run).toLocaleString()}
                                             </div>
                                         )}

@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Brain, Settings } from 'lucide-react';
+import { getLevelProgress } from '@/lib/gamification';
 
 interface Agent {
     id: string;
@@ -22,7 +23,7 @@ interface AgentCardProps {
 }
 
 export default function AgentCard({ agent, onSelect, onEdit }: AgentCardProps) {
-    const xpPercentage = Math.min((agent.xp / (agent.level * 1000)) * 100, 100);
+    const { level, currentLevelXp, nextLevelXp, progressPercent } = getLevelProgress(agent.xp ?? 0);
 
     return (
         <motion.div
@@ -61,7 +62,7 @@ export default function AgentCard({ agent, onSelect, onEdit }: AgentCardProps) {
                 <div className="flex items-start gap-2 -mr-2">
                     <div className="flex flex-col items-end">
                         <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Nivel</span>
-                        <span className="text-2xl font-mono text-accent font-bold">{agent.level}</span>
+                        <span className="text-2xl font-mono text-accent font-bold">{level}</span>
                     </div>
                     {/* Settings Button */}
                     <button
@@ -87,12 +88,12 @@ export default function AgentCard({ agent, onSelect, onEdit }: AgentCardProps) {
                 <div className="space-y-1">
                     <div className="flex justify-between text-[10px] text-white/40 uppercase font-bold tracking-wider">
                         <span>XP</span>
-                        <span>{agent.xp.toLocaleString()} / {(agent.level * 1000).toLocaleString()}</span>
+                        <span>{currentLevelXp.toLocaleString()} / {nextLevelXp.toLocaleString()}</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${xpPercentage}%` }}
+                            animate={{ width: `${progressPercent}%` }}
                             transition={{ duration: 1, ease: "easeOut" }}
                             className="h-full bg-accent relative"
                         >

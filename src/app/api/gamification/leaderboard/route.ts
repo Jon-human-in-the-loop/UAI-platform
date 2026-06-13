@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { dbPool } from '@/lib/database';
-import { getRank } from '@/lib/gamification';
+import { calculateLevel, getRank } from '@/lib/gamification';
 
 export async function GET(req: NextRequest) {
     const session = await auth();
@@ -20,9 +20,12 @@ export async function GET(req: NextRequest) {
             );
 
             const rows = res.rows.map((row: any) => {
-                const rankObj = getRank(row.level || 1);
+                // Calcular nivel desde XP para consistencia (evita discrepancia con columna level del DB)
+                const computedLevel = calculateLevel(row.xp || 0);
+                const rankObj = getRank(computedLevel);
                 return {
                     ...row,
+                    level: computedLevel,
                     rank: rankObj.name,
                     rank_emoji: rankObj.emoji,
                 };

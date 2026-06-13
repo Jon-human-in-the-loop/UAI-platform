@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { authorize } from '@/lib/authz';
-import { stripe } from '@/lib/stripe';
+import { stripe, isStripeConfigured } from '@/lib/stripe';
 import { preference, mpClient } from '@/lib/mercadopago';
 import { PAYMENT_PLANS, PAYMENT_PROVIDERS } from '@/lib/payments.config';
 
@@ -9,6 +9,23 @@ export async function POST(req: Request) {
     try {
         const session = await auth();
         const { planId, provider, userId: bodyUserId } = await req.json();
+
+        // Validar configuración del proveedor de pagos
+        if (provider === PAYMENT_PROVIDERS.STRIPE) {
+            if (!isStripeConfigured()) {
+                return NextResponse.json(
+                    { error: 'El sistema de pagos aún no está configurado. Contacta al administrador.' },
+                    { status: 503 }
+                );
+            }
+        } else if (provider === PAYMENT_PROVIDERS.MERCADOPAGO) {
+            if (!process.env.MP_ACCESS_TOKEN) {
+                return NextResponse.json(
+                    { error: 'Mercado Pago no está configurado todavía.' },
+                    { status: 503 }
+                );
+            }
+        }
 
         // Compatibilidad: permitimos checkout durante registro sin sesión.
         // Si existe sesión, aplicamos RBAC explícito.

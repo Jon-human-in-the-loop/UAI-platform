@@ -3,6 +3,7 @@ import { verifyDiscordSignature, sendDiscordFollowup, buildInteractionResponse, 
 import { getCompiledApp } from '@/lib/orchestrator/nodes';
 import { HumanMessage } from '@langchain/core/messages';
 import { dbPool } from '@/lib/database';
+import { getUserBudgetStatus } from '@/lib/budget';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,6 +103,7 @@ async function triggerOrchestrationAsync(
                 configurable: { thread_id: `discord-${userId}-${Date.now()}` },
             };
 
+            const budgetStatus = await getUserBudgetStatus(userId);
             const payload = {
                 userId,
                 messages: [new HumanMessage(input)],
@@ -109,7 +111,7 @@ async function triggerOrchestrationAsync(
                 errors: [],
                 skills_active: [],
                 context_memory: {},
-                budget_status: { current: 0, limit: 1000, plan: 'essentials' },
+                budget_status: budgetStatus,
                 is_blocked: false,
                 agent_config: {
                     name: 'UAI Discord Agent',

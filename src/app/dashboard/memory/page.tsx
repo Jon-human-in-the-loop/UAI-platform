@@ -174,7 +174,7 @@ export default function CollectiveMemoryPage() {
                                                 <span className="text-xs font-black text-white uppercase tracking-tighter">{item.agent_name}</span>
                                                 <span className="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-white/30 uppercase tracking-widest">{item.learning_type}</span>
                                             </div>
-                                            <span className="text-[10px] font-mono text-white/20">{new Date(item.created_at).toLocaleString()}</span>
+                                            <span suppressHydrationWarning className="text-[10px] font-mono text-white/20">{new Date(item.created_at).toLocaleString()}</span>
                                         </div>
                                         <p className="text-sm text-white/70 leading-relaxed font-mono italic">
                                             &ldquo;{item.summary}&rdquo;

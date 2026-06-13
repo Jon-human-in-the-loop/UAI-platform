@@ -6,6 +6,7 @@ import { Flame, Target, Bot, Layers, Trophy, ShieldCheck, Share2, BarChart3, Sho
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useDashboard } from './DashboardContext';
+import { calculateLevel } from '@/lib/gamification';
 
 const planLabel: Record<string, string> = {
     'free': 'Gratis',
@@ -23,9 +24,9 @@ export default function Sidebar() {
     // Verificar si el usuario es admin
     const isAdmin = profile?.email === 'jon@uai.com' || (profile as any)?.role === 'admin';
 
-    // Datos especiales para Admin
+    // Datos especiales para Admin — nivel siempre calculado desde XP para consistencia
     const displayRank = isAdmin ? 'Dragón Primordial' : profile?.rank;
-    const displayLevel = isAdmin ? 100 : profile?.level;
+    const displayLevel = profile ? calculateLevel(profile.xp ?? 0) : undefined;
     const displayEmoji = isAdmin ? '🐲' : profile?.rankEmoji;
     const displayGradient = isAdmin ? 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500' : profile?.rankGradient;
 

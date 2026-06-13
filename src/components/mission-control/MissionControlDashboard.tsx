@@ -123,14 +123,17 @@ export default function MissionControlDashboard() {
     const [recentRuns, setRecentRuns] = useState<RunRecord[]>([]);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [activeTab, setActiveTab] = useState<'log' | 'missions' | 'agents'>('log');
-    const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([
-        { id: 1, type: 'system', text: 'Sistema UAI inicializado. Grafo orbital activo.', time: new Date().toLocaleTimeString() },
-    ]);
+    const [logs, setLogs] = useState<{ id: number; type: string; text: string; time: string }[]>([]);
     const [missionInput, setMissionInput] = useState('');
     const [isRunning, setIsRunning] = useState(false);
     const [runOutput, setRunOutput] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Inicializar log solo en cliente para evitar hidratación #418
+    useEffect(() => {
+        setLogs([{ id: 1, type: 'system', text: 'Sistema UAI inicializado. Grafo orbital activo.', time: new Date().toLocaleTimeString() }]);
+    }, []);
 
     const addLog = useCallback((type: string, text: string) => {
         setLogs(prev => [...prev.slice(-49), {

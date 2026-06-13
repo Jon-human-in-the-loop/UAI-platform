@@ -55,7 +55,7 @@ export default function ROIDashboard({ metrics }: { metrics: ROIMetrics }) {
                     </div>
                     <span className="text-[10px] font-bold text-purple-400 uppercase">Carga Mental</span>
                 </div>
-                <h3 className="text-3xl font-black text-white">-{metrics.cognitiveLoadReduction}%</h3>
+                <h3 className="text-3xl font-black text-white">{metrics.cognitiveLoadReduction > 0 ? '-' : ''}{metrics.cognitiveLoadReduction}%</h3>
                 <p className="text-xs text-white/50">Menos decisiones triviales tomadas</p>
             </motion.div>
 

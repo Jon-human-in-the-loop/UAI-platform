@@ -176,6 +176,29 @@ export function levelProgress(totalXp: number): {
     return { level, currentXp, xpToNext, progress, rank: getRank(level) };
 }
 
+/**
+ * Calcula cuánto XP dentro del nivel actual ya se tiene.
+ * Útil para barras de progreso de agentes y del perfil.
+ *
+ * Ejemplo: XP=1500 → { level: X, currentLevelXp: 500, nextLevelXp: 2000, progressPercent: 25 }
+ */
+export function getLevelProgress(totalXp: number): {
+    level: number;
+    currentLevelXp: number;
+    nextLevelXp: number;
+    progressPercent: number;
+} {
+    const level = calculateLevel(totalXp);
+    const xpAtLevelStart = totalXpForLevel(level);
+    const xpAtNextLevel = totalXpForLevel(level + 1);
+    const currentLevelXp = totalXp - xpAtLevelStart;
+    const nextLevelXp = xpAtNextLevel - xpAtLevelStart;
+    const progressPercent = nextLevelXp > 0
+        ? Math.max(0, Math.min(100, Math.floor((currentLevelXp / nextLevelXp) * 100)))
+        : 100;
+    return { level, currentLevelXp, nextLevelXp, progressPercent };
+}
+
 // === Racha de Operaciones ===
 
 export function calculateStreak(lastActiveDate: string | undefined, currentDate: string): {
