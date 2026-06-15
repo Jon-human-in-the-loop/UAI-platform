@@ -334,7 +334,7 @@ function RegistroPage() {
                                     </div>
 
                                     <p className="text-[10px] text-center text-white/20 uppercase tracking-widest leading-relaxed">
-                                        Al registrarte, aceptas nuestros <span className="text-white/40">Términos de Servicio</span> y <span className="text-white/40">Política de Privacidad</span>.
+                                        Al registrarte, aceptas nuestros <Link href="/terms" className="text-white/40 hover:text-accent underline transition-colors">Términos de Servicio</Link> y <Link href="/privacy" className="text-white/40 hover:text-accent underline transition-colors">Política de Privacidad</Link>.
                                     </p>
                                 </form>
                             )}

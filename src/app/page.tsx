@@ -616,8 +616,12 @@ export default function LandingPage() {
                         <span className="text-lg font-bold tracking-tighter uppercase opacity-30">UAI PLATFORM 2026</span>
                     </div>
                     <div className="flex gap-10 order-1 md:order-2">
-                        {['Privacy', 'Terms', 'Enterprise', 'API', 'Docs'].map(link => (
-                            <a key={link} href="#" className="text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">{link}</a>
+                        {[
+                            { label: 'Privacidad', href: '/privacy' },
+                            { label: 'Términos', href: '/terms' },
+                            { label: 'Cookies', href: '/cookies' },
+                        ].map(link => (
+                            <Link key={link.href} href={link.href} className="text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">{link.label}</Link>
                         ))}
                     </div>
                 </footer>
