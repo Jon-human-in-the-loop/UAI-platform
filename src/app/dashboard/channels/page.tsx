@@ -49,10 +49,7 @@ const CHANNELS: {
     },
 ];
 
-function deriveStatus(channelId: ChannelType, config: ChannelConfigData | undefined): ChannelStatus {
-    if (channelId === 'EMAIL') {
-        return { label: 'PRÓXIMAMENTE', color: 'text-white/30' };
-    }
+function deriveStatus(_channelId: ChannelType, config: ChannelConfigData | undefined): ChannelStatus {
     if (!config) {
         return { label: 'DESCONECTADO', color: 'text-white/40' };
     }
@@ -92,9 +89,6 @@ export default function ChannelsPage() {
     // Modal
     const [modalChannel, setModalChannel] = useState<ChannelType | null>(null);
 
-    // Toast "próximamente" para EMAIL
-    const [emailToast, setEmailToast] = useState(false);
-
     // ── Carga de configs ──────────────────────
     const fetchConfigs = useCallback(async () => {
         try {
@@ -116,11 +110,6 @@ export default function ChannelsPage() {
 
     // ── Handlers ──────────────────────────────
     const handleConfigureClick = (channelId: ChannelType) => {
-        if (channelId === 'EMAIL') {
-            setEmailToast(true);
-            setTimeout(() => setEmailToast(false), 4000);
-            return;
-        }
         setModalChannel(channelId);
     };
 
@@ -148,14 +137,6 @@ export default function ChannelsPage() {
                     Conecta tus agentes con el mundo exterior a través de múltiples plataformas.
                 </p>
             </div>
-
-            {/* Toast EMAIL próximamente */}
-            {emailToast && (
-                <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm text-white/70 flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-red-400 shrink-0" />
-                    <span>Integración por email disponible próximamente.</span>
-                </div>
-            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* ── Columna principal: tarjetas de canales ── */}
