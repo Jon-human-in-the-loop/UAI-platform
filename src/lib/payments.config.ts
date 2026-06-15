@@ -8,7 +8,7 @@ export const PAYMENT_PLANS = {
     },
     essentials: {
         id: 'essentials',
-        name: 'Básico',
+        name: 'Essentials',
         price: 9, // Sincronizado con Landing Oficial
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_ESSENTIALS || 'price_1T0t1QFCIL2k9dafVkXIUzmw',
@@ -26,7 +26,7 @@ export const PAYMENT_PLANS = {
     },
     professional: {
         id: 'professional',
-        name: 'Pro',
+        name: 'Professional',
         price: 79, // Sincronizado con Landing Oficial (79 según la landing para el plan más alto)
         currency: 'USD',
         stripePriceId: process.env.STRIPE_PRICE_ID_PROFESSIONAL || 'price_1T0t1QFCIL2k9dafZf008rAa',

@@ -19,7 +19,7 @@ export async function POST(req: Request) {
                 );
             }
         } else if (provider === PAYMENT_PROVIDERS.MERCADOPAGO) {
-            if (!process.env.MP_ACCESS_TOKEN) {
+            if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
                 return NextResponse.json(
                     { error: 'Mercado Pago no está configurado todavía.' },
                     { status: 503 }
@@ -90,6 +90,15 @@ export async function POST(req: Request) {
                     userId: userId,
                     planId: plan.id,
                 },
+                // Propagate metadata to the Subscription so that
+                // subscription.updated/deleted and invoice.payment_succeeded
+                // webhooks can also resolve userId and planId.
+                subscription_data: plan.stripePriceId ? {
+                    metadata: {
+                        userId: userId,
+                        planId: plan.id,
+                    },
+                } : undefined,
             });
 
             return NextResponse.json({ url: sessionStripe.url });
@@ -115,12 +124,13 @@ export async function POST(req: Request) {
                 body: {
                     preapproval_plan_id: plan.mpPlanId,
                     payer_email: userEmail,
-                    external_reference: userId, // ID de usuario para el webhook
+                    // Encode both userId and planId so the webhook can resolve both
+                    // without an extra DB round-trip. Format: "<userId>:<planId>"
+                    external_reference: `${userId}:${plan.id}`,
                     back_url: successUrl,
-                    reason: `Suscripción ${plan.name} - UAI Platform`,
+                    reason: `UAI Platform · ${plan.name}`,
                     auto_recurring: {
                         currency_id: 'ARS',
-                        transaction_amount: plan.id === 'essentials' ? 15000 : 131000, // Fallback visual, el plan define el cobro real
                         frequency: 1,
                         frequency_type: 'months',
                     },
