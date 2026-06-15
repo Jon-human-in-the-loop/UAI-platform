@@ -16,7 +16,7 @@ const plans: { id: PlanId; name: string; price: string; period: string; badge?: 
         highlight: false, cta: 'Comenzar Gratis'
     },
     {
-        id: 'essentials', name: 'Básico', price: '$9', period: '/mes',
+        id: 'essentials', name: 'Essentials', price: '$9', period: '/mes',
         badge: 'RECOMENDADO',
         features: ['Orquestación de 2 Agentes', 'Memoria Cognitiva Persistente', 'Prioridad en Razonamiento', 'Tokens a Coste Directo (0% Margen)', 'Capacidad: 50 consultas/hora'],
         highlight: true, cta: 'Activar Essentials'
@@ -27,7 +27,7 @@ const plans: { id: PlanId; name: string; price: string; period: string; badge?: 
         highlight: false, cta: 'Activar Advanced'
     },
     {
-        id: 'professional', name: 'Pro', price: '$79', period: '/mes',
+        id: 'professional', name: 'Professional', price: '$79', period: '/mes',
         features: ['Agentes Ilimitados', 'Auto-Sanación Neural', 'Memoria Cognitiva Infinita', 'Soporte Prioritario 24/7', 'Margen Plataforma: solo 5%'],
         highlight: false, cta: 'Activar Professional'
     }

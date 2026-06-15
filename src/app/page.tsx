@@ -1,30 +1,73 @@
 'use client';
 
-import React from 'react';
-import { Bot, Cpu, Zap, Layers, Activity, Play, CheckCircle2, Search, ArrowRight, Shield, Globe, Terminal, Sparkles, Rocket, TrendingUp, Star, Code, Flame } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { Bot, Cpu, Zap, Layers, Activity, Play, CheckCircle2, Search, ArrowRight, Shield, Globe, Terminal, Sparkles, Rocket, TrendingUp, Star, Code, Flame, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
+const NAV_LINKS = [
+    { href: '#features', label: 'Tecnología' },
+    { href: '#power', label: 'Orquestación' },
+    { href: '#community', label: 'Comunidad' },
+    { href: '#mission', label: 'Mission Control' },
+    { href: '#pricing', label: 'Precios' },
+];
+
 export default function LandingPage() {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     return (
         <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-accent font-sans">
-            {/* Navbar Landing - Minimal & Premium */}
+            {/* Navbar Landing */}
             <header className="fixed top-0 w-full h-20 z-50 border-b border-white/5 bg-black/50 backdrop-blur-xl flex items-center justify-between px-6 lg:px-20">
                 <div className="flex items-center gap-3">
                     <Cpu className="text-accent w-8 h-8" />
                     <span className="text-2xl font-bold tracking-tighter gold-text-gradient">UAI PLATFORM</span>
                 </div>
+                {/* Desktop nav */}
                 <div className="hidden md:flex items-center gap-10">
-                    <a href="#features" className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">Tecnología</a>
-                    <a href="#power" className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">Orquestación</a>
-                    <a href="#community" className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">Comunidad</a>
-                    <a href="#mission" className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">Mission Control</a>
-                    <a href="#pricing" className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">Precios</a>
+                    {NAV_LINKS.map(l => (
+                        <a key={l.href} href={l.href} className="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">{l.label}</a>
+                    ))}
                 </div>
                 <div className="flex items-center gap-4">
-                    <Link href="/registro" className="bg-primary px-8 py-2.5 rounded-full text-[10px] font-black shadow-[0_0_30px_rgba(139,0,0,0.4)] hover:scale-105 active:scale-95 transition-all tracking-[0.2em] uppercase">Comenzar ahora</Link>
+                    <Link href="/registro" className="hidden md:inline-flex bg-primary px-8 py-2.5 rounded-full text-[10px] font-black shadow-[0_0_30px_rgba(139,0,0,0.4)] hover:scale-105 active:scale-95 transition-all tracking-[0.2em] uppercase">Comenzar ahora</Link>
+                    {/* Mobile hamburger */}
+                    <button
+                        className="md:hidden p-2 text-white/60 hover:text-white transition-colors"
+                        onClick={() => setMobileMenuOpen(o => !o)}
+                        aria-label="Menú"
+                    >
+                        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
                 </div>
             </header>
+
+            {/* Mobile nav drawer */}
+            <AnimatePresence>
+                {mobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed top-20 inset-x-0 z-40 md:hidden bg-black/95 backdrop-blur-xl border-b border-white/10 px-6 py-6 flex flex-col gap-5"
+                    >
+                        {NAV_LINKS.map(l => (
+                            <a
+                                key={l.href}
+                                href={l.href}
+                                className="text-sm font-bold text-white/60 hover:text-white transition-colors uppercase tracking-[0.2em]"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >{l.label}</a>
+                        ))}
+                        <Link
+                            href="/registro"
+                            className="mt-2 text-center bg-primary px-8 py-3 rounded-full text-[10px] font-black shadow-[0_0_30px_rgba(139,0,0,0.4)] transition-all tracking-[0.2em] uppercase"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >Comenzar ahora</Link>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <main>
                 {/* Hero Section: The "Irresistible" Hook */}
